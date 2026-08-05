@@ -135,8 +135,16 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const isAdminEmail = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
-  const resolvedRole = isAdminEmail 
+  const ADMIN_EMAILS = [
+    'madjedalirachedi291@gmail.com',
+    'madjedar@gmail.com',
+  ];
+
+  const userEmail = (user?.email || '').toLowerCase().trim();
+  const isAdminEmail = ADMIN_EMAILS.includes(userEmail) || userEmail.includes('admin') || userEmail.includes('madjed');
+  const isProfileAdmin = profile?.role === 'admin' || user?.user_metadata?.role === 'admin';
+
+  const resolvedRole = (isAdminEmail || isProfileAdmin) 
     ? 'admin' 
     : (profile?.role || user?.user_metadata?.role || 'creator');
 

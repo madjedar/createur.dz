@@ -102,7 +102,11 @@ const Header = ({ onOpenAuth, onOpenDashboard }) => {
                   <span>{t('logout')}</span>
                 </button>
 
-                <div className={`w-9 h-9 rounded-full overflow-hidden border-2 ${isBrand ? 'border-blue-500' : 'border-emerald-500'}`}>
+                <div 
+                  onClick={() => onOpenDashboard(isAdmin ? 'admin' : 'overview')}
+                  className={`w-9 h-9 rounded-full overflow-hidden border-2 cursor-pointer hover:scale-105 transition-transform ${isAdmin ? 'border-purple-500 font-bold' : isBrand ? 'border-blue-500' : 'border-emerald-500'}`}
+                  title={user.user_metadata?.full_name || 'Profile'}
+                >
                   {user.user_metadata?.avatar_url ? (
                     <img src={user.user_metadata.avatar_url} alt="User" className="w-full h-full object-cover" />
                   ) : (

@@ -330,7 +330,7 @@ function AppContent() {
 
       {user?.role === 'admin' ? (
         <AdminDashboardModal
-          isOpen={dashboardState.open && dashboardState.tab === 'admin'}
+          isOpen={dashboardState.open}
           onClose={handleCloseDashboard}
         />
       ) : user?.role === 'brand' ? (

@@ -1,6 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+const ADMIN_EMAILS = [
+  'madjedalirachedi291@gmail.com',
+  'madjedar@gmail.com',
+];
+
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
@@ -100,8 +105,6 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
-  const ADMIN_EMAILS = ['madjedalirachedi291@gmail.com'];
-
   const updateProfileData = async (profileFields) => {
     if (!user || !supabase) return;
     try {
@@ -134,11 +137,6 @@ export function AuthProvider({ children }) {
       console.error('Error updating role:', err)
     }
   }
-
-  const ADMIN_EMAILS = [
-    'madjedalirachedi291@gmail.com',
-    'madjedar@gmail.com',
-  ];
 
   const userEmail = (user?.email || '').toLowerCase().trim();
   const isAdminEmail = ADMIN_EMAILS.includes(userEmail) || userEmail.includes('admin') || userEmail.includes('madjed');

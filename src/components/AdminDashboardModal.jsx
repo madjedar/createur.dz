@@ -6,9 +6,11 @@ import {
 import { useLanguage } from '../context/LanguageContext';
 import { formatDZD } from '../services/chargilyService';
 
-export default function AdminDashboardModal({ onClose }) {
+export default function AdminDashboardModal({ isOpen, onClose }) {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
+
+  if (!isOpen) return null;
 
   // Mock Admin Data
   const stats = {

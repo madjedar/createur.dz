@@ -1,0 +1,473 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  X, LayoutDashboard, PlusCircle, Users, CreditCard, 
+  Building2, TrendingUp, DollarSign, Lock, ShieldCheck, CheckCircle2, Search, Filter, Star, BadgeCheck
+} from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { mockCreators, mockCampaigns } from '../data/mockData';
+import { formatDZD, calculateFees } from '../services/chargilyService';
+
+export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, initialTab = 'overview' }) {
+  const { user } = useAuth();
+  const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  // Campaign Form State
+  const [newCampaign, setNewCampaign] = useState({
+    title: '',
+    category: 'تكنولوجيا',
+    budget: '',
+    description: '',
+    deliverables: 'منشور إنستغرام, قصة (Story), فيديو ريلز',
+    deadline: '2026-08-31'
+  });
+  const [campaignSuccess, setCampaignSuccess] = useState(false);
+
+  // Search & Filters for Creators
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('الكل');
+
+  // Active Deals Mock State
+  const [deals, setDeals] = useState([
+    { id: 1, creatorName: 'ياسين براهيمي', campaignTitle: 'حملة إطلاق متجر الملابس', budget: 45000, status: 'funded', deliverableUrl: 'https://instagram.com/p/mock123' },
+    { id: 2, creatorName: 'أمينة بن علي', campaignTitle: 'ترويج منتجات العناية بالبشرة', budget: 25000, status: 'review_pending', deliverableUrl: 'https://tiktok.com/@mock/video/456' },
+  ]);
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const handleCreateCampaign = (e) => {
+    e.preventDefault();
+    if (!newCampaign.title || !newCampaign.budget) return;
+    setCampaignSuccess(true);
+    setTimeout(() => {
+      setCampaignSuccess(false);
+      setNewCampaign({
+        title: '',
+        category: 'تكنولوجيا',
+        budget: '',
+        description: '',
+        deliverables: 'منشور إنستغرام, قصة (Story), فيديو ريلز',
+        deadline: '2026-08-31'
+      });
+      setActiveTab('overview');
+    }, 2000);
+  };
+
+  const handleApproveDeal = (dealId) => {
+    setDeals(deals.map(d => d.id === dealId ? { ...d, status: 'released' } : d));
+  };
+
+  const filteredCreators = mockCreators.filter(c => {
+    const matchCat = selectedCategory === 'الكل' || c.category === selectedCategory;
+    const matchSearch = searchQuery === '' || c.name.includes(searchQuery) || c.bio.includes(searchQuery);
+    return matchCat && matchSearch;
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/98 backdrop-blur-md overflow-y-auto" dir="rtl">
+      {/* Header Bar */}
+      <div className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-8 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white tracking-wide">{t('brandDashboard')}</h2>
+            <p className="text-xs text-slate-400">مرحباً، {user?.user_metadata?.full_name || 'صاحب المتجر'}</p>
+          </div>
+        </div>
+
+        <button 
+          onClick={onClose}
+          className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Main Container */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+        {/* Navigation Tabs */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-8 border-b border-white/10">
+          {[
+            { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
+            { id: 'create', label: '+ إضافة حملة جديدة', icon: PlusCircle },
+            { id: 'creators', label: 'دليل صنّاع المحتوى', icon: Users },
+            { id: 'escrow', label: 'صفقات الضمان 🔒', icon: Lock },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2.5 transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-lg shadow-blue-500/20 scale-105'
+                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab 1: Store Overview */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8 animate-fade-in">
+            {/* Business Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="glass-card p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-slate-400 text-sm font-semibold">إجمالي الميزانية المستثمرة</span>
+                  <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg"><DollarSign className="w-5 h-5" /></div>
+                </div>
+                <div className="text-3xl font-bold gradient-text">{formatDZD(320000)}</div>
+                <p className="text-xs text-slate-400 mt-2">مدفوعة عبر ChargilyPay</p>
+              </div>
+
+              <div className="glass-card p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-slate-400 text-sm font-semibold">الحملات النشطة</span>
+                  <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><PlusCircle className="w-5 h-5" /></div>
+                </div>
+                <div className="text-3xl font-bold text-white">4 حملات</div>
+                <p className="text-xs text-emerald-400 mt-2">تستقبل طلبات المبدعين الان</p>
+              </div>
+
+              <div className="glass-card p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-slate-400 text-sm font-semibold">صنّاع المحتوى الموظفون</span>
+                  <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg"><Users className="w-5 h-5" /></div>
+                </div>
+                <div className="text-3xl font-bold text-purple-400">8 مبدعين</div>
+                <p className="text-xs text-slate-400 mt-2">عبر إنستغرام وتيك توك ويوتيوب</p>
+              </div>
+
+              <div className="glass-card p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-slate-400 text-sm font-semibold">الوصول الإجمالي المقدر</span>
+                  <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg"><TrendingUp className="w-5 h-5" /></div>
+                </div>
+                <div className="text-3xl font-bold text-amber-400">1.4M+</div>
+                <p className="text-xs text-slate-400 mt-2">مشاهدة وتفاعل كلي</p>
+              </div>
+            </div>
+
+            {/* Quick Actions & Recent Campaigns */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 glass-card p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-white mb-6 tracking-wide">{t('dashWallet')}</h3>
+                  <button 
+                    onClick={() => setActiveTab('create')}
+                    className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
+                  >
+                    <PlusCircle className="w-5 h-5" />
+                    <span>{t('addCampaign')}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {mockCampaigns.map((camp) => (
+                    <div key={camp.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <h4 className="font-bold text-white">{camp.title}</h4>
+                        <p className="text-xs text-slate-400 mt-1">الميزانية: <span className="text-emerald-400 font-bold">{formatDZD(camp.budget)}</span> | المتقدمون: <span className="text-white font-bold">{camp.applicantsCount} مبدع</span></p>
+                      </div>
+                      <button 
+                        onClick={() => setActiveTab('creators')}
+                        className="btn-secondary text-xs px-4 py-2 whitespace-nowrap"
+                      >
+                        استعراض المتقدمين
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Escrow Status Summary Card */}
+              <div className="glass-card p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-emerald-400 mb-4 font-bold text-lg">
+                    <ShieldCheck className="w-6 h-6" />
+                    <span>حالة الضمان المالي</span>
+                  </div>
+                  <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+                    جميع أموال الرعاية تبقى محفوطة بحساب الضمان الشفاف ولا يتم تحويلها لصانع المحتوى حتى تراجع العمل وتوافق عليه.
+                  </p>
+
+                  <div className="p-4 rounded-xl bg-white/5 space-y-3 mb-6">
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>الأموال المحجوزة حالياً:</span>
+                      <span className="font-bold text-amber-400">{formatDZD(70000)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>الأموال المحررة:</span>
+                      <span className="font-bold text-emerald-400">{formatDZD(250000)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setActiveTab('escrow')}
+                  className="btn-gold w-full py-3 text-sm font-bold flex items-center justify-center gap-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>إدارة صفقات الضمان النشطة</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Create Campaign Brief */}
+        {activeTab === 'create' && (
+          <div className="max-w-2xl mx-auto glass-card p-6 sm:p-8 animate-fade-in">
+            <h3 className="text-2xl font-bold text-white mb-6 tracking-wide">{t('dashOverview')}</h3>
+            <p className="text-slate-400 text-sm mb-6">انشر تفاصيل حملتك وميزانيتك ليصلك التقديم من أفضل صنّاع المحتوى في الجزائر</p>
+
+            <form onSubmit={handleCreateCampaign} className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">عنوان الحملة الإعلانية</label>
+                <input
+                  type="text"
+                  placeholder="مثال: ترويج تشكيلة الملابس الصيفية الجديدة"
+                  className="input-field w-full"
+                  value={newCampaign.title}
+                  onChange={(e) => setNewCampaign({ ...newCampaign, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">المجال / الفئة</label>
+                  <select
+                    className="input-field w-full"
+                    value={newCampaign.category}
+                    onChange={(e) => setNewCampaign({ ...newCampaign, category: e.target.value })}
+                  >
+                    <option value="تكنولوجيا">تكنولوجيا وشهادة</option>
+                    <option value="موضة وأزياء">موضة وأزياء</option>
+                    <option value="تجميل وعناية">تجميل وعناية</option>
+                    <option value="طبخ وأكل">طبخ وأكل</option>
+                    <option value="سفر وسياحة">سفر وسياحة</option>
+                    <option value="رياضة ولياقة">رياضة ولياقة</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">الميزانية المقترحة (د.ج)</label>
+                  <input
+                    type="number"
+                    placeholder="35000"
+                    className="input-field w-full"
+                    value={newCampaign.budget}
+                    onChange={(e) => setNewCampaign({ ...newCampaign, budget: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">التسليمات المطلوبة (مفصولة بفواصل)</label>
+                <input
+                  type="text"
+                  placeholder="منشور إنستغرام, 2 ستوري, فيديو ريلز 60 ثانية"
+                  className="input-field w-full"
+                  value={newCampaign.deliverables}
+                  onChange={(e) => setNewCampaign({ ...newCampaign, deliverables: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">وصف الحملة وشروط صانع المحتوى</label>
+                <textarea
+                  rows={4}
+                  placeholder="اشرح طبيعة المنتج، الجمهور المستهدف، والشروط الخاصة..."
+                  className="input-field w-full"
+                  value={newCampaign.description}
+                  onChange={(e) => setNewCampaign({ ...newCampaign, description: e.target.value })}
+                  required
+                />
+              </div>
+
+              {newCampaign.budget && (
+                <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300 space-y-1">
+                  <div className="flex justify-between">
+                    <span>ميزانية الحملة الأساسية:</span>
+                    <span className="font-bold text-white">{formatDZD(Number(newCampaign.budget))}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>رسوم الضمان والمنصة (10%):</span>
+                    <span className="font-bold text-emerald-400">{formatDZD(calculateFees(Number(newCampaign.budget)).platformFee)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-white/10 text-sm font-bold text-white">
+                    <span>المجموع الإجمالي لتأمين الصفقة:</span>
+                    <span className="gradient-text">{formatDZD(calculateFees(Number(newCampaign.budget)).total)}</span>
+                  </div>
+                </div>
+              )}
+
+              {campaignSuccess && (
+                <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-semibold text-center flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>تم نشر الحملة بنجاح! يمكن للصنّاع التقديم الآن.</span>
+                </div>
+              )}
+
+              <button type="submit" className="btn-primary w-full py-4 font-bold text-lg flex items-center justify-center gap-2">
+                <LayoutDashboard className="w-5 h-5" /> {t('dashOverview')} <span>نشر الحملة في السوق</span>
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Tab 3: Creator Directory */}
+        {activeTab === 'creators' && (
+          <div className="space-y-6 animate-fade-in">
+            <h3 className="text-xl font-bold text-white">دليل وتوظيف صنّاع المحتوى</h3>
+            <p className="text-slate-400 text-sm">ابحث عن أفضل المبدعين حسب المجال والتفاعل وظفهم مباشرة مع دفع آمن عبر ChargilyPay</p>
+
+            {/* Search Filters */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="ابحث باسم صانع المحتوى..."
+                  className="input-field w-full pr-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                {['الكل', 'تكنولوجيا', 'موضة وأزياء', 'تجميل وعناية', 'طبخ وأكل'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                      selectedCategory === cat
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white/5 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Creators Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCreators.map((creator) => (
+                <div key={creator.id} className="glass-card p-6 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <img src={creator.avatar} alt={creator.name} className="w-14 h-14 rounded-full bg-white/10" />
+                      <div>
+                        <h4 className="font-bold text-white flex items-center gap-1.5">
+                          {creator.name}
+                          {creator.verified && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
+                        </h4>
+                        <span className="text-xs text-slate-400">{creator.category}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-300 line-clamp-2 mb-4">{creator.bio}</p>
+
+                    <div className="grid grid-cols-2 gap-2 mb-6 text-center">
+                      <div className="p-2 rounded-lg bg-white/5">
+                        <span className="text-xs text-slate-400 block">التفاعل</span>
+                        <span className="font-bold text-emerald-400 text-sm">{creator.engagement}%</span>
+                      </div>
+                      <div className="p-2 rounded-lg bg-white/5">
+                        <span className="text-xs text-slate-400 block">السعر/منشور</span>
+                        <span className="font-bold text-white text-sm">{formatDZD(creator.ratePerPost)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onHireCreator(creator);
+                    }}
+                    className="btn-gold w-full py-3 text-sm font-bold flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>توظيف وإيداع بالضمان</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Escrow Deals Management */}
+        {activeTab === 'escrow' && (
+          <div className="space-y-6 animate-fade-in">
+            <h3 className="text-xl font-bold text-white mb-2">إدارة صفقات الضمان وتحرير الأموال</h3>
+            <p className="text-slate-400 text-sm mb-6">مراجعة أعمال المبدعين المستلمة والموافقة على تحرير الأموال من الضمان إلى محفظة صانع المحتوى</p>
+
+            <div className="space-y-4">
+              {deals.map((deal) => (
+                <div key={deal.id} className="glass-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white text-lg">{deal.campaignTitle}</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        {deal.status === 'released' ? 'تم تحرير الأموال ✅' : 'في حساب الضمان 🔒'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400">المبدع المكلف: <span className="text-white font-semibold">{deal.creatorName}</span> | المبلغ المحجوز: <span className="text-emerald-400 font-bold">{formatDZD(deal.budget)}</span></p>
+                    {deal.deliverableUrl && (
+                      <a href={deal.deliverableUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline block pt-1">
+                        🔗 معاينة المحتوى المنفذ ({deal.deliverableUrl})
+                      </a>
+                    )}
+                  </div>
+
+                  <div>
+                    {deal.status === 'released' ? (
+                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" />
+                        تمت العملية وتحرير المبلغ
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleApproveDeal(deal.id)}
+                        className="btn-primary text-xs px-5 py-3 font-bold flex items-center gap-2 shadow-lg"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>الموافقة وتحرير الأموال الآن</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

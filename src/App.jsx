@@ -54,7 +54,16 @@ function AppContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const paymentStatus = params.get('payment')
-    if (paymentStatus === 'success') {
+    const errorMsg = params.get('error_description') || params.get('error')
+    
+    // Also check hash for Supabase OAuth errors
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const hashError = hashParams.get('error_description') || hashParams.get('error')
+
+    if (errorMsg || hashError) {
+      setToast({ type: 'error', message: `Auth Error: ${errorMsg || hashError}` })
+      window.history.replaceState({}, '', window.location.pathname)
+    } else if (paymentStatus === 'success') {
       setToast({ type: 'success', message: t('paymentSuccess') })
       window.history.replaceState({}, '', window.location.pathname)
     } else if (paymentStatus === 'failed') {

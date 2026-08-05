@@ -43,14 +43,24 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
     try {
       setLoading(true);
       setError(null);
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized.');
+      }
       sessionStorage.setItem('oauth_login', 'true');
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin, data: { role } }
+        options: { 
+          redirectTo: window.location.origin, 
+          data: { role } 
+        }
       });
       if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
     } catch (err) {
-      setError(err.message);
+      console.error('Google Auth Error:', err);
+      setError(err.message || 'Google authentication failed');
     } finally {
       setLoading(false);
     }
@@ -207,6 +217,12 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
               </svg>
               {t('authGoogle')}
             </button>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-500/20 border border-red-500/50 text-red-300 text-xs font-semibold text-center animate-fade-in">
+                {error}
+              </div>
+            )}
 
             <div className="flex items-center gap-4 mb-6">
               <div className="flex-1 h-px bg-white/10"></div>

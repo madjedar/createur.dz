@@ -116,7 +116,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const userWithRole = user ? { ...user, role: profile?.role || user?.user_metadata?.role, profile } : null
+  const userWithRole = user ? { ...user, role: profile?.role || user?.user_metadata?.role || 'creator', profile } : null
 
   return (
     <AuthContext.Provider value={{ user: userWithRole, profile, loading, logout, updateRole, fetchProfile }}>

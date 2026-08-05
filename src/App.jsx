@@ -98,7 +98,7 @@ function AppContent() {
       if (isOAuthLogin) sessionStorage.removeItem('oauth_login');
       
       if (user.role === 'admin') {
-        setIsAdminDashboardOpen(true);
+        handleOpenDashboard('admin');
       } else {
         handleOpenDashboard('overview');
       }

@@ -55,12 +55,21 @@ export default function AdminDashboardModal({ onClose }) {
               <p className="text-xs text-slate-400">{t('adminOverview')} Control Center</p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => window.open('/', '_blank')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 hover:text-white transition-all text-xs font-bold"
+            >
+              <Globe className="w-4 h-4 text-purple-400" />
+              <span>{t('browseWebsite')}</span>
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden">

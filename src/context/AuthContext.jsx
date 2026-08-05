@@ -100,6 +100,26 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
+  const ADMIN_EMAILS = ['madjedalirachedi291@gmail.com'];
+
+  const updateProfileData = async (profileFields) => {
+    if (!user || !supabase) return;
+    try {
+      const payload = {
+        id: user.id,
+        updated_at: new Date().toISOString(),
+        ...profileFields
+      };
+      const { error } = await supabase
+        .from('profiles')
+        .upsert(payload);
+      if (error) console.error('Error saving profile:', error);
+      setProfile(prev => ({ ...(prev || {}), ...payload }));
+    } catch (err) {
+      console.error('Error in updateProfileData:', err);
+    }
+  };
+
   const updateRole = async (role) => {
     if (!user || !supabase) return
     try {
@@ -107,7 +127,6 @@ export function AuthProvider({ children }) {
         .from('profiles')
         .upsert({ id: user.id, role, full_name: user.user_metadata?.full_name || '' })
       
-      // Also update metadata in Auth
       await supabase.auth.updateUser({ data: { role } })
 
       setProfile(prev => ({ ...(prev || {}), id: user.id, role }))
@@ -116,10 +135,19 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const userWithRole = user ? { ...user, role: profile?.role || user?.user_metadata?.role || 'creator', profile } : null
+  const isAdminEmail = user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+  const resolvedRole = isAdminEmail 
+    ? 'admin' 
+    : (profile?.role || user?.user_metadata?.role || 'creator');
+
+  const userWithRole = user ? { 
+    ...user, 
+    role: resolvedRole, 
+    profile 
+  } : null
 
   return (
-    <AuthContext.Provider value={{ user: userWithRole, profile, loading, logout, updateRole, fetchProfile }}>
+    <AuthContext.Provider value={{ user: userWithRole, profile, loading, logout, updateRole, updateProfileData, fetchProfile }}>
       {children}
     </AuthContext.Provider>
   )

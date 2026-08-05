@@ -9,17 +9,17 @@ import { mockCampaigns, mockWallet, mockTransactions, mockPayoutRequests } from 
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
 
 export default function CreatorDashboardModal({ isOpen, onClose }) {
-  const { user } = useAuth();
+  const { user, updateProfileData } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   
   // Profile State
   const [profileData, setProfileData] = useState({
-    bio: user?.user_metadata?.bio || 'صانع محتوى جزائري مهتم بالتقنية وأسلوب الحياة.',
-    youtubeUrl: 'https://youtube.com/@creator_dz',
-    instagramUrl: 'https://instagram.com/creator_dz',
-    tiktokUrl: 'https://tiktok.com/@creator_dz',
-    ratePerPost: '25000'
+    bio: user?.profile?.bio || user?.user_metadata?.bio || 'صانع محتوى جزائري مهتم بالتقنية وأسلوب الحياة.',
+    youtubeUrl: user?.profile?.youtube_url || 'https://youtube.com/@creator_dz',
+    instagramUrl: user?.profile?.instagram_url || 'https://instagram.com/creator_dz',
+    tiktokUrl: user?.profile?.tiktok_url || 'https://tiktok.com/@creator_dz',
+    ratePerPost: user?.profile?.rate_per_post || '25000'
   });
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -37,8 +37,17 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
+    if (updateProfileData) {
+      await updateProfileData({
+        bio: profileData.bio,
+        youtube_url: profileData.youtubeUrl,
+        instagram_url: profileData.instagramUrl,
+        tiktok_url: profileData.tiktokUrl,
+        rate_per_post: profileData.ratePerPost
+      });
+    }
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };

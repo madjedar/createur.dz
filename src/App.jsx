@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth, AuthProvider } from './context/AuthContext'
 import { LanguageProvider, useLanguage } from './context/LanguageContext'
+import { supabase } from './lib/supabase'
 import { mockCreators, mockCampaigns, categories } from './data/mockData'
 import { formatDZD } from './services/chargilyService'
 import Header from './components/Header'
@@ -162,6 +163,14 @@ function AppContent() {
       )}
 
       {/* ─── Header ─── */}
+      {/* Missing Env Variables Warning Banner */}
+      {!supabase && (
+        <div className="bg-red-500 text-white p-4 text-center font-bold text-lg z-50 relative shadow-lg">
+          ⚠️ ERROR: ENVIRONMENT VARIABLES MISSING ⚠️<br />
+          You must add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to your Render/Vercel Dashboard settings and redeploy.
+        </div>
+      )}
+
       <Header 
         onOpenAuth={handleOpenAuth} 
         onOpenDashboard={handleOpenDashboard} 

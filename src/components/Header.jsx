@@ -4,10 +4,20 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
 const Header = ({ onOpenAuth, onOpenDashboard }) => {
-  const { user, logout } = useAuth();
+  const { user: realUser, logout } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+
+  // FAKE USER FOR VISUAL TESTING ONLY
+  const isFakeMode = window.location.hash.includes('#fake');
+  const user = isFakeMode ? {
+    role: 'creator',
+    user_metadata: {
+      avatar_url: 'https://i.pravatar.cc/150?img=11',
+      full_name: 'Test Creator'
+    }
+  } : realUser;
 
   const isBrand = user?.role === 'brand';
   const isAdmin = user?.role === 'admin';

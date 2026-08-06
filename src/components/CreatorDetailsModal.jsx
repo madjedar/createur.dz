@@ -2,9 +2,10 @@ import React, { useEffect } from 'react';
 import { X, MapPin, Star, Play, Camera, ExternalLink, BadgeCheck, Users, TrendingUp, Handshake } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { formatDZD } from '../services/chargilyService';
+import { getLocalizedItem } from '../data/mockData';
 
 export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
@@ -30,7 +31,6 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }
       <div 
         className="relative w-full max-w-2xl my-auto p-0 overflow-hidden modal-content bg-slate-900 border border-white/10 rounded-2xl animate-scale-in flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
-        dir="rtl"
       >
         <button 
           onClick={onClose}
@@ -63,10 +63,10 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-slate-400">
                 <span className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
-                  {creator.location || 'الجزائر'}
+                  {getLocalizedItem(creator, 'location', language) || 'الجزائر'}
                 </span>
                 <span className="px-2 py-1 bg-white/5 border border-white/10 rounded-md text-slate-300">
-                  {creator.category || 'صانع محتوى'}
+                  {getLocalizedItem(creator, 'category', language) || 'صانع محتوى'}
                 </span>
                 <span className="flex items-center gap-1 text-amber-400">
                   <Star className="w-4 h-4 fill-amber-400" />
@@ -77,7 +77,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }
 
               {/* Bio */}
               <p className="mt-4 text-slate-300 leading-relaxed max-w-lg">
-                {creator.bio || 'صانع محتوى جزائري شغوف بتقديم محتوى هادف وممتع. مهتم بالتكنولوجيا وأسلوب الحياة.'}
+                {getLocalizedItem(creator, 'bio', language)}
               </p>
             </div>
           </div>

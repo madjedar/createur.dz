@@ -5,12 +5,12 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { mockCampaigns, mockWallet, mockTransactions, mockPayoutRequests } from '../data/mockData';
+import { mockCampaigns, mockWallet, mockTransactions, mockPayoutRequests, getLocalizedItem } from '../data/mockData';
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
 
 export default function CreatorDashboardModal({ isOpen, onClose }) {
   const { user, updateProfileData } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   
   // Profile State
@@ -197,45 +197,52 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
         {activeTab === 'opportunities' && (
           <div className="space-y-6 animate-fade-in">
             <h3 className="text-xl font-bold text-white mb-2">فرص الرعاية المتاحة للتقديم</h3>
-            <p className="text-slate-400 text-sm mb-6">تصفح الحملات المعلنة من طرف المتاجر والعلامات التجارية وتقدم بطلبك</p>
+            <p className="text-slate-400 text-sm mb-6">{t('opportunitiesSub')}</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockCampaigns.map((campaign) => (
-                <div key={campaign.id} className="glass-card-hover p-6 flex flex-col justify-between">
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">{campaign.brandLogo}</span>
-                        <div>
-                          <h4 className="font-bold text-white text-lg">{campaign.title}</h4>
-                          <span className="text-xs text-slate-400">{campaign.category}</span>
+              {mockCampaigns.map((campaign) => {
+                const campaignTitle = getLocalizedItem(campaign, 'title', language);
+                const campaignCategory = getLocalizedItem(campaign, 'category', language);
+                const campaignDesc = getLocalizedItem(campaign, 'description', language);
+                const campaignDeliverables = (campaign.deliverables && campaign.deliverables[language]) || campaign.deliverables?.ar || campaign.deliverables || [];
+
+                return (
+                  <div key={campaign.id} className="glass-card-hover p-6 flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl">{campaign.brandLogo}</span>
+                          <div>
+                            <h4 className="font-bold text-white text-lg">{campaignTitle}</h4>
+                            <span className="text-xs text-slate-400">{campaignCategory}</span>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          {formatDZD(campaign.budget)}
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-slate-300 mb-4 leading-relaxed">{campaignDesc}</p>
+
+                      <div className="space-y-2 mb-6">
+                        <span className="text-xs text-slate-400 font-semibold block">{t('deliverablesRequired')}</span>
+                        <div className="flex flex-wrap gap-2">
+                          {Array.isArray(campaignDeliverables) && campaignDeliverables.map((item, idx) => (
+                            <span key={idx} className="px-2.5 py-1 rounded-md bg-white/5 text-slate-300 text-xs border border-white/5">
+                              {item}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                        {formatDZD(campaign.budget)}
-                      </span>
                     </div>
 
-                    <p className="text-sm text-slate-300 mb-4 leading-relaxed">{campaign.description}</p>
-
-                    <div className="space-y-2 mb-6">
-                      <span className="text-xs text-slate-400 font-semibold block">التسليمات المطلوبة:</span>
-                      <div className="flex flex-wrap gap-2">
-                        {campaign.deliverables.map((item, idx) => (
-                          <span key={idx} className="px-2.5 py-1 rounded-md bg-white/5 text-slate-300 text-xs border border-white/5">
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                    <button className="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                      <Send className="w-4 h-4" />
+                      <span>{t('applyNow')}</span>
+                    </button>
                   </div>
-
-                  <button className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-                    <Send className="w-4 h-4" />
-                    <span>تقدم لهذه الحملة</span>
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

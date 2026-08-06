@@ -5,12 +5,12 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { mockCreators, mockCampaigns } from '../data/mockData';
+import { mockCreators, mockCampaigns, getLocalizedItem } from '../data/mockData';
 import { formatDZD, calculateFees } from '../services/chargilyService';
 
 export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, initialTab = 'overview' }) {
   const { user, updateProfileData } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
@@ -419,11 +419,11 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                           {creator.name}
                           {creator.verified && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
                         </h4>
-                        <span className="text-xs text-slate-400">{creator.category}</span>
+                        <span className="text-xs text-slate-400">{getLocalizedItem(creator, 'category', language)}</span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-2 mb-4">{creator.bio}</p>
+                    <p className="text-xs text-slate-300 line-clamp-2 mb-4">{getLocalizedItem(creator, 'bio', language)}</p>
 
                     <div className="grid grid-cols-2 gap-2 mb-6 text-center">
                       <div className="p-2 rounded-lg bg-white/5">

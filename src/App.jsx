@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth, AuthProvider } from './context/AuthContext'
 import { LanguageProvider, useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
-import { mockCreators, mockCampaigns, categories } from './data/mockData'
+import { mockCreators, mockCampaigns, categories, getLocalizedItem } from './data/mockData'
 import { formatDZD } from './services/chargilyService'
 import Header from './components/Header'
 import Hero from './components/Hero'
@@ -133,12 +133,16 @@ function AppContent() {
 
   // Filtered creators
   const filteredCreators = mockCreators.filter((c) => {
-    const matchCategory = selectedCategory === 'الكل' || c.category === selectedCategory
+    const rawCategory = typeof c.category === 'object' ? c.category.ar : c.category
+    const matchCategory = selectedCategory === 'الكل' || rawCategory === selectedCategory
+    const bioText = getLocalizedItem(c, 'bio', language)
+    const categoryText = getLocalizedItem(c, 'category', language)
     const matchSearch =
       searchQuery === '' ||
-      c.name.includes(searchQuery) ||
-      c.bio.includes(searchQuery) ||
-      c.tags.some((tag) => tag.includes(searchQuery))
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bioText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      categoryText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.tags && c.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
     return matchCategory && matchSearch
   })
 
@@ -301,12 +305,12 @@ function AppContent() {
                       <h3 className="font-bold text-white text-base truncate group-hover:text-emerald-400 transition-colors">
                         {creator.name}
                       </h3>
-                      <span className="text-xs text-slate-400 block mt-0.5">{creator.category}</span>
+                      <span className="text-xs text-slate-400 block mt-0.5">{getLocalizedItem(creator, 'category', language)}</span>
                     </div>
                   </div>
 
                   <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-6">
-                    {creator.bio}
+                    {getLocalizedItem(creator, 'bio', language)}
                   </p>
                 </div>
 

@@ -9,12 +9,25 @@ const ReviewModal = ({ isOpen, onClose, creator }) => {
   const [reviewText, setReviewText] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  const isMounted = React.useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
     };
     
     if (isOpen) {
+      setSubmitted(false);
+      setRating(0);
+      setReviewText('');
+      setHoveredStar(0);
       document.addEventListener('keydown', handleEscape);
     }
     
@@ -25,14 +38,27 @@ const ReviewModal = ({ isOpen, onClose, creator }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setRating(0);
-      setReviewText('');
-      onClose();
-    }, 2000);
+  const handleSubmit = async () => {
+    try {
+      const { addReview } = await import('../services/dbService');
+      if (creator?.id) {
+        await addReview(creator.id, rating, reviewText);
+      }
+    } catch (err) {
+      console.error('Failed to save review:', err);
+    }
+
+    if (isMounted.current) {
+      setSubmitted(true);
+      setTimeout(() => {
+        if (isMounted.current) {
+          setSubmitted(false);
+          setRating(0);
+          setReviewText('');
+          onClose();
+        }
+      }, 2000);
+    }
   };
 
   return (

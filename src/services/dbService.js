@@ -170,7 +170,7 @@ export const getMessages = async (userId1, userId2) => {
   const { data, error } = await supabase
     .from('messages')
     .select('*')
-    .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
+    .or(`and(sender_id.eq."${userId1}",receiver_id.eq."${userId2}"),and(sender_id.eq."${userId2}",receiver_id.eq."${userId1}")`)
     .order('created_at', { ascending: true });
     
   if (error) throw error;
@@ -269,4 +269,25 @@ export const createNotification = async (userId, title, message) => {
     
   if (error) throw error;
   return data;
+};
+export const addReview = async (creatorId, rating, reviewText) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert({
+        creator_id: creatorId,
+        brand_id: user.id,
+        rating,
+        review_text: reviewText
+      });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error adding review:", error);
+    throw error;
+  }
 };

@@ -20,30 +20,39 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Mock Admin Data
-  const stats = {
+  // Stateful mock data for admin prototype
+  const [stats, setStats] = useState({
     creators: 1245,
     brands: 320,
     activeCampaigns: 48,
     txVolume: 4500000,
     revenue: 450000
-  };
+  });
 
-  const mockUsers = [
+  const [mockUsers, setMockUsers] = useState([
     { id: 1, name: 'أحمد ديزاد', role: 'creator', status: 'verified', joinDate: '2023-10-15' },
     { id: 2, name: 'متجر ستايل', role: 'brand', status: 'pending', joinDate: '2023-10-20' },
     { id: 3, name: 'ياسمين بيوتي', role: 'creator', status: 'verified', joinDate: '2023-11-01' },
-  ];
+  ]);
 
-  const mockCampaigns = [
+  const [mockCampaigns, setMockCampaigns] = useState([
     { id: 101, brand: 'متجر ستايل', budget: 50000, status: 'pending_review' },
     { id: 102, brand: 'وكالة تيك', budget: 120000, status: 'active' },
-  ];
+  ]);
 
-  const mockTx = [
+  const [mockTx, setMockTx] = useState([
     { id: 'TX-902', amount: 50000, method: 'Edahabia', status: 'escrow' },
     { id: 'TX-901', amount: 15000, method: 'CIB', status: 'released' },
-  ];
+  ]);
+
+  const handleVerifyUser = (id) => setMockUsers(prev => prev.map(u => u.id === id ? { ...u, status: 'verified' } : u));
+  const handleSuspendUser = (id) => setMockUsers(prev => prev.filter(u => u.id !== id));
+  
+  const handleApproveCampaign = (id) => setMockCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: 'active' } : c));
+  const handleRejectCampaign = (id) => setMockCampaigns(prev => prev.filter(c => c.id !== id));
+  
+  const handleReleaseEscrow = (id) => setMockTx(prev => prev.map(t => t.id === id ? { ...t, status: 'released' } : t));
+  const handleRefundEscrow = (id) => setMockTx(prev => prev.map(t => t.id === id ? { ...t, status: 'refunded' } : t));
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/98 backdrop-blur-md overflow-y-auto" dir="rtl">
@@ -165,8 +174,8 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
                           </span>
                         </td>
                         <td className="px-6 py-4 flex items-center justify-center gap-2">
-                          <button className="text-emerald-400 hover:text-emerald-300 px-3 py-1 bg-emerald-400/10 rounded font-bold">{t('adminActionVerify')}</button>
-                          <button className="text-red-400 hover:text-red-300 px-3 py-1 bg-red-400/10 rounded font-bold">{t('adminActionSuspend')}</button>
+                          <button onClick={() => handleVerifyUser(userItem.id)} className="text-emerald-400 hover:text-emerald-300 px-3 py-1 bg-emerald-400/10 rounded font-bold">{t('adminActionVerify')}</button>
+                          <button onClick={() => handleSuspendUser(userItem.id)} className="text-red-400 hover:text-red-300 px-3 py-1 bg-red-400/10 rounded font-bold">{t('adminActionSuspend')}</button>
                         </td>
                       </tr>
                     ))}
@@ -189,8 +198,8 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
                     <p className="text-sm text-slate-400 mt-1">{t('budget')}: {formatDZD(camp.budget)}</p>
                   </div>
                   <div className="flex gap-3">
-                    <button className="btn-primary px-4 py-2 text-sm font-bold">{t('adminActionApprove')}</button>
-                    <button className="px-4 py-2 text-sm bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors font-bold">{t('adminActionReject')}</button>
+                    <button onClick={() => handleApproveCampaign(camp.id)} className="btn-primary px-4 py-2 text-sm font-bold">{t('adminActionApprove')}</button>
+                    <button onClick={() => handleRejectCampaign(camp.id)} className="px-4 py-2 text-sm bg-red-500/20 text-red-400 rounded-xl hover:bg-red-500/30 transition-colors font-bold">{t('adminActionReject')}</button>
                   </div>
                 </div>
               ))}
@@ -230,8 +239,8 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
                         <td className="px-6 py-4 flex items-center justify-center gap-2">
                           {tx.status === 'escrow' ? (
                             <>
-                              <button className="text-emerald-400 hover:text-emerald-300 px-3 py-1.5 bg-emerald-400/10 rounded font-bold">Release</button>
-                              <button className="text-red-400 hover:text-red-300 px-3 py-1.5 bg-red-400/10 rounded font-bold">Refund</button>
+                              <button onClick={() => handleReleaseEscrow(tx.id)} className="text-emerald-400 hover:text-emerald-300 px-3 py-1.5 bg-emerald-400/10 rounded font-bold">Release</button>
+                              <button onClick={() => handleRefundEscrow(tx.id)} className="text-red-400 hover:text-red-300 px-3 py-1.5 bg-red-400/10 rounded font-bold">Refund</button>
                             </>
                           ) : (
                             <span className="text-slate-500 text-xs">مكتمل</span>

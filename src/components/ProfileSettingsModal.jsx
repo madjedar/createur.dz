@@ -141,6 +141,15 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const isMounted = React.useRef(true);
+  
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
@@ -149,15 +158,21 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
       if (updateProfileData) {
         await updateProfileData(formData);
       }
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        onClose();
-      }, 1000);
+      if (isMounted.current) {
+        setShowSuccess(true);
+        setTimeout(() => {
+          if (isMounted.current) {
+            setShowSuccess(false);
+            onClose();
+          }
+        }, 1000);
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
     } finally {
-      setIsSaving(false);
+      if (isMounted.current) {
+        setIsSaving(false);
+      }
     }
   };
 

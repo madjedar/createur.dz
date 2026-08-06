@@ -19,6 +19,16 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign }) {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setAgreed(false);
+      setSuccess(false);
+      setError(null);
+      setPaymentMethod('edahabia');
+      setLoading(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const baseAmount = campaign?.budget || 25000;
@@ -39,6 +49,8 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign }) {
       
       if (result.success && result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
+      } else if (result.success && !result.checkoutUrl) {
+        setSuccess(true);
       } else {
         setError(result.error || t('checkoutError'));
       }
@@ -66,8 +78,14 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign }) {
         {success ? (
           <div className="flex flex-col items-center justify-center py-10 text-center animate-fade-in-up">
             <CheckCircle className="w-16 h-16 text-emerald-500 mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">{t('checkoutSuccessTitle')}</h2>
-            <p className="text-slate-400">{t('checkoutSuccessDesc')}</p>
+            <h2 className="text-2xl font-bold text-white mb-2">{t('checkoutSuccessTitle') || 'تم الدفع بنجاح!'}</h2>
+            <p className="text-slate-400 mb-6">{t('checkoutSuccessDesc') || 'تم حجز المبلغ في حساب الضمان (Escrow). يمكنك الآن متابعة العمل مع صانع المحتوى.'}</p>
+            <button
+              onClick={onClose}
+              className="btn-primary px-8 py-3 rounded-xl font-bold"
+            >
+              متابعة
+            </button>
           </div>
         ) : (
           <>

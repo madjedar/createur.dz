@@ -34,11 +34,18 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   // Payout Form State
   const [payoutForm, setPayoutForm] = useState({ amount: '', ripNumber: '', method: 'baridimob' });
   const [payoutSuccess, setPayoutSuccess] = useState(false);
+  const [withdrawnAmount, setWithdrawnAmount] = useState(0);
+  const [localTransactions, setLocalTransactions] = useState(mockTransactions);
 
   // Chat State
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [selectedContactId, setSelectedContactId] = useState(null);
+  const messagesEndRef = React.useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const [deliverableUrls, setDeliverableUrls] = useState({});
 
@@ -74,17 +81,19 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   // Derive unique brand contacts from applications
   const contacts = Array.from(new Map(
     applications
-      .filter(app => app.campaign?.brand?.id)
-      .map(app => [app.campaign.brand.id, { id: app.campaign.brand_id, ...app.campaign.brand }])
+      .filter(app => app.campaign?.brand_id)
+      .map(app => [app.campaign.brand_id, { id: app.campaign.brand_id, ...app.campaign.brand }])
   ).values()).filter(c => c.id);
 
   useEffect(() => {
     if (!selectedContactId || !user?.id) return;
     
     let subscription = null;
+    let isMounted = true;
     import('../services/dbService').then(({ getMessages, subscribeToMessages }) => {
+      if (!isMounted) return;
       getMessages(user.id, selectedContactId).then(fetchedMessages => {
-        setMessages(fetchedMessages || []);
+        if (isMounted) setMessages(fetchedMessages || []);
       });
       
       subscription = subscribeToMessages(user.id, (newMsg) => {
@@ -93,12 +102,13 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
           (newMsg.sender_id === user.id && newMsg.receiver_id === selectedContactId) ||
           (newMsg.sender_id === selectedContactId && newMsg.receiver_id === user.id)
         ) {
-          setMessages(prev => [...prev, newMsg]);
+          if (isMounted) setMessages(prev => [...prev, newMsg]);
         }
       });
     });
 
     return () => {
+      isMounted = false;
       if (subscription) subscription.unsubscribe();
     };
   }, [selectedContactId, user]);
@@ -177,7 +187,28 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
   const handlePayoutSubmit = (e) => {
     e.preventDefault();
-    if (!payoutForm.amount || !payoutForm.ripNumber) return;
+    const amount = Number(payoutForm.amount);
+    if (!amount || !payoutForm.ripNumber) return;
+    
+    // Validate against available balance (which is calculated in render, but we need it here)
+    const currentAvailable = applications
+      .filter(app => app.status === 'completed')
+      .reduce((sum, app) => sum + (app.campaign?.budget || 0), 0) - withdrawnAmount;
+
+    if (amount > currentAvailable) {
+      alert("الرصيد غير كافٍ");
+      return;
+    }
+
+    setWithdrawnAmount(prev => prev + amount);
+    setLocalTransactions(prev => [{
+      id: `TX-${Date.now()}`,
+      date: new Date().toISOString().split('T')[0],
+      description: 'طلب سحب أرباح',
+      amount: amount,
+      status: 'pending'
+    }, ...prev]);
+
     setPayoutSuccess(true);
     setTimeout(() => {
       setPayoutSuccess(false);
@@ -313,20 +344,28 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             <div className="glass-card p-6">
               <h3 className="text-lg font-bold text-white mb-4">طلبك الأخير للحملات</h3>
               <div className="space-y-4">
-                {campaigns.slice(0, 3).map((campaign) => (
-                  <div key={campaign.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl bg-white/5 border border-white/5 gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{campaign.brandLogo}</span>
-                      <div>
-                        <h4 className="font-bold text-white">{campaign.title}</h4>
-                        <p className="text-xs text-slate-400">الميزانية: <span className="text-emerald-400 font-semibold">{formatDZD(campaign.budget)}</span></p>
+                {applications.length === 0 ? (
+                  <div className="text-center text-slate-500 text-sm mt-4">لم تقدم على أي حملة بعد.</div>
+                ) : (
+                  applications.slice(0, 3).map((app) => (
+                    <div key={app.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl bg-white/5 border border-white/5 gap-4">
+                      <div className="flex items-center gap-3">
+                        <img src={app.campaign?.brand?.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=b'} alt="Brand Avatar" className="w-10 h-10 rounded-full" />
+                        <div>
+                          <h4 className="font-bold text-white">{app.campaign?.title}</h4>
+                          <p className="text-xs text-slate-400">الميزانية: <span className="text-emerald-400 font-semibold">{formatDZD(app.campaign?.budget)}</span></p>
+                        </div>
                       </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                        app.status === 'approved' || app.status === 'completed'
+                          ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                          : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      }`}>
+                        {app.status === 'approved' ? 'مقبول' : app.status === 'completed' ? 'منتهي' : 'قيد المراجعة'}
+                      </span>
                     </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      قيد المراجعة
-                    </span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -500,6 +539,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                         );
                       })
                     )}
+                    <div ref={messagesEndRef} />
                   </div>
 
                   <div className="p-4 border-t border-white/10">
@@ -699,11 +739,11 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             .filter(app => app.status === 'approved')
             .reduce((sum, app) => sum + (app.campaign?.budget || 0), 0);
             
-          const availableBalance = applications
+          const totalEarned = applications
             .filter(app => app.status === 'completed')
             .reduce((sum, app) => sum + (app.campaign?.budget || 0), 0);
             
-          const totalEarned = availableBalance; // for now, assuming they haven't withdrawn any
+          const availableBalance = totalEarned - withdrawnAmount;
           
           return (
           <div className="space-y-8 animate-fade-in">
@@ -790,7 +830,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                     </tr>
                   </thead>
                   <tbody>
-                    {mockTransactions.map((tx) => {
+                    {localTransactions.map((tx) => {
                       const statusCfg = getPaymentStatusConfig(tx.status);
                       return (
                         <tr key={tx.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">

@@ -111,12 +111,12 @@ export default function NotificationDropdown() {
                   }`}
                 >
                   <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    notif.title.includes('رسالة') ? 'bg-blue-500/20 text-blue-400' :
-                    notif.title.includes('قبول') || notif.title.includes('مبروك') ? 'bg-emerald-500/20 text-emerald-400' :
+                    notif.title?.includes('رسالة') ? 'bg-blue-500/20 text-blue-400' :
+                    notif.title?.includes('قبول') || notif.title?.includes('مبروك') ? 'bg-emerald-500/20 text-emerald-400' :
                     'bg-purple-500/20 text-purple-400'
                   }`}>
-                    {notif.title.includes('رسالة') ? <MessageSquare className="w-4 h-4" /> :
-                     notif.title.includes('قبول') ? <CheckCircle2 className="w-4 h-4" /> :
+                    {notif.title?.includes('رسالة') ? <MessageSquare className="w-4 h-4" /> :
+                     notif.title?.includes('قبول') ? <CheckCircle2 className="w-4 h-4" /> :
                      <Sparkles className="w-4 h-4" />}
                   </div>
                   <div>

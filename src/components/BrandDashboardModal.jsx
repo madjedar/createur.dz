@@ -12,10 +12,25 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
   const { user, updateProfileData } = useAuth();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [applications, setApplications] = useState([]);
+  const [activeCampaignId, setActiveCampaignId] = useState(null);
+  const messagesEndRef = React.useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  useEffect(() => {
+    if (user?.id) {
+      import('../services/dbService').then(({ getBrandApplications }) => {
+        getBrandApplications(user.id).then(setApplications).catch(console.error);
+      });
+    }
+  }, [user?.id]);
 
   // Brand / Business Profile State
   const [profileData, setProfileData] = useState({
@@ -62,22 +77,25 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
   useEffect(() => {
     let subscription;
+    let isMounted = true;
     if (activeTab === 'messages' && selectedContactId && user?.id) {
       import('../services/dbService').then(({ getMessages, subscribeToMessages }) => {
+        if (!isMounted) return;
         getMessages(user.id, selectedContactId).then(fetchedMessages => {
-          setMessages(fetchedMessages || []);
+          if (isMounted) setMessages(fetchedMessages || []);
         });
         subscription = subscribeToMessages(user.id, (newMsg) => {
           if (
             (newMsg.sender_id === user.id && newMsg.receiver_id === selectedContactId) ||
             (newMsg.sender_id === selectedContactId && newMsg.receiver_id === user.id)
           ) {
-            setMessages(prev => [...prev, newMsg]);
+            if (isMounted) setMessages(prev => [...prev, newMsg]);
           }
         });
       });
     }
     return () => {
+      isMounted = false;
       if (subscription) subscription.unsubscribe();
     };
   }, [activeTab, selectedContactId, user]);
@@ -107,22 +125,28 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
   if (!isOpen) return null;
 
-  const handleCreateCampaign = (e) => {
+  const handleCreateCampaign = async (e) => {
     e.preventDefault();
     if (!newCampaign.title || !newCampaign.budget) return;
-    setCampaignSuccess(true);
-    setTimeout(() => {
-      setCampaignSuccess(false);
-      setNewCampaign({
-        title: '',
-        category: 'تكنولوجيا',
-        budget: '',
-        description: '',
-        deliverables: 'منشور إنستغرام, قصة (Story), فيديو ريلز',
-        deadline: '2026-08-31'
-      });
-      setActiveTab('overview');
-    }, 2000);
+    try {
+      const { createCampaign } = await import('../services/dbService');
+      await createCampaign({ ...newCampaign, brand_id: user.id });
+      setCampaignSuccess(true);
+      setTimeout(() => {
+        setCampaignSuccess(false);
+        setNewCampaign({
+          title: '',
+          category: 'تكنولوجيا',
+          budget: '',
+          description: '',
+          deliverables: 'منشور إنستغرام, قصة (Story), فيديو ريلز',
+          deadline: '2026-08-31'
+        });
+        setActiveTab('overview');
+      }, 2000);
+    } catch (err) {
+      console.error('Error creating campaign:', err);
+    }
   };
 
   const handleSaveProfile = async (e) => {
@@ -143,13 +167,35 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const handleApproveDeal = (dealId) => {
-    setDeals(deals.map(d => d.id === dealId ? { ...d, status: 'released' } : d));
+  const handleApproveDeal = async (applicationId) => {
+    try {
+      const { updateApplicationStatus } = await import('../services/dbService');
+      await updateApplicationStatus(applicationId, 'completed');
+      setApplications(prev => prev.map(app => 
+        app.id === applicationId ? { ...app, status: 'completed' } : app
+      ));
+    } catch (err) {
+      console.error('Error approving deal:', err);
+    }
   };
 
-  const filteredCreators = mockCreators.filter(c => {
+  const baseCreatorsList = activeCampaignId 
+    ? applications.filter(app => app.campaign_id === activeCampaignId).map(app => ({
+        id: app.creator_id,
+        name: app.creator?.full_name || 'بدون اسم',
+        category: app.creator?.category || 'صانع محتوى',
+        bio: app.creator?.bio || 'صانع محتوى على المنصة',
+        avatarUrl: app.creator?.avatar_url,
+        ratePerPost: app.creator?.rate_per_post || 0,
+        followers: '...',
+        engagementRate: '...',
+        platform: 'instagram'
+      }))
+    : mockCreators;
+
+  const filteredCreators = baseCreatorsList.filter(c => {
     const matchCat = selectedCategory === 'الكل' || c.category === selectedCategory;
-    const matchSearch = searchQuery === '' || c.name.includes(searchQuery) || c.bio.includes(searchQuery);
+    const matchSearch = searchQuery === '' || c.name.includes(searchQuery) || (c.bio && c.bio.includes(searchQuery));
     return matchCat && matchSearch;
   });
 
@@ -270,7 +316,10 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                         <p className="text-xs text-slate-400 mt-1">الميزانية: <span className="text-emerald-400 font-bold">{formatDZD(camp.budget)}</span> | المتقدمون: <span className="text-white font-bold">{camp.applicantsCount} مبدع</span></p>
                       </div>
                       <button 
-                        onClick={() => setActiveTab('creators')}
+                        onClick={() => {
+                          setActiveCampaignId(camp.id);
+                          setActiveTab('creators');
+                        }}
                         className="btn-secondary text-xs px-4 py-2 whitespace-nowrap"
                       >
                         استعراض المتقدمين
@@ -424,6 +473,9 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
           <div className="space-y-6 animate-fade-in">
             <h3 className="text-xl font-bold text-white">دليل وتوظيف صنّاع المحتوى</h3>
             <p className="text-slate-400 text-sm">ابحث عن أفضل المبدعين حسب المجال والتفاعل وظفهم مباشرة مع دفع آمن عبر ChargilyPay</p>
+            {activeCampaignId && (
+               <button onClick={() => setActiveCampaignId(null)} className="text-sm text-blue-400 mb-2 hover:underline">عرض جميع صنّاع المحتوى</button>
+            )}
 
             {/* Search Filters */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -559,6 +611,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                         </div>
                       ))
                     )}
+                    <div ref={messagesEndRef} />
                   </div>
 
                   <div className="p-4 border-t border-white/10">
@@ -593,41 +646,45 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
             <p className="text-slate-400 text-sm mb-6">مراجعة أعمال المبدعين المستلمة والموافقة على تحرير الأموال من الضمان إلى محفظة صانع المحتوى</p>
 
             <div className="space-y-4">
-              {deals.map((deal) => (
-                <div key={deal.id} className="glass-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-lg">{deal.campaignTitle}</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                        {deal.status === 'released' ? 'تم تحرير الأموال ✅' : 'في حساب الضمان 🔒'}
-                      </span>
+              {applications.filter(app => app.status === 'approved' || app.status === 'completed').length === 0 ? (
+                <div className="text-center text-slate-400 text-sm mt-10">لا توجد صفقات في الضمان حالياً.</div>
+              ) : (
+                applications.filter(app => app.status === 'approved' || app.status === 'completed').map((app) => (
+                  <div key={app.id} className="glass-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white text-lg">{app.campaign?.title}</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                          {app.status === 'completed' ? 'تم تحرير الأموال ✅' : 'في حساب الضمان 🔒'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">المبدع المكلف: <span className="text-white font-semibold">{app.creator?.full_name || app.creator?.brand_name || 'بدون اسم'}</span> | المبلغ المحجوز: <span className="text-emerald-400 font-bold">{formatDZD(app.campaign?.budget)}</span></p>
+                      {app.deliverable_url && (
+                        <a href={app.deliverable_url} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline block pt-1">
+                          🔗 معاينة المحتوى المنفذ ({app.deliverable_url})
+                        </a>
+                      )}
                     </div>
-                    <p className="text-xs text-slate-400">المبدع المكلف: <span className="text-white font-semibold">{deal.creatorName}</span> | المبلغ المحجوز: <span className="text-emerald-400 font-bold">{formatDZD(deal.budget)}</span></p>
-                    {deal.deliverableUrl && (
-                      <a href={deal.deliverableUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline block pt-1">
-                        🔗 معاينة المحتوى المنفذ ({deal.deliverableUrl})
-                      </a>
-                    )}
-                  </div>
 
-                  <div>
-                    {deal.status === 'released' ? (
-                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" />
-                        تمت العملية وتحرير المبلغ
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleApproveDeal(deal.id)}
-                        className="btn-primary text-xs px-5 py-3 font-bold flex items-center gap-2 shadow-lg"
-                      >
-                        <ShieldCheck className="w-4 h-4" />
-                        <span>الموافقة وتحرير الأموال الآن</span>
-                      </button>
-                    )}
+                    <div>
+                      {app.status === 'completed' ? (
+                        <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4" />
+                          تمت العملية وتحرير المبلغ
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleApproveDeal(app.id)}
+                          className="btn-primary text-xs px-5 py-3 font-bold flex items-center gap-2 shadow-lg"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                          <span>الموافقة وتحرير الأموال الآن</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}

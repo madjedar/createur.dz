@@ -126,7 +126,7 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
                     </div>
 
                     <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
-                      {Array.isArray(campaignDeliverables) && campaignDeliverables.map((deliv, idx) => (
+                      {(Array.isArray(campaignDeliverables) ? campaignDeliverables : (typeof campaignDeliverables === 'string' ? [campaignDeliverables] : [])).map((deliv, idx) => (
                         <span key={idx} className="px-2.5 py-1 rounded-md bg-white/5 text-slate-300 text-xs border border-white/5">
                           ✓ {deliv}
                         </span>

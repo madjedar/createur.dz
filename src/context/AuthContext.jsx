@@ -40,35 +40,14 @@ export function AuthProvider({ children }) {
       return
     }
 
-    // FORCE PARSE URL HASH
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-
-    if (accessToken && refreshToken) {
-      console.log('Forcing session from URL hash...');
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-        .then(({ data, error }) => {
-          if (error) console.error('Error forcing session:', error);
-          const currentUser = data?.session?.user ?? null;
-          setUser(currentUser);
-          if (currentUser) {
-            fetchProfile(currentUser.id);
-          }
-          setLoading(false);
-          // Clean the URL
-          window.history.replaceState({}, '', window.location.pathname);
-        });
-    } else {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        const currentUser = session?.user ?? null
-        setUser(currentUser)
-        if (currentUser) {
-          fetchProfile(currentUser.id)
-        }
-        setLoading(false)
-      })
-    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user ?? null
+      setUser(currentUser)
+      if (currentUser) {
+        fetchProfile(currentUser.id)
+      }
+      setLoading(false)
+    })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -144,7 +123,7 @@ export function AuthProvider({ children }) {
   const isAdmin = ADMIN_EMAILS.includes(userEmail) || userEmail.includes('madjed') || profile?.role === 'admin' || user?.user_metadata?.role === 'admin';
   const resolvedRole = isAdmin 
     ? 'admin' 
-    : (profile?.role || user?.user_metadata?.role || 'creator');
+    : (profile?.role || user?.user_metadata?.role || null);
 
   const userWithRole = user ? { 
     ...user, 

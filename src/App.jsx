@@ -12,6 +12,7 @@ import CreatorDashboardModal from './components/CreatorDashboardModal'
 import BrandDashboardModal from './components/BrandDashboardModal'
 import AdminDashboardModal from './components/AdminDashboardModal'
 import CreatorDetailsModal from './components/CreatorDetailsModal'
+import StoreDetailsModal from './components/StoreDetailsModal'
 import CheckoutModal from './components/CheckoutModal'
 import ReviewModal from './components/ReviewModal'
 import {

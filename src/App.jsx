@@ -111,6 +111,15 @@ function AppContent() {
     }
   }, [user?.id, user?.role, authModal.open]);
 
+  // Role-based default showcase tab
+  useEffect(() => {
+    if (user?.role === 'creator') {
+      setShowcaseTab('stores');
+    } else if (user?.role === 'brand') {
+      setShowcaseTab('creators');
+    }
+  }, [user?.role]);
+
   // Handlers
   const handleOpenAuth = (mode = 'login', role = 'creator') => setAuthModal({ open: true, mode, role })
   const handleCloseAuth = () => setAuthModal({ open: false, mode: 'login', role: 'creator' })

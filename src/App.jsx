@@ -47,6 +47,7 @@ function AppContent() {
   const [authModal, setAuthModal] = useState({ open: false, mode: 'login', role: 'creator' })
   const [dashboardState, setDashboardState] = useState({ open: false, tab: 'overview', type: 'creator' })
   const [selectedCreator, setSelectedCreator] = useState(null)
+  const [selectedStore, setSelectedStore] = useState(null)
   const [checkoutData, setCheckoutData] = useState(null)
   const [reviewCreator, setReviewCreator] = useState(null)
 
@@ -392,13 +393,7 @@ function AppContent() {
               {filteredStores.map((store) => (
                 <div
                   key={store.id}
-                  onClick={() => {
-                    if (isLoggedIn) {
-                      handleOpenDashboard('create');
-                    } else {
-                      handleOpenAuth('signup', 'brand');
-                    }
-                  }}
+                  onClick={() => setSelectedStore(store)}
                   className="glass-card-hover p-6 cursor-pointer group flex flex-col justify-between border border-blue-500/10 hover:border-blue-500/30"
                 >
                   <div>
@@ -488,6 +483,19 @@ function AppContent() {
         onClose={handleCloseCreator}
         creator={selectedCreator}
         onHire={handleHireCreator}
+      />
+      <StoreDetailsModal
+        isOpen={!!selectedStore}
+        onClose={() => setSelectedStore(null)}
+        store={selectedStore}
+        onApplyCampaign={(campaign) => {
+          setSelectedStore(null);
+          if (isLoggedIn) {
+            handleOpenDashboard('opportunities');
+          } else {
+            handleOpenAuth('signup', 'creator');
+          }
+        }}
       />
       <CheckoutModal
         isOpen={!!checkoutData}

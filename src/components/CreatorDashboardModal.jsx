@@ -15,11 +15,17 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
   
   // Profile State
   const [profileData, setProfileData] = useState({
+    fullName: user?.profile?.full_name || user?.user_metadata?.full_name || '',
+    category: user?.profile?.category || 'تكنولوجيا',
     bio: user?.profile?.bio || user?.user_metadata?.bio || 'صانع محتوى جزائري مهتم بالتقنية وأسلوب الحياة.',
-    youtubeUrl: user?.profile?.youtube_url || 'https://youtube.com/@creator_dz',
+    ratePerPost: user?.profile?.rate_per_post || '25000',
+    wilaya: user?.profile?.wilaya || 'الجزائر',
+    phone: user?.profile?.phone || '',
     instagramUrl: user?.profile?.instagram_url || 'https://instagram.com/creator_dz',
     tiktokUrl: user?.profile?.tiktok_url || 'https://tiktok.com/@creator_dz',
-    ratePerPost: user?.profile?.rate_per_post || '25000'
+    youtubeUrl: user?.profile?.youtube_url || 'https://youtube.com/@creator_dz',
+    facebookUrl: user?.profile?.facebook_url || '',
+    ripNumber: user?.profile?.rip_number || ''
   });
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -41,11 +47,17 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
     e.preventDefault();
     if (updateProfileData) {
       await updateProfileData({
+        full_name: profileData.fullName,
+        category: profileData.category,
         bio: profileData.bio,
-        youtube_url: profileData.youtubeUrl,
+        rate_per_post: profileData.ratePerPost,
+        wilaya: profileData.wilaya,
+        phone: profileData.phone,
         instagram_url: profileData.instagramUrl,
         tiktok_url: profileData.tiktokUrl,
-        rate_per_post: profileData.ratePerPost
+        youtube_url: profileData.youtubeUrl,
+        facebook_url: profileData.facebookUrl,
+        rip_number: profileData.ripNumber
       });
     }
     setSavedSuccess(true);
@@ -230,64 +242,166 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
 
         {/* Tab 3: Profile */}
         {activeTab === 'profile' && (
-          <div className="max-w-2xl mx-auto glass-card p-6 sm:p-8 animate-fade-in">
-            <h3 className="text-xl font-bold text-white mb-6">تعديل الملف الشخصي والتسعير</h3>
+          <div className="max-w-3xl mx-auto glass-card p-6 sm:p-8 animate-fade-in">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">إعدادات ملف صانع المحتوى</h3>
+                <p className="text-xs text-slate-400">حدث بياناتك ليتمكن أصحاب المتاجر والعلامات التجارية من العثور عليك وتوظيفك</p>
+              </div>
+            </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">اسم صانع المحتوى / الاسم الفني</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: ياسمين بيوتي"
+                    className="input-field w-full"
+                    value={profileData.fullName}
+                    onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">تخصص / مجال المحتوى (Niche)</label>
+                  <select
+                    className="input-field w-full"
+                    value={profileData.category}
+                    onChange={(e) => setProfileData({ ...profileData, category: e.target.value })}
+                  >
+                    <option value="تكنولوجيا">تكنولوجيا ومرئيات</option>
+                    <option value="موضة وأزياء">موضة وأزياء</option>
+                    <option value="تجميل وعناية">تجميل وعناية بالبشرة</option>
+                    <option value="طبخ وأكل">طبخ ومراجعة مطاعم</option>
+                    <option value="سفر وسياحة">سفر وفلوغات سياحية</option>
+                    <option value="رياضة ولياقة">رياضة ولياقة بدنية</option>
+                    <option value="ألعاب وترفيه">ألعاب إلكترونية (Gaming)</option>
+                    <option value="لايف ستايل">أسلوب حياة (Lifestyle)</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-slate-300 mb-2">النبذة التعريفية (Bio)</label>
                 <textarea
                   rows={4}
+                  placeholder="اكتب نبذة مختصرة عن نفسك، جمهورك المستهدف، وأسلوب تقديمك للإعلانات..."
                   className="input-field w-full"
                   value={profileData.bio}
                   onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">السعر التقريبي لكل منشور (د.ج)</label>
-                <input
-                  type="number"
-                  className="input-field w-full"
-                  value={profileData.ratePerPost}
-                  onChange={(e) => setProfileData({ ...profileData, ratePerPost: e.target.value })}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">سعر المنشور / الريلز (د.ج)</label>
+                  <input
+                    type="number"
+                    placeholder="25000"
+                    className="input-field w-full"
+                    value={profileData.ratePerPost}
+                    onChange={(e) => setProfileData({ ...profileData, ratePerPost: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">الولاية / مكان الإقامة</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: الجزائر العاصمة، وهران..."
+                    className="input-field w-full"
+                    value={profileData.wilaya}
+                    onChange={(e) => setProfileData({ ...profileData, wilaya: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">رقم الواتساب / الهاتف للتواصل</label>
+                  <input
+                    type="tel"
+                    placeholder="0655123456"
+                    className="input-field w-full"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <h4 className="font-semibold text-white text-sm">روابط منصات التواصل Social Links</h4>
-                <div className="relative">
-                  <Play className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
-                  <input
-                    type="url"
-                    placeholder="رابط قناتك على يوتيوب"
-                    className="input-field w-full pr-10"
-                    value={profileData.youtubeUrl}
-                    onChange={(e) => setProfileData({ ...profileData, youtubeUrl: e.target.value })}
-                  />
-                </div>
+              <div className="space-y-4 pt-2 border-t border-white/10">
+                <h4 className="font-bold text-white text-sm">روابط منصات التواصل الاجتماعي Social Links</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <Camera className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-pink-500" />
+                    <input
+                      type="url"
+                      placeholder="رابط حساب انستغرام (Instagram)"
+                      className="input-field w-full pr-10"
+                      value={profileData.instagramUrl}
+                      onChange={(e) => setProfileData({ ...profileData, instagramUrl: e.target.value })}
+                    />
+                  </div>
 
-                <div className="relative">
-                  <Camera className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-pink-500" />
-                  <input
-                    type="url"
-                    placeholder="رابط حسابك على انستغرام"
-                    className="input-field w-full pr-10"
-                    value={profileData.instagramUrl}
-                    onChange={(e) => setProfileData({ ...profileData, instagramUrl: e.target.value })}
-                  />
+                  <div className="relative">
+                    <Play className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400" />
+                    <input
+                      type="url"
+                      placeholder="رابط حساب تيك توك (TikTok)"
+                      className="input-field w-full pr-10"
+                      value={profileData.tiktokUrl}
+                      onChange={(e) => setProfileData({ ...profileData, tiktokUrl: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <Play className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+                    <input
+                      type="url"
+                      placeholder="رابط قناة يوتيوب (YouTube)"
+                      className="input-field w-full pr-10"
+                      value={profileData.youtubeUrl}
+                      onChange={(e) => setProfileData({ ...profileData, youtubeUrl: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <Globe className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-500" />
+                    <input
+                      type="url"
+                      placeholder="صفحة فيسبوك أو موقع آخر"
+                      className="input-field w-full pr-10"
+                      value={profileData.facebookUrl}
+                      onChange={(e) => setProfileData({ ...profileData, facebookUrl: e.target.value })}
+                    />
+                  </div>
                 </div>
+              </div>
+
+              <div className="pt-2 border-t border-white/10">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">رقم الـ RIP لحساب بريدي موب (استلام مستحقات السحب)</label>
+                <input
+                  type="text"
+                  placeholder="00799999000000000000"
+                  className="input-field w-full font-mono text-sm"
+                  value={profileData.ripNumber}
+                  onChange={(e) => setProfileData({ ...profileData, ripNumber: e.target.value })}
+                />
               </div>
 
               {savedSuccess && (
                 <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-semibold text-center flex items-center justify-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />
-                  <span>تم حفظ التعديلات بنجاح!</span>
+                  <span>تم حفظ معلومات الملف الشخصي بنجاح!</span>
                 </div>
               )}
 
-              <button type="submit" className="btn-primary w-full py-3 font-bold">
-                حفظ البيانات
+              <button type="submit" className="btn-primary w-full py-3.5 font-bold text-base flex items-center justify-center gap-2">
+                <span>حفظ بيانات صانع المحتوى</span>
               </button>
             </form>
           </div>

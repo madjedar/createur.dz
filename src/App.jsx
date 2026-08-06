@@ -36,6 +36,7 @@ import {
 
 function AppContent() {
   const { user } = useAuth()
+  const isLoggedIn = !!user
   const { t, language } = useLanguage()
 
   // Modal states
@@ -177,55 +178,53 @@ function AppContent() {
         onOpenCreateCampaign={() => handleOpenDashboard('create')} 
       />
 
-      {/* ─── Hero ─── */}
-      <Hero 
-        onOpenAuth={handleOpenAuth} 
-        onOpenDashboard={handleOpenDashboard} 
-      />
+      {/* ─── Hero & How It Works — hidden when logged in ─── */}
+      {!isLoggedIn && (
+        <>
+          <Hero 
+            onOpenAuth={handleOpenAuth} 
+            onOpenDashboard={handleOpenDashboard} 
+          />
 
-      {/* ─── Section 2: Direct 3-Step Process ─── */}
-      <section className="py-20 px-4 border-b border-white/5 relative bg-[#080C14]">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-5xl font-black text-white mb-4 leading-relaxed">
-            {t('howItWorks')} <span className="gradient-text-mint">{t('howItWorksHighlight')}</span>
-          </h2>
-          <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base mb-16 leading-relaxed">
-            {t('howItWorksSub')}
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="glass-card-hover p-8 text-center relative group">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                1
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step1Title')}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                {t('step1Desc')}
+          {/* ─── Section 2: Direct 3-Step Process ─── */}
+          <section className="py-20 px-4 border-b border-white/5 relative bg-[#080C14]">
+            <div className="max-w-5xl mx-auto text-center">
+              <h2 className="text-3xl sm:text-5xl font-black text-white mb-4 leading-relaxed">
+                {t('howItWorks')} <span className="gradient-text-mint">{t('howItWorksHighlight')}</span>
+              </h2>
+              <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base mb-16 leading-relaxed">
+                {t('howItWorksSub')}
               </p>
-            </div>
 
-            <div className="glass-card-hover p-8 text-center relative group">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                2
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step2Title')}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                {t('step2Desc')}
-              </p>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="glass-card-hover p-8 text-center relative group">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                    1
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step1Title')}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{t('step1Desc')}</p>
+                </div>
 
-            <div className="glass-card-hover p-8 text-center relative group">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                3
+                <div className="glass-card-hover p-8 text-center relative group">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                    2
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step2Title')}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{t('step2Desc')}</p>
+                </div>
+
+                <div className="glass-card-hover p-8 text-center relative group">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                    3
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step3Title')}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{t('step3Desc')}</p>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step3Title')}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                {t('step3Desc')}
-              </p>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        </>
+      )}
 
       {/* ─── Section 3: Clean Creator Showcase Grid ─── */}
       <section id="creators" className="py-20 px-4 bg-[#080C14]">
@@ -328,7 +327,7 @@ function AppContent() {
         initialRole={authModal.role}
       />
 
-      {user?.role === 'admin' ? (
+      {dashboardState.tab === 'admin' || user?.role === 'admin' ? (
         <AdminDashboardModal
           isOpen={dashboardState.open}
           onClose={handleCloseDashboard}

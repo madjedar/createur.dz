@@ -62,9 +62,9 @@ const Header = ({ onOpenAuth, onOpenDashboard }) => {
                 {isAdmin ? (
                   <button
                     onClick={() => onOpenDashboard('admin')}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 transition-colors font-bold text-sm"
+                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 transition-all font-bold text-sm shadow-md"
                   >
-                    <ShieldAlert className="w-4 h-4" />
+                    <ShieldAlert className="w-4 h-4 text-purple-400" />
                     <span>لوحة الأدمن / Admin Dashboard</span>
                   </button>
                 ) : isBrand ? (

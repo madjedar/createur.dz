@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, LayoutDashboard, PlusCircle, Users, CreditCard, 
-  Building2, TrendingUp, DollarSign, Lock, ShieldCheck, CheckCircle2, Search, Filter, Star, BadgeCheck
+  Building2, TrendingUp, DollarSign, Lock, ShieldCheck, CheckCircle2, Search, Filter, Star, BadgeCheck, User, Globe, Phone, MapPin
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,13 +9,25 @@ import { mockCreators, mockCampaigns } from '../data/mockData';
 import { formatDZD, calculateFees } from '../services/chargilyService';
 
 export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, initialTab = 'overview' }) {
-  const { user } = useAuth();
+  const { user, updateProfileData } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  // Brand / Business Profile State
+  const [profileData, setProfileData] = useState({
+    brandName: user?.profile?.full_name || user?.profile?.brand_name || user?.user_metadata?.full_name || '',
+    sector: user?.profile?.sector || 'تجارة إلكترونية وموضة',
+    bio: user?.profile?.bio || 'متجر جزائري يوفر أحدث المنتجات عالية الجودة.',
+    websiteUrl: user?.profile?.website_url || '',
+    phone: user?.profile?.phone || '',
+    wilaya: user?.profile?.wilaya || 'الجزائر',
+    rcNumber: user?.profile?.rc_number || ''
+  });
+  const [savedSuccess, setSavedSuccess] = useState(false);
 
   // Campaign Form State
   const [newCampaign, setNewCampaign] = useState({
@@ -66,6 +78,24 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
     }, 2000);
   };
 
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (updateProfileData) {
+      await updateProfileData({
+        full_name: profileData.brandName,
+        brand_name: profileData.brandName,
+        sector: profileData.sector,
+        bio: profileData.bio,
+        website_url: profileData.websiteUrl,
+        phone: profileData.phone,
+        wilaya: profileData.wilaya,
+        rc_number: profileData.rcNumber
+      });
+    }
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
   const handleApproveDeal = (dealId) => {
     setDeals(deals.map(d => d.id === dealId ? { ...d, status: 'released' } : d));
   };
@@ -107,6 +137,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
             { id: 'create', label: '+ إضافة حملة جديدة', icon: PlusCircle },
             { id: 'creators', label: 'دليل صنّاع المحتوى', icon: Users },
             { id: 'escrow', label: 'صفقات الضمان 🔒', icon: Lock },
+            { id: 'profile', label: 'ملف المتجر والمشروع 🏪', icon: User },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -465,6 +496,132 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Tab 5: Brand / Business Profile */}
+        {activeTab === 'profile' && (
+          <div className="max-w-3xl mx-auto glass-card p-6 sm:p-8 animate-fade-in">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">إعدادات ملف المتجر والمشروع التجاري</h3>
+                <p className="text-xs text-slate-400">بيانات متجرك أو عملك التجاري تظهر لصنّاع المحتوى عند التواصل ونشر الحملات الإعلانية</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">اسم المتجر / العلامة التجارية / الشركة</label>
+                  <input
+                    type="text"
+                    placeholder="مثال: متجر ستايل الجزائري"
+                    className="input-field w-full"
+                    value={profileData.brandName}
+                    onChange={(e) => setProfileData({ ...profileData, brandName: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">مجال النشاط التجاري (Sector)</label>
+                  <select
+                    className="input-field w-full"
+                    value={profileData.sector}
+                    onChange={(e) => setProfileData({ ...profileData, sector: e.target.value })}
+                  >
+                    <option value="تجارة إلكترونية وموضة">تجارة إلكترونية وموضة</option>
+                    <option value="إلكترونيات وهواتف">إلكترونيات وهواتف</option>
+                    <option value="مطاعم ومأكولات">مطاعم ومأكولات</option>
+                    <option value="مستحضرات تجميل وعناية">مستحضرات تجميل وعناية</option>
+                    <option value="خدمات واستشارات">خدمات وبرمجيات</option>
+                    <option value="تأثيث وديكور">تأثيث وديكور منزلي</option>
+                    <option value="رياضة ومستلزمات">رياضة ومستلزمات</option>
+                    <option value="آخر">مجال آخر</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">وصف النشاط التجاري والمنتجات (Bio / Description)</label>
+                <textarea
+                  rows={4}
+                  placeholder="اكتب نبذة مختصرة عن متجرك، المنتجات التي تقدمها، والفئة المستهدفة من الزبائن..."
+                  className="input-field w-full"
+                  value={profileData.bio}
+                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">رقم هاتف التواصل والواتساب</label>
+                  <div className="relative">
+                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="tel"
+                      placeholder="0550123456"
+                      className="input-field w-full pr-9"
+                      value={profileData.phone}
+                      onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">الولاية / المقر الرئيسي</label>
+                  <div className="relative">
+                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      placeholder="مثال: الجزائر العاصمة"
+                      className="input-field w-full pr-9"
+                      value={profileData.wilaya}
+                      onChange={(e) => setProfileData({ ...profileData, wilaya: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">رقم السجل التجاري / NIF (اختياري)</label>
+                  <input
+                    type="text"
+                    placeholder="16/00-1234567"
+                    className="input-field w-full font-mono text-sm"
+                    value={profileData.rcNumber}
+                    onChange={(e) => setProfileData({ ...profileData, rcNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">رابط الموقع أو صفحة الانستغرام / فيسبوك</label>
+                <div className="relative">
+                  <Globe className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                  <input
+                    type="url"
+                    placeholder="https://instagram.com/my_store_dz"
+                    className="input-field w-full pr-10"
+                    value={profileData.websiteUrl}
+                    onChange={(e) => setProfileData({ ...profileData, websiteUrl: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {savedSuccess && (
+                <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-semibold text-center flex items-center justify-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>تم حفظ معلومات المتجر بنجاح!</span>
+                </div>
+              )}
+
+              <button type="submit" className="btn-primary w-full py-3.5 font-bold text-base flex items-center justify-center gap-2">
+                <span>حفظ بيانات المتجر والمشروع</span>
+              </button>
+            </form>
           </div>
         )}
       </div>

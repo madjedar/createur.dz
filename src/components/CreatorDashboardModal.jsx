@@ -13,8 +13,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(initialTab);
   
-  // Track applied campaigns
-  const [appliedCampaigns, setAppliedCampaigns] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
 
   // Profile State
   const [profileData, setProfileData] = useState({
@@ -38,17 +37,112 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
   // Chat State
   const [chatMessage, setChatMessage] = useState('');
-  const [messages, setMessages] = useState([
-    { id: 1, sender: 'brand', text: 'مرحباً، هل أنت متاح لحملتنا الإعلانية القادمة؟', time: '10:00 AM' },
-    { id: 2, sender: 'me', text: 'أهلاً بك! نعم بالتأكيد، يمكننا مناقشة التفاصيل.', time: '10:05 AM' },
-    { id: 3, sender: 'brand', text: 'رائع، الميزانية هي 45,000 د.ج مقابل ريلز و 2 ستوري. ما رأيك؟', time: '10:15 AM' },
-  ]);
+  const [messages, setMessages] = useState([]);
+  const [selectedContactId, setSelectedContactId] = useState(null);
+
+  const [deliverableUrls, setDeliverableUrls] = useState({});
+
+  const handleSubmitDeliverable = async (applicationId) => {
+    const url = deliverableUrls[applicationId];
+    if (!url) return;
+    try {
+      const { updateApplicationStatus, createNotification } = await import('../services/dbService');
+      await updateApplicationStatus(applicationId, 'approved', url); // status is still approved, but URL added
+      
+      const app = applications.find(a => a.id === applicationId);
+      if (app && app.campaign?.brand_id) {
+        await createNotification(
+          app.campaign.brand_id,
+          'تم استلام العمل',
+          `قام ${user?.user_metadata?.full_name || 'صانع المحتوى'} بتسليم العمل لحملة "${app.campaign.title}". يرجى المراجعة.`
+        );
+      }
+
+      setApplications(applications.map(a => 
+        a.id === applicationId ? { ...a, deliverable_url: url } : a
+      ));
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (err) {
+      console.error("Error submitting deliverable:", err);
+    }
+  };
+
+  const [appliedCampaigns, setAppliedCampaigns] = useState([]);
+  const [applications, setApplications] = useState([]);
+
+  // Derive unique brand contacts from applications
+  const contacts = Array.from(new Map(
+    applications
+      .filter(app => app.campaign?.brand?.id)
+      .map(app => [app.campaign.brand.id, { id: app.campaign.brand_id, ...app.campaign.brand }])
+  ).values()).filter(c => c.id);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!selectedContactId || !user?.id) return;
+    
+    let subscription = null;
+    import('../services/dbService').then(({ getMessages, subscribeToMessages }) => {
+      getMessages(user.id, selectedContactId).then(fetchedMessages => {
+        setMessages(fetchedMessages || []);
+      });
+      
+      subscription = subscribeToMessages(user.id, (newMsg) => {
+        // Only append if it belongs to the current conversation
+        if (
+          (newMsg.sender_id === user.id && newMsg.receiver_id === selectedContactId) ||
+          (newMsg.sender_id === selectedContactId && newMsg.receiver_id === user.id)
+        ) {
+          setMessages(prev => [...prev, newMsg]);
+        }
+      });
+    });
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
+  }, [selectedContactId, user]);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim() || !selectedContactId || !user?.id) return;
+    
+    const msgText = chatMessage;
+    setChatMessage('');
+    
+    try {
+      const { sendMessage } = await import('../services/dbService');
+      await sendMessage(user.id, selectedContactId, msgText);
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
       setActiveTab(initialTab);
     }
   }, [isOpen, initialTab]);
+
+
+
+  useEffect(() => {
+    if (!isOpen || !user?.id) return;
+    import('../services/dbService').then(({ getCampaigns, getCreatorApplications }) => {
+      Promise.all([getCampaigns(), getCreatorApplications(user.id)])
+        .then(([allCampaigns, apps]) => {
+          setCampaigns(allCampaigns.length > 0 ? allCampaigns : mockCampaigns);
+          if (apps && apps.length > 0) {
+            setApplications(apps);
+            setAppliedCampaigns(apps.map(app => app.campaign_id));
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching creator data:", err);
+          setCampaigns(mockCampaigns);
+        });
+    });
+  }, [isOpen, user]);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -91,24 +185,32 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
     }, 3000);
   };
 
-  const handleApply = (campaignId) => {
-    if (!appliedCampaigns.includes(campaignId)) {
-      setAppliedCampaigns([...appliedCampaigns, campaignId]);
+  const handleApply = async (campaignId) => {
+    if (!appliedCampaigns.includes(campaignId) && user?.id) {
+      try {
+        const { applyToCampaign, createNotification } = await import('../services/dbService');
+        const newAppArray = await applyToCampaign(campaignId, user.id);
+        if (newAppArray && newAppArray.length > 0) {
+          const newApp = newAppArray[0];
+          setApplications([...applications, newApp]);
+          
+          const campaign = campaigns.find(c => c.id === campaignId);
+          if (campaign && campaign.brand_id) {
+             await createNotification(
+               campaign.brand_id,
+               'طلب تقديم جديد',
+               `قام ${user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaign.title}".`
+             );
+          }
+        }
+        setAppliedCampaigns([...appliedCampaigns, campaignId]);
+      } catch (err) {
+        console.error("Error applying to campaign:", err);
+      }
     }
   };
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (!chatMessage.trim()) return;
-    const newMsg = {
-      id: messages.length + 1,
-      sender: 'me',
-      text: chatMessage,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    setMessages([...messages, newMsg]);
-    setChatMessage('');
-  };
+
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/98 backdrop-blur-md overflow-y-auto" dir="rtl">
@@ -211,7 +313,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             <div className="glass-card p-6">
               <h3 className="text-lg font-bold text-white mb-4">طلبك الأخير للحملات</h3>
               <div className="space-y-4">
-                {mockCampaigns.slice(0, 3).map((campaign) => (
+                {campaigns.slice(0, 3).map((campaign) => (
                   <div key={campaign.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-xl bg-white/5 border border-white/5 gap-4">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{campaign.brandLogo}</span>
@@ -237,7 +339,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             <p className="text-slate-400 text-sm mb-6">{t('opportunitiesSub')}</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockCampaigns.map((campaign) => {
+              {campaigns.map((campaign) => {
                 const campaignTitle = getLocalizedItem(campaign, 'title', language);
                 const campaignCategory = getLocalizedItem(campaign, 'category', language);
                 const campaignDesc = getLocalizedItem(campaign, 'description', language);
@@ -273,20 +375,64 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                       </div>
                     </div>
 
-                    {appliedCampaigns.includes(campaign.id) ? (
-                      <button disabled className="btn-secondary w-full py-3 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span className="text-emerald-400">تم التقديم - قيد المراجعة</span>
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => handleApply(campaign.id)}
-                        className="btn-primary w-full py-3 flex items-center justify-center gap-2"
-                      >
-                        <Send className="w-4 h-4" />
-                        <span>{t('applyNow')}</span>
-                      </button>
-                    )}
+                    {(() => {
+                      const app = applications.find(a => a.campaign_id === campaign.id);
+                      if (app) {
+                        if (app.status === 'pending') {
+                          return (
+                            <button disabled className="btn-secondary w-full py-3 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <span className="text-emerald-400">تم التقديم - قيد المراجعة</span>
+                            </button>
+                          );
+                        } else if (app.status === 'approved') {
+                          if (app.deliverable_url) {
+                            return (
+                              <div className="p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-center text-sm text-emerald-400 font-bold flex items-center justify-center gap-2">
+                                <CheckCircle2 className="w-5 h-5" />
+                                <span>تم إرسال العمل بنجاح</span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="space-y-3">
+                              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm font-bold text-center mb-3">
+                                🎉 تم قبولك! قدم عملك الآن.
+                              </div>
+                              <input 
+                                type="url" 
+                                placeholder="رابط العمل (Google Drive, Tiktok, etc)"
+                                className="input-field w-full text-sm"
+                                value={deliverableUrls[app.id] || ''}
+                                onChange={e => setDeliverableUrls({ ...deliverableUrls, [app.id]: e.target.value })}
+                              />
+                              <button 
+                                onClick={() => handleSubmitDeliverable(app.id)}
+                                className="btn-primary w-full py-2 text-sm"
+                              >
+                                إرسال العمل
+                              </button>
+                            </div>
+                          );
+                        } else if (app.status === 'completed') {
+                          return (
+                            <div className="p-3 rounded-lg border border-purple-500/30 bg-purple-500/10 text-center text-sm text-purple-400 font-bold flex items-center justify-center gap-2">
+                              <CheckCircle2 className="w-5 h-5" />
+                              <span>مكتمل</span>
+                            </div>
+                          );
+                        }
+                      }
+                      return (
+                        <button 
+                          onClick={() => handleApply(campaign.id)}
+                          className="btn-primary w-full py-3 flex items-center justify-center gap-2"
+                        >
+                          <Send className="w-4 h-4" />
+                          <span>{t('applyNow')}</span>
+                        </button>
+                      );
+                    })()}
                   </div>
                 );
               })}
@@ -301,69 +447,81 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             <div className="glass-card flex flex-col h-full lg:col-span-1">
               <div className="p-4 border-b border-white/10 font-bold text-white flex items-center justify-between">
                 <span>المحادثات</span>
-                <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">1 جديد</span>
               </div>
               <div className="flex-1 overflow-y-auto">
-                <div className="p-4 border-l-2 border-l-emerald-500 bg-white/5 cursor-pointer flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xl">
-                    🛍️
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">متجر الأناقة</h4>
-                    <p className="text-xs text-emerald-400 truncate w-40">رائع، الميزانية هي 45,000 د.ج...</p>
-                  </div>
-                </div>
-                <div className="p-4 hover:bg-white/5 cursor-pointer flex items-center gap-3 opacity-60">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 text-xl">
-                    📱
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">Tech Store DZ</h4>
-                    <p className="text-xs text-slate-400 truncate w-40">شكراً لك، سنراجع طلبك قريباً.</p>
-                  </div>
-                </div>
+                {contacts.length === 0 ? (
+                  <p className="text-slate-400 p-4 text-sm text-center">لا توجد محادثات بعد</p>
+                ) : (
+                  contacts.map(contact => (
+                    <div 
+                      key={contact.id}
+                      onClick={() => setSelectedContactId(contact.id)}
+                      className={`p-4 cursor-pointer flex items-center gap-3 ${selectedContactId === contact.id ? 'border-l-2 border-l-emerald-500 bg-white/5' : 'hover:bg-white/5 opacity-60'}`}
+                    >
+                      <img src={contact.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=b'} alt="Brand Avatar" className="w-10 h-10 rounded-full" />
+                      <div>
+                        <h4 className="font-bold text-white text-sm">{contact.brand_name || 'Brand'}</h4>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
             {/* Main Chat Area */}
             <div className="glass-card flex flex-col h-full lg:col-span-2">
-              <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xl">
-                  🛍️
-                </div>
-                <div>
-                  <h3 className="font-bold text-white">متجر الأناقة</h3>
-                  <span className="text-xs text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> متصل الآن
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/30">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`flex flex-col max-w-[75%] ${msg.sender === 'me' ? 'mr-auto items-end' : 'ml-auto items-start'}`}>
-                    <div className={`p-3 rounded-2xl ${msg.sender === 'me' ? 'bg-emerald-500 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none'}`}>
-                      {msg.text}
+              {selectedContactId ? (
+                <>
+                  <div className="p-4 border-b border-white/10 flex items-center gap-3">
+                    <img src={contacts.find(c => c.id === selectedContactId)?.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=b'} alt="Brand Avatar" className="w-10 h-10 rounded-full" />
+                    <div>
+                      <h3 className="font-bold text-white">{contacts.find(c => c.id === selectedContactId)?.brand_name || 'Brand'}</h3>
+                      <span className="text-xs text-emerald-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> متصل
+                      </span>
                     </div>
-                    <span className="text-[10px] text-slate-500 mt-1">{msg.time}</span>
                   </div>
-                ))}
-              </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/30">
+                    {messages.length === 0 ? (
+                      <p className="text-slate-400 text-center text-sm">ابدأ المحادثة الآن!</p>
+                    ) : (
+                      messages.map((msg) => {
+                        const isMe = msg.sender_id === user.id;
+                        return (
+                          <div key={msg.id} className={`flex flex-col max-w-[75%] ${isMe ? 'mr-auto items-end' : 'ml-auto items-start'}`}>
+                            <div className={`p-3 rounded-2xl ${isMe ? 'bg-emerald-600 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none'}`}>
+                              {msg.text}
+                            </div>
+                            <span className="text-[10px] text-slate-500 mt-1">
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
 
-              <div className="p-4 border-t border-white/10">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="اكتب رسالتك هنا..."
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                  />
-                  <button type="submit" disabled={!chatMessage.trim()} className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white p-2.5 rounded-xl transition-colors">
-                    <SendHorizontal className="w-5 h-5" />
-                  </button>
-                </form>
-              </div>
+                  <div className="p-4 border-t border-white/10">
+                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="اكتب رسالتك هنا..."
+                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
+                        value={chatMessage}
+                        onChange={(e) => setChatMessage(e.target.value)}
+                      />
+                      <button type="submit" disabled={!chatMessage.trim()} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white p-2.5 rounded-xl transition-colors">
+                        <SendHorizontal className="w-5 h-5" />
+                      </button>
+                    </form>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">
+                  اختر محادثة من القائمة
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -536,13 +694,24 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
         )}
 
         {/* Tab 4: Wallet */}
-        {activeTab === 'wallet' && (
+        {activeTab === 'wallet' && (() => {
+          const pendingEscrow = applications
+            .filter(app => app.status === 'approved')
+            .reduce((sum, app) => sum + (app.campaign?.budget || 0), 0);
+            
+          const availableBalance = applications
+            .filter(app => app.status === 'completed')
+            .reduce((sum, app) => sum + (app.campaign?.budget || 0), 0);
+            
+          const totalEarned = availableBalance; // for now, assuming they haven't withdrawn any
+          
+          return (
           <div className="space-y-8 animate-fade-in">
             {/* Balance Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="glass-card p-6 border-r-4 border-r-emerald-500">
                 <span className="text-slate-400 text-sm">الرصيد المتاح للسحب</span>
-                <div className="text-3xl font-bold text-emerald-400 mt-2">{formatDZD(mockWallet.availableBalance)}</div>
+                <div className="text-3xl font-bold text-emerald-400 mt-2">{formatDZD(availableBalance)}</div>
                 <p className="text-xs text-slate-500 mt-2">جاهز للتحويل عبر BaridiMob</p>
               </div>
 
@@ -550,15 +719,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                 <span className="text-slate-400 text-sm">رصيد الضمان (محجوز)</span>
                 <div className="text-3xl font-bold text-amber-400 mt-2 flex items-center gap-2">
                   <Lock className="w-6 h-6" />
-                  {formatDZD(mockWallet.pendingEscrow)}
+                  {formatDZD(pendingEscrow)}
                 </div>
                 <p className="text-xs text-slate-500 mt-2">يُحرّر فور الموافقة على التسليمات</p>
               </div>
 
               <div className="glass-card p-6 border-r-4 border-r-blue-500">
                 <span className="text-slate-400 text-sm">إجمالي الأرباح التاريخية</span>
-                <div className="text-3xl font-bold gradient-text mt-2">{formatDZD(mockWallet.totalEarned)}</div>
-                <p className="text-xs text-slate-500 mt-2">إجمالي 14 صفقة مكتملة</p>
+                <div className="text-3xl font-bold gradient-text mt-2">{formatDZD(totalEarned)}</div>
+                <p className="text-xs text-slate-500 mt-2">أرباح الحملات المكتملة</p>
               </div>
             </div>
 
@@ -571,7 +740,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                   <input
                     type="number"
                     placeholder="20000"
-                    max={mockWallet.availableBalance}
+                    max={availableBalance}
                     className="input-field w-full"
                     value={payoutForm.amount}
                     onChange={(e) => setPayoutForm({ ...payoutForm, amount: e.target.value })}
@@ -608,7 +777,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
             {/* Transactions Table */}
             <div className="glass-card p-6">
-              <h3 className="text-lg font-bold text-white mb-4">سجل المعاملات المالية</h3>
+              <h3 className="text-lg font-bold text-white mb-4">سجل طلبات السحب (وهمي حالياً)</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-right text-sm text-slate-300">
                   <thead>
@@ -644,7 +813,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
               </div>
             </div>
           </div>
-        )}
+        )})()}
       </div>
     </div>
   );

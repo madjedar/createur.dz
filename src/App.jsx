@@ -57,6 +57,30 @@ function AppContent() {
   const [selectedCategory, setSelectedCategory] = useState('الكل')
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Database State
+  const [creators, setCreators] = useState([])
+  const [stores, setStores] = useState([])
+  const [loadingData, setLoadingData] = useState(true)
+
+  // Fetch real data on mount
+  useEffect(() => {
+    import('./services/dbService').then(({ getStoreProfiles, getCreatorProfiles }) => {
+      Promise.all([getStoreProfiles(), getCreatorProfiles()])
+        .then(([fetchedStores, fetchedCreators]) => {
+          setStores(fetchedStores.length > 0 ? fetchedStores : mockStores);
+          setCreators(fetchedCreators.length > 0 ? fetchedCreators : mockCreators);
+          setLoadingData(false);
+        })
+        .catch(err => {
+          console.error("Error fetching from DB:", err);
+          // Fallback to mock data if there's a DB error (e.g. no rows yet or network issue)
+          setStores(mockStores);
+          setCreators(mockCreators);
+          setLoadingData(false);
+        });
+    });
+  }, []);
+
   // Payment callback detection
   const [toast, setToast] = useState(null)
 
@@ -148,14 +172,14 @@ function AppContent() {
   const handleCloseReview = () => setReviewCreator(null)
 
   // Filtered creators
-  const filteredCreators = mockCreators.filter((c) => {
+  const filteredCreators = creators.filter((c) => {
     const rawCategory = typeof c.category === 'object' ? c.category.ar : c.category
     const matchCategory = selectedCategory === 'الكل' || rawCategory === selectedCategory
     const bioText = getLocalizedItem(c, 'bio', language)
     const categoryText = getLocalizedItem(c, 'category', language)
     const matchSearch =
       searchQuery === '' ||
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      getLocalizedItem(c, 'name', language).toLowerCase().includes(searchQuery.toLowerCase()) ||
       bioText.toLowerCase().includes(searchQuery.toLowerCase()) ||
       categoryText.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.tags && c.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
@@ -163,7 +187,7 @@ function AppContent() {
   })
 
   // Filtered stores
-  const filteredStores = mockStores.filter((s) => {
+  const filteredStores = stores.filter((s) => {
     const rawSector = typeof s.sector === 'object' ? s.sector.ar : s.sector
     const matchCategory = selectedCategory === 'الكل' || rawSector === selectedCategory
     const nameText = getLocalizedItem(s, 'name', language)
@@ -490,11 +514,29 @@ function AppContent() {
         isOpen={!!selectedStore}
         onClose={() => setSelectedStore(null)}
         store={selectedStore}
-        onApplyCampaign={(campaign) => {
-          setSelectedStore(null);
-          if (isLoggedIn) {
-            handleOpenDashboard('opportunities');
+        onApplyCampaign={async (campaign) => {
+          if (isLoggedIn && user?.role === 'creator') {
+            try {
+              const { applyToCampaign, createNotification } = await import('./services/dbService');
+              await applyToCampaign(campaign.id, user.id);
+              if (campaign.brand_id) {
+                 await createNotification(
+                   campaign.brand_id,
+                   'طلب تقديم جديد',
+                   `قام ${user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaign.title}".`
+                 );
+              }
+              alert("تم التقديم بنجاح!");
+              setSelectedStore(null);
+              handleOpenDashboard('opportunities');
+            } catch (err) {
+              console.error(err);
+              alert("حدث خطأ أثناء التقديم");
+            }
+          } else if (isLoggedIn) {
+            alert("فقط صناع المحتوى يمكنهم التقديم");
           } else {
+            setSelectedStore(null);
             handleOpenAuth('signup', 'creator');
           }
         }}

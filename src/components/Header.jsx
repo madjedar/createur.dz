@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Menu, X, User, LogOut, LayoutDashboard, PlusCircle, Sparkles, Building2, Globe, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import NotificationDropdown from './NotificationDropdown';
 
 const Header = ({ onOpenAuth, onOpenDashboard }) => {
   const { user: realUser, logout } = useAuth();
@@ -59,6 +60,7 @@ const Header = ({ onOpenAuth, onOpenDashboard }) => {
 
             {user ? (
               <>
+                <NotificationDropdown />
                 {isAdmin ? (
                   <button
                     onClick={() => onOpenDashboard('admin')}

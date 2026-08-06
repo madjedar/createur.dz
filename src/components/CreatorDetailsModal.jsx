@@ -57,7 +57,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }
 
             <div className="flex-1 space-y-2">
               <h1 className="text-3xl font-bold text-white flex items-center justify-center md:justify-start gap-2">
-                {creator.name}
+                {getLocalizedItem(creator, 'name', language)}
               </h1>
               
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-slate-400">
@@ -87,17 +87,17 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }
             <div className="p-4 text-center glass-card rounded-xl">
               <Users className="w-5 h-5 mx-auto mb-2 text-blue-400" />
               <div className="text-xl md:text-2xl font-bold text-white">{formatNumber(totalFollowers || 150000)}</div>
-              <div className="text-xs text-slate-400 mt-1">متابع</div>
+              <div className="text-xs text-slate-400 mt-1">{t('creatorFollowers')}</div>
             </div>
             <div className="p-4 text-center glass-card rounded-xl">
               <TrendingUp className="w-5 h-5 mx-auto mb-2 text-emerald-400" />
               <div className="text-xl md:text-2xl font-bold text-white">{creator.engagement || 5.2}%</div>
-              <div className="text-xs text-slate-400 mt-1">تفاعل</div>
+              <div className="text-xs text-slate-400 mt-1">{t('creatorEngagement')}</div>
             </div>
             <div className="p-4 text-center glass-card rounded-xl">
               <Handshake className="w-5 h-5 mx-auto mb-2 text-amber-400" />
               <div className="text-xl md:text-2xl font-bold text-white">{creator.completedDeals || 12}</div>
-              <div className="text-xs text-slate-400 mt-1">تعاون مكتمل</div>
+              <div className="text-xs text-slate-400 mt-1">{t('creatorDeals')}</div>
             </div>
           </div>
 
@@ -138,15 +138,15 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }
 
             {/* Rate Card */}
             <div>
-              <h3 className="font-semibold text-white mb-4">التسعيرة (ابتداءً من)</h3>
+              <h3 className="font-semibold text-white mb-4">{t('creatorRate')}</h3>
               <div className="h-full p-6 flex flex-col justify-center items-center glass-card rounded-xl relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-blue-600/10 opacity-50 group-hover:opacity-100 transition-opacity"></div>
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full -mr-16 -mt-16"></div>
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/20 blur-3xl rounded-full -ml-16 -mb-16"></div>
                 
                 <div className="relative z-10 text-center">
-                  <span className="block text-slate-400 mb-2">سعر المنشور الواحد</span>
-                  <span className="text-4xl font-bold gradient-text block mb-4">{formatDZD(creator.ratePerPost || 15000)}</span>
+                  <span className="block text-slate-400 mb-2">{t('deliveryStartsAt')}</span>
+                  <span className="text-4xl font-bold gradient-text block mb-4">{formatDZD(creator.ratePerPost || 15000, language)}</span>
                   <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-slate-300 inline-block">
                     قابل للتفاوض حسب الحملة
                   </div>

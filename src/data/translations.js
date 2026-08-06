@@ -209,6 +209,12 @@ export const translations = {
     footerContact: 'تواصل معنا',
     footerRights: 'جميع الحقوق محفوظة',
     footerMadeIn: 'صنع بـ ❤️ في عنابة، الجزائر',
+    footerPlatform: 'المنصة',
+    footerCreators: 'صنّاع المحتوى',
+    footerBrands: 'العلامات التجارية',
+    footerPricing: 'الأسعار',
+    footerSupport: 'الدعم',
+    footerCity: 'عنابة، الجزائر',
 
     // ─── Common ───
     close: 'إغلاق',
@@ -435,6 +441,12 @@ export const translations = {
     footerContact: 'Nous Contacter',
     footerRights: 'Tous droits réservés',
     footerMadeIn: 'Fait avec ❤️ à Annaba, Algérie',
+    footerPlatform: 'Plateforme',
+    footerCreators: 'Créateurs de contenu',
+    footerBrands: 'Marques & Boutiques',
+    footerPricing: 'Tarifs',
+    footerSupport: 'Support & Aide',
+    footerCity: 'Annaba, Algérie',
 
     // ─── Common ───
     close: 'Fermer',
@@ -661,6 +673,12 @@ export const translations = {
     footerContact: 'Contact Us',
     footerRights: 'All rights reserved',
     footerMadeIn: 'Made with ❤️ in Annaba, Algeria',
+    footerPlatform: 'Platform',
+    footerCreators: 'Content Creators',
+    footerBrands: 'Brands & Stores',
+    footerPricing: 'Pricing',
+    footerSupport: 'Support & Help',
+    footerCity: 'Annaba, Algeria',
 
     // ─── Common ───
     close: 'Close',

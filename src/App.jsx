@@ -303,7 +303,7 @@ function AppContent() {
                     />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-white text-base truncate group-hover:text-emerald-400 transition-colors">
-                        {creator.name}
+                        {getLocalizedItem(creator, 'name', language)}
                       </h3>
                       <span className="text-xs text-slate-400 block mt-0.5">{getLocalizedItem(creator, 'category', language)}</span>
                     </div>
@@ -316,7 +316,7 @@ function AppContent() {
 
                 <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                   <span className="text-xs text-slate-400 font-semibold">{t('deliveryStartsAt')}</span>
-                  <span className="font-extrabold text-emerald-400 text-sm">{formatDZD(creator.ratePerPost)}</span>
+                  <span className="font-extrabold text-emerald-400 text-sm">{formatDZD(creator.ratePerPost, language)}</span>
                 </div>
               </div>
             ))}

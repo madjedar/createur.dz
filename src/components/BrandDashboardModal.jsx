@@ -413,10 +413,10 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 <div key={creator.id} className="glass-card p-6 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-4">
-                      <img src={creator.avatar} alt={creator.name} className="w-14 h-14 rounded-full bg-white/10" />
+                      <img src={creator.avatar} alt={getLocalizedItem(creator, 'name', language)} className="w-14 h-14 rounded-full bg-white/10" />
                       <div>
                         <h4 className="font-bold text-white flex items-center gap-1.5">
-                          {creator.name}
+                          {getLocalizedItem(creator, 'name', language)}
                           {creator.verified && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
                         </h4>
                         <span className="text-xs text-slate-400">{getLocalizedItem(creator, 'category', language)}</span>
@@ -427,12 +427,12 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
                     <div className="grid grid-cols-2 gap-2 mb-6 text-center">
                       <div className="p-2 rounded-lg bg-white/5">
-                        <span className="text-xs text-slate-400 block">التفاعل</span>
+                        <span className="text-xs text-slate-400 block">{t('creatorEngagement')}</span>
                         <span className="font-bold text-emerald-400 text-sm">{creator.engagement}%</span>
                       </div>
                       <div className="p-2 rounded-lg bg-white/5">
-                        <span className="text-xs text-slate-400 block">السعر/منشور</span>
-                        <span className="font-bold text-white text-sm">{formatDZD(creator.ratePerPost)}</span>
+                        <span className="text-xs text-slate-400 block">{t('creatorRate')}</span>
+                        <span className="font-bold text-white text-sm">{formatDZD(creator.ratePerPost, language)}</span>
                       </div>
                     </div>
                   </div>

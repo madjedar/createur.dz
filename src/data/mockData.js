@@ -7,7 +7,11 @@ export const getLocalizedItem = (item, field, lang = 'ar') => {
 export const mockCreators = [
   {
     id: '1',
-    name: 'أمين بن عمر',
+    name: {
+      ar: 'أمين بن عمر',
+      fr: 'Amine Benamar',
+      en: 'Amine Benamar'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=amine',
     bio: {
       ar: 'صانع محتوى تقني متخصص في مراجعات الهواتف والتكنولوجيا. أكثر من 500 ألف متابع على يوتيوب.',
@@ -40,7 +44,11 @@ export const mockCreators = [
   },
   {
     id: '2',
-    name: 'سارة مزياني',
+    name: {
+      ar: 'سارة مزياني',
+      fr: 'Sara Meziani',
+      en: 'Sara Meziani'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sara',
     bio: {
       ar: 'مؤثرة في مجال الجمال والموضة. أشارك نصائح العناية بالبشرة ومكياج يومي مع جمهور نسائي واسع.',
@@ -73,7 +81,11 @@ export const mockCreators = [
   },
   {
     id: '3',
-    name: 'يوسف حداد',
+    name: {
+      ar: 'يوسف حداد',
+      fr: 'Youcef Haddad',
+      en: 'Youcef Haddad'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=youcef',
     bio: {
       ar: 'طبّاخ ومدوّن طعام جزائري. أقدم وصفات تقليدية وعصرية من المطبخ الجزائري والعالمي.',
@@ -106,7 +118,11 @@ export const mockCreators = [
   },
   {
     id: '4',
-    name: 'نور الهدى بلقاسمي',
+    name: {
+      ar: 'نور الهدى بلقاسمي',
+      fr: 'Nour El Houda Belkacemi',
+      en: 'Nour El Houda Belkacemi'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=nour',
     bio: {
       ar: 'خبيرة في التنمية الذاتية والتطوير الشخصي. أساعد الشباب الجزائري على تحقيق أهدافهم وتطوير مهاراتهم.',
@@ -139,7 +155,11 @@ export const mockCreators = [
   },
   {
     id: '5',
-    name: 'كريم بوعلام',
+    name: {
+      ar: 'كريم بوعلام',
+      fr: 'Karim Boualem',
+      en: 'Karim Boualem'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=karim',
     bio: {
       ar: 'مصور فوتوغرافي ومخرج فيديو. أوثّق جمال الطبيعة والثقافة الجزائرية من الشمال إلى الصحراء.',
@@ -172,7 +192,11 @@ export const mockCreators = [
   },
   {
     id: '6',
-    name: 'ليلى عيساوي',
+    name: {
+      ar: 'ليلى عيساوي',
+      fr: 'Leila Aissaoui',
+      en: 'Leila Aissaoui'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=leila',
     bio: {
       ar: 'أم ومدوّنة حياة عائلية. أشارك تجربتي في التربية والموضوعات المنزلية ونصائح للأمهات.',
@@ -205,7 +229,11 @@ export const mockCreators = [
   },
   {
     id: '7',
-    name: 'رضا مهري',
+    name: {
+      ar: 'رضا مهري',
+      fr: 'Reda Mehri',
+      en: 'Reda Mehri'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=reda',
     bio: {
       ar: 'لاعب ألعاب إلكترونية ومعلق رياضي. بث مباشر يومي وتحليلات للألعاب التنافسية.',
@@ -238,7 +266,11 @@ export const mockCreators = [
   },
   {
     id: '8',
-    name: 'فاطمة الزهراء بن يحيى',
+    name: {
+      ar: 'فاطمة الزهراء بن يحيى',
+      fr: 'Fatima Zohra Benyahia',
+      en: 'Fatima Zohra Benyahia'
+    },
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=fatima',
     bio: {
       ar: 'صانعة محتوى تعليمي. أقدم دروس في اللغة الإنجليزية والفرنسية للطلاب والمهنيين.',

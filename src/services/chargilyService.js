@@ -12,14 +12,20 @@ export function calculateFees(subtotal) {
 }
 
 /**
- * Format amount in Algerian Dinar
+ * Format amount in Algerian Dinar with multi-language currency support
  */
-export function formatDZD(amount) {
-  return new Intl.NumberFormat('ar-DZ', {
-    style: 'decimal',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount) + ' د.ج'
+export function formatDZD(amount, lang = 'ar') {
+  if (!amount && amount !== 0) return '0';
+  const num = Number(amount);
+  if (isNaN(num)) return amount;
+
+  if (lang === 'fr') {
+    return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(num) + ' DZD';
+  }
+  if (lang === 'en') {
+    return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(num) + ' DZD';
+  }
+  return new Intl.NumberFormat('ar-DZ', { maximumFractionDigits: 0 }).format(num) + ' د.ج';
 }
 
 /**

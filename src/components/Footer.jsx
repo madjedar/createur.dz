@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 const Footer = () => {
   const { t } = useLanguage();
   return (
-    <footer className="border-t border-white/10 bg-slate-950 mt-auto" dir="rtl">
+    <footer className="border-t border-white/10 bg-slate-950 mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
           {/* Column 1 - Brand */}
@@ -34,11 +34,11 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-semibold mb-4">{t('footerLinks')}</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">المنصة</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">صنّاع المحتوى</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">العلامات التجارية</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">الأسعار</a></li>
-              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">الدعم</a></li>
+              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">{t('footerPlatform')}</a></li>
+              <li><a href="#creators" className="text-slate-400 hover:text-emerald-400 transition-colors block">{t('footerCreators')}</a></li>
+              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">{t('footerBrands')}</a></li>
+              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">{t('footerPricing')}</a></li>
+              <li><a href="#" className="text-slate-400 hover:text-emerald-400 transition-colors block">{t('footerSupport')}</a></li>
             </ul>
           </div>
 
@@ -52,7 +52,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-3 text-slate-400">
                 <MapPin className="w-5 h-5 text-emerald-500" />
-                <span>عنابة، الجزائر</span>
+                <span>{t('footerCity')}</span>
               </li>
             </ul>
           </div>
@@ -62,9 +62,9 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 py-6 border-t border-white/5">
           <span className="text-slate-400 text-sm">{t('paymentPartners')}:</span>
           <div className="flex items-center gap-3 flex-wrap justify-center">
-            <span className="badge-edahabia text-xs px-3 py-1.5 rounded-md font-bold shadow-lg">💳 بطاقة الذهبية</span>
+            <span className="badge-edahabia text-xs px-3 py-1.5 rounded-md font-bold shadow-lg">💳 {t('checkoutEdahabia')}</span>
             <div className="w-px h-4 bg-white/10"></div>
-            <span className="badge-cib text-xs px-3 py-1.5 rounded-md font-bold shadow-lg">🏦 بطاقة CIB</span>
+            <span className="badge-cib text-xs px-3 py-1.5 rounded-md font-bold shadow-lg">🏦 {t('checkoutCIB')}</span>
           </div>
         </div>
 
@@ -74,9 +74,7 @@ const Footer = () => {
             © {new Date().getFullYear()} Créateur DZ — {t('footerRights')}
           </p>
           <p className="text-slate-500 flex items-center justify-center gap-2">
-            صنع بـ
-            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-            في عنابة، الجزائر
+            {t('footerMadeIn')}
           </p>
         </div>
       </div>

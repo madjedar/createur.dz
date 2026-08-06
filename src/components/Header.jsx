@@ -65,7 +65,7 @@ const Header = ({ onOpenAuth, onOpenDashboard }) => {
                     className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 transition-all font-bold text-sm shadow-md"
                   >
                     <ShieldAlert className="w-4 h-4 text-purple-400" />
-                    <span>لوحة الأدمن / Admin Dashboard</span>
+                    <span>{t('adminDashboard')}</span>
                   </button>
                 ) : isBrand ? (
                   <>
@@ -172,7 +172,7 @@ const Header = ({ onOpenAuth, onOpenDashboard }) => {
                   className="w-full py-3 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center gap-2 font-bold border border-purple-500/20"
                 >
                   <ShieldAlert className="w-5 h-5" />
-                  <span>لوحة الأدمن / Admin Dashboard</span>
+                  <span>{t('adminDashboard')}</span>
                 </button>
               ) : isBrand ? (
                 <>

@@ -241,19 +241,30 @@ function AppContent() {
 
             {/* Category Filters */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
-                    selectedCategory === cat
-                      ? 'bg-emerald-400 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
-                      : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/10'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+              {categories.map((cat) => {
+                const categoryLabels = {
+                  'الكل': t('catAll'),
+                  'تكنولوجيا': t('catTech'),
+                  'موضة وأزياء': t('catFashion'),
+                  'تجميل وعناية': t('catBeauty'),
+                  'طبخ وأكل': t('catFood'),
+                  'سفر وسياحة': t('catTravel'),
+                  'رياضة ولياقة': t('catFitness')
+                };
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                      selectedCategory === cat
+                        ? 'bg-emerald-400 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/10'
+                    }`}
+                  >
+                    {categoryLabels[cat] || cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

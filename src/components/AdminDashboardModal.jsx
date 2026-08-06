@@ -77,10 +77,10 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
         {/* Navigation Tabs */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-8 border-b border-white/10">
           {[
-            { id: 'overview', label: 'الإحصائيات العامة', icon: Activity },
-            { id: 'users', label: 'إدارة المستخدمين', icon: Users },
-            { id: 'campaigns', label: 'مراجعة الحملات', icon: FileText },
-            { id: 'financial', label: 'إدارة الضمان والمالية 💰', icon: Wallet },
+            { id: 'overview', label: t('adminOverview'), icon: Activity },
+            { id: 'users', label: t('adminUsers'), icon: Users },
+            { id: 'campaigns', label: t('adminCampaigns'), icon: FileText },
+            { id: 'financial', label: `${t('adminEscrow')} 💰`, icon: Wallet },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;

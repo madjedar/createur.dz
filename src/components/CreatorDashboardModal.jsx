@@ -84,10 +84,10 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              لوحة صانع المحتوى
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">مبدع</span>
+              {t('creatorDashboard')}
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold">{t('roleCreator')}</span>
             </h1>
-            <p className="text-xs text-slate-400">أهلاً بك، {user?.user_metadata?.full_name || 'صانع المحتوى'}</p>
+            <p className="text-xs text-slate-400">{t('welcomeUser')}، {user?.user_metadata?.full_name || t('roleCreator')}</p>
           </div>
         </div>
 
@@ -104,10 +104,10 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
         {/* Navigation Tabs */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-8 border-b border-white/10">
           {[
-            { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
-            { id: 'opportunities', label: 'فرص الرعاية', icon: Briefcase },
-            { id: 'profile', label: 'الملف والأسعار', icon: User },
-            { id: 'wallet', label: 'المحفظة المالية 💰', icon: Wallet },
+            { id: 'overview', label: t('dashOverview'), icon: LayoutDashboard },
+            { id: 'opportunities', label: t('dashOpportunities'), icon: Briefcase },
+            { id: 'profile', label: t('dashProfile'), icon: User },
+            { id: 'wallet', label: `${t('dashWallet')} 💰`, icon: Wallet },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;

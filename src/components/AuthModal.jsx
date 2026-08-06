@@ -133,8 +133,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
 
         {mode === 'select_role' ? (
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">اختر نوع حسابك</h2>
-            <p className="text-sm text-slate-400 mb-6">يرجى تحديد صفة استخدامك للمنصة لإعداد لوحة التحكم المناسبة</p>
+            <h2 className="text-2xl font-bold text-white mb-2">{t('selectAccountType')}</h2>
+            <p className="text-sm text-slate-400 mb-6">{t('selectRoleSub')}</p>
             
             <div className="grid grid-cols-2 gap-4 mb-6">
               <button
@@ -146,8 +146,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                 <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <span className="font-bold text-white block">صانع محتوى</span>
-                <span className="text-xs text-slate-400 block">عرض الخدمات والحصول على صفقات</span>
+                <span className="font-bold text-white block">{t('roleCreator')}</span>
+                <span className="text-xs text-slate-400 block">{t('roleCreatorSub')}</span>
               </button>
 
               <button
@@ -159,8 +159,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                 <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Building2 className="w-6 h-6" />
                 </div>
-                <span className="font-bold text-white block">صاحب متجر / مشروع</span>
-                <span className="text-xs text-slate-400 block">نشر حملات وتوظيف المبدعين</span>
+                <span className="font-bold text-white block">{t('roleBrand')}</span>
+                <span className="text-xs text-slate-400 block">{t('roleBrandSub')}</span>
               </button>
             </div>
           </div>
@@ -173,7 +173,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
             {/* Role Switcher in Signup Mode */}
             {mode === 'signup' && (
               <div className="mb-6">
-                <label className="block text-xs font-semibold text-slate-400 mb-2">نوع الحساب:</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-2">{t('accountType')}</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
@@ -185,7 +185,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                     }`}
                   >
                     <Sparkles className="w-4 h-4" />
-                    <span>صانع محتوى</span>
+                    <span>{t('roleCreator')}</span>
                   </button>
 
                   <button
@@ -198,7 +198,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                     }`}
                   >
                     <Building2 className="w-4 h-4" />
-                    <span>صاحب متجر</span>
+                    <span>{t('roleBrand')}</span>
                   </button>
                 </div>
               </div>

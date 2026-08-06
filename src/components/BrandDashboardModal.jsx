@@ -116,7 +116,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
           </div>
           <div>
             <h2 className="text-xl font-bold text-white tracking-wide">{t('brandDashboard')}</h2>
-            <p className="text-xs text-slate-400">مرحباً، {user?.user_metadata?.full_name || 'صاحب المتجر'}</p>
+            <p className="text-xs text-slate-400">{t('welcomeUser')}، {user?.user_metadata?.full_name || t('roleBrand')}</p>
           </div>
         </div>
 
@@ -133,11 +133,11 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
         {/* Navigation Tabs */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-8 border-b border-white/10">
           {[
-            { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
-            { id: 'create', label: '+ إضافة حملة جديدة', icon: PlusCircle },
-            { id: 'creators', label: 'دليل صنّاع المحتوى', icon: Users },
-            { id: 'escrow', label: 'صفقات الضمان 🔒', icon: Lock },
-            { id: 'profile', label: 'ملف المتجر والمشروع 🏪', icon: User },
+            { id: 'overview', label: t('dashOverview'), icon: LayoutDashboard },
+            { id: 'create', label: t('addCampaign'), icon: PlusCircle },
+            { id: 'creators', label: t('creatorDirectory'), icon: Users },
+            { id: 'escrow', label: t('escrowDeals'), icon: Lock },
+            { id: 'profile', label: t('storeProfile'), icon: User },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;

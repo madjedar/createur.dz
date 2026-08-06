@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth, AuthProvider } from './context/AuthContext'
 import { LanguageProvider, useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
-import { mockCreators, mockCampaigns, categories, getLocalizedItem } from './data/mockData'
+import { mockCreators, mockCampaigns, mockStores, categories, getLocalizedItem } from './data/mockData'
 import { formatDZD } from './services/chargilyService'
 import Header from './components/Header'
 import Hero from './components/Hero'
@@ -32,6 +32,10 @@ import {
   FileText,
   Handshake,
   CircleDollarSign,
+  Building2,
+  MapPin,
+  Briefcase,
+  Sparkles,
 } from 'lucide-react'
 
 function AppContent() {
@@ -46,7 +50,8 @@ function AppContent() {
   const [checkoutData, setCheckoutData] = useState(null)
   const [reviewCreator, setReviewCreator] = useState(null)
 
-  // Filters
+  // Showcase Tab & Filters
+  const [showcaseTab, setShowcaseTab] = useState('creators') // 'creators' | 'stores'
   const [selectedCategory, setSelectedCategory] = useState('الكل')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -146,6 +151,23 @@ function AppContent() {
     return matchCategory && matchSearch
   })
 
+  // Filtered stores
+  const filteredStores = mockStores.filter((s) => {
+    const rawSector = typeof s.sector === 'object' ? s.sector.ar : s.sector
+    const matchCategory = selectedCategory === 'الكل' || rawSector === selectedCategory
+    const nameText = getLocalizedItem(s, 'name', language)
+    const bioText = getLocalizedItem(s, 'bio', language)
+    const sectorText = getLocalizedItem(s, 'sector', language)
+    const locationText = getLocalizedItem(s, 'location', language)
+    const matchSearch =
+      searchQuery === '' ||
+      nameText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bioText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      sectorText.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      locationText.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchCategory && matchSearch
+  })
+
   const formatFollowers = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
     if (num >= 1000) return (num / 1000).toFixed(0) + 'K'
@@ -230,16 +252,45 @@ function AppContent() {
         </>
       )}
 
-      {/* ─── Section 3: Clean Creator Showcase Grid ─── */}
+      {/* ─── Section 3: Clean Creators & Stores Showcase Grid ─── */}
       <section id="creators" className="py-20 px-4 bg-[#080C14]">
         <div className="max-w-7xl mx-auto">
+          {/* Main Showcase Toggle Tabs (Creators vs Stores) */}
+          <div className="flex justify-center mb-10">
+            <div className="p-1.5 bg-white/5 border border-white/10 rounded-2xl flex gap-2">
+              <button
+                onClick={() => setShowcaseTab('creators')}
+                className={`px-6 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center gap-2 transition-all ${
+                  showcaseTab === 'creators'
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 scale-105'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{t('tabCreators')}</span>
+              </button>
+
+              <button
+                onClick={() => setShowcaseTab('stores')}
+                className={`px-6 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center gap-2 transition-all ${
+                  showcaseTab === 'stores'
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-lg shadow-blue-500/20 scale-105'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Building2 className="w-5 h-5" />
+                <span>{t('tabStores')}</span>
+              </button>
+            </div>
+          </div>
+
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
               <h2 className="text-3xl sm:text-4xl font-black text-white mb-3 tracking-wide">
-                {t('featuredCreators')}
+                {showcaseTab === 'creators' ? t('featuredCreators') : t('featuredStores')}
               </h2>
               <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-                {t('featuredCreatorsSub')}
+                {showcaseTab === 'creators' ? t('featuredCreatorsSub') : t('featuredStoresSub')}
               </p>
             </div>
 
@@ -261,7 +312,9 @@ function AppContent() {
                     onClick={() => setSelectedCategory(cat)}
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
                       selectedCategory === cat
-                        ? 'bg-emerald-400 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
+                        ? showcaseTab === 'creators' 
+                          ? 'bg-emerald-400 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
+                          : 'bg-blue-400 text-slate-950 font-black shadow-lg shadow-blue-500/20'
                         : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/10'
                     }`}
                   >
@@ -286,43 +339,104 @@ function AppContent() {
             </div>
           </div>
 
-          {/* Creators Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredCreators.map((creator) => (
-              <div
-                key={creator.id}
-                onClick={() => handleSelectCreator(creator)}
-                className="glass-card-hover p-6 cursor-pointer group flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-3.5 mb-4">
-                    <img
-                      src={creator.avatar}
-                      alt={creator.name}
-                      className="w-14 h-14 rounded-2xl bg-white/10 object-cover border border-white/10 group-hover:scale-105 transition-transform"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-white text-base truncate group-hover:text-emerald-400 transition-colors">
-                        {getLocalizedItem(creator, 'name', language)}
-                      </h3>
-                      <span className="text-xs text-slate-400 block mt-0.5">{getLocalizedItem(creator, 'category', language)}</span>
+          {/* Tab 1: Creators Grid */}
+          {showcaseTab === 'creators' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredCreators.map((creator) => (
+                <div
+                  key={creator.id}
+                  onClick={() => handleSelectCreator(creator)}
+                  className="glass-card-hover p-6 cursor-pointer group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center gap-3.5 mb-4">
+                      <img
+                        src={creator.avatar}
+                        alt={getLocalizedItem(creator, 'name', language)}
+                        className="w-14 h-14 rounded-2xl bg-white/10 object-cover border border-white/10 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-white text-base truncate group-hover:text-emerald-400 transition-colors">
+                          {getLocalizedItem(creator, 'name', language)}
+                        </h3>
+                        <span className="text-xs text-slate-400 block mt-0.5">{getLocalizedItem(creator, 'category', language)}</span>
+                      </div>
                     </div>
+
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-6">
+                      {getLocalizedItem(creator, 'bio', language)}
+                    </p>
                   </div>
 
-                  <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-6">
-                    {getLocalizedItem(creator, 'bio', language)}
-                  </p>
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-xs text-slate-400 font-semibold">{t('deliveryStartsAt')}</span>
+                    <span className="font-extrabold text-emerald-400 text-sm">{formatDZD(creator.ratePerPost, language)}</span>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
 
-                <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-semibold">{t('deliveryStartsAt')}</span>
-                  <span className="font-extrabold text-emerald-400 text-sm">{formatDZD(creator.ratePerPost, language)}</span>
+          {/* Tab 2: Stores & Small Businesses Grid */}
+          {showcaseTab === 'stores' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredStores.map((store) => (
+                <div
+                  key={store.id}
+                  onClick={() => {
+                    if (isLoggedIn) {
+                      handleOpenDashboard('create');
+                    } else {
+                      handleOpenAuth('signup', 'brand');
+                    }
+                  }}
+                  className="glass-card-hover p-6 cursor-pointer group flex flex-col justify-between border border-blue-500/10 hover:border-blue-500/30"
+                >
+                  <div>
+                    <div className="flex items-center gap-3.5 mb-4">
+                      <img
+                        src={store.logo}
+                        alt={getLocalizedItem(store, 'name', language)}
+                        className="w-14 h-14 rounded-2xl bg-blue-500/10 p-1 object-cover border border-blue-500/20 group-hover:scale-105 transition-transform"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-white text-base truncate group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                          {getLocalizedItem(store, 'name', language)}
+                          {store.verified && <BadgeCheck className="w-4 h-4 text-blue-400" />}
+                        </h3>
+                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                          <span>{getLocalizedItem(store, 'sector', language)}</span>
+                          <span>•</span>
+                          <span className="flex items-center gap-0.5">
+                            <MapPin className="w-3 h-3 text-slate-500" />
+                            {getLocalizedItem(store, 'location', language)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-6">
+                      {getLocalizedItem(store, 'bio', language)}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block">{t('activeCampaignsCount')}</span>
+                      <span className="font-extrabold text-blue-400 text-sm">{store.activeCampaigns} {t('applicants')}</span>
+                    </div>
+                    <div className="text-left">
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block">{t('budgetOffer')}</span>
+                      <span className="font-extrabold text-emerald-400 text-sm">{formatDZD(store.totalBudget, language)}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {filteredCreators.length === 0 && (
+          {((showcaseTab === 'creators' && filteredCreators.length === 0) ||
+            (showcaseTab === 'stores' && filteredStores.length === 0)) && (
             <div className="text-center py-16">
               <Search className="w-12 h-12 text-slate-600 mx-auto mb-4" />
               <p className="text-slate-400 text-lg">{t('noResults')}</p>

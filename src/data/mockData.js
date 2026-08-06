@@ -457,3 +457,156 @@ export const categories = [
   'سفر وسياحة',
   'رياضة ولياقة',
 ];
+
+export const mockStores = [
+  {
+    id: 's1',
+    name: 'Djezzy Telecom',
+    logo: 'https://api.dicebear.com/7.x/identicon/svg?seed=djezzy',
+    sector: {
+      ar: 'تكنولوجيا',
+      fr: 'Télécom & Tech',
+      en: 'Telecom & Tech'
+    },
+    location: {
+      ar: 'الجزائر العاصمة',
+      fr: 'Alger',
+      en: 'Algiers'
+    },
+    bio: {
+      ar: 'متعامل الهاتف النقال الأول في الجزائر. نبحث عن صنّاع محتوى تكنولوجيا للترويج لخدمات الشبكة والأنترنت.',
+      fr: 'Premier opérateur de téléphonie mobile en Algérie. Recherche de créateurs tech pour promouvoir les services 5G.',
+      en: 'Leading mobile operator in Algeria. Seeking tech creators to promote 5G network services.'
+    },
+    activeCampaigns: 3,
+    totalBudget: 50000,
+    rating: 4.9,
+    reviewCount: 42,
+    verified: true,
+  },
+  {
+    id: 's2',
+    name: 'El Mordjene Store',
+    logo: 'https://api.dicebear.com/7.x/identicon/svg?seed=elmordjene',
+    sector: {
+      ar: 'طبخ وأكل',
+      fr: 'Cuisine & Agroalimentaire',
+      en: 'Food & Gourmet'
+    },
+    location: {
+      ar: 'عنابة',
+      fr: 'Annaba',
+      en: 'Annaba'
+    },
+    bio: {
+      ar: 'العلامة التجارية الجزائرية الشهيرة لمنتجات الشوكولاتة والكريمة القابلة للدهن. أفرش طاولتك بالطعم الأصيل.',
+      fr: 'Marque algérienne célèbre de crémes à tartiner et chocolats gourmands.',
+      en: 'Famous Algerian gourmet brand for hazelnut spread and chocolates.'
+    },
+    activeCampaigns: 2,
+    totalBudget: 45000,
+    rating: 5.0,
+    reviewCount: 88,
+    verified: true,
+  },
+  {
+    id: 's3',
+    name: 'Venus Cosmetics',
+    logo: 'https://api.dicebear.com/7.x/identicon/svg?seed=venus',
+    sector: {
+      ar: 'تجميل وعناية',
+      fr: 'Cosmétique & Soins',
+      en: 'Cosmetics & Care'
+    },
+    location: {
+      ar: 'وهران',
+      fr: 'Oran',
+      en: 'Oran'
+    },
+    bio: {
+      ar: 'الرائد في مجال مستحضرات التجميل والعناية بالبشرة والشعر في الجزائر. منتجات طبيعية بجودة عالية.',
+      fr: 'Leader des produits cosmétiques et soins de la peau en Algérie. Produits naturels de haute qualité.',
+      en: 'Leader in cosmetics, skincare, and hair care products in Algeria. Premium natural ingredients.'
+    },
+    activeCampaigns: 4,
+    totalBudget: 60000,
+    rating: 4.8,
+    reviewCount: 65,
+    verified: true,
+  },
+  {
+    id: 's4',
+    name: 'Maison DZ Fashion',
+    logo: 'https://api.dicebear.com/7.x/identicon/svg?seed=maisondz',
+    sector: {
+      ar: 'موضة وأزياء',
+      fr: 'Mode & Couture',
+      en: 'Fashion & Apparel'
+    },
+    location: {
+      ar: 'قسنطينة',
+      fr: 'Constantine',
+      en: 'Constantine'
+    },
+    bio: {
+      ar: 'متجر متخصص في الأزياء التقليدية والعصرية للمرأة والشباب الجزائري. تصاميم حصرية وجودة ممتازة.',
+      fr: 'Boutique spécialisée en tenue traditionnelle et mode moderne pour femmes et hommes.',
+      en: 'Boutique specialized in traditional Algerian attire and modern urban fashion.'
+    },
+    activeCampaigns: 2,
+    totalBudget: 35000,
+    rating: 4.7,
+    reviewCount: 29,
+    verified: true,
+  },
+  {
+    id: 's5',
+    name: 'Condor Electronics',
+    logo: 'https://api.dicebear.com/7.x/identicon/svg?seed=condor',
+    sector: {
+      ar: 'تكنولوجيا',
+      fr: 'Électronique & High-Tech',
+      en: 'Electronics & Tech'
+    },
+    location: {
+      ar: 'برج بوعريريج',
+      fr: 'Bordj Bou Arréridj',
+      en: 'Bordj Bou Arreridj'
+    },
+    bio: {
+      ar: 'الشركة الرائدة في صناعة الأجهزة الكهرومنزلية والهواتف وأجهزة الكمبيوتر المحمولة في الجزائر.',
+      fr: 'Fabricant majeur d\'électroménager, téléphones et ordinateurs portables en Algérie.',
+      en: 'Major manufacturer of home appliances, smartphones, and laptops in Algeria.'
+    },
+    activeCampaigns: 5,
+    totalBudget: 75000,
+    rating: 4.9,
+    reviewCount: 110,
+    verified: true,
+  },
+  {
+    id: 's6',
+    name: 'Fitness Corner DZ',
+    logo: 'https://api.dicebear.com/7.x/identicon/svg?seed=fitnesscorner',
+    sector: {
+      ar: 'رياضة ولياقة',
+      fr: 'Sport & Nutrition',
+      en: 'Sports & Fitness'
+    },
+    location: {
+      ar: 'سطيف',
+      fr: 'Sétif',
+      en: 'Setif'
+    },
+    bio: {
+      ar: 'متجر مكملات غذائية ومعدات رياضية للأبطال. نوفر أفضل الماركات العالمية والمحلية المعتمدة.',
+      fr: 'Boutique de compléments alimentaires et équipements de fitness pour athlètes.',
+      en: 'Nutrition and fitness gear store providing certified supplements and equipment.'
+    },
+    activeCampaigns: 1,
+    totalBudget: 28000,
+    rating: 4.6,
+    reviewCount: 19,
+    verified: false,
+  },
+];

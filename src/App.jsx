@@ -15,6 +15,7 @@ import CreatorDetailsModal from './components/CreatorDetailsModal'
 import StoreDetailsModal from './components/StoreDetailsModal'
 import CheckoutModal from './components/CheckoutModal'
 import ReviewModal from './components/ReviewModal'
+import ProfileSettingsModal from './components/ProfileSettingsModal'
 import {
   Search,
   Filter,
@@ -51,6 +52,7 @@ function AppContent() {
   const [selectedStore, setSelectedStore] = useState(null)
   const [checkoutData, setCheckoutData] = useState(null)
   const [reviewCreator, setReviewCreator] = useState(null)
+  const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
 
   // Showcase Tab & Filters
   const [showcaseTab, setShowcaseTab] = useState('creators') // 'creators' | 'stores'
@@ -236,7 +238,8 @@ function AppContent() {
       <Header 
         onOpenAuth={handleOpenAuth} 
         onOpenDashboard={handleOpenDashboard} 
-        onOpenCreateCampaign={() => handleOpenDashboard('create')} 
+        onOpenCreateCampaign={() => handleOpenDashboard('create')}
+        onOpenProfileSettings={() => setIsProfileSettingsOpen(true)}
       />
 
       {/* ─── Hero & How It Works — hidden when logged in ─── */}
@@ -517,24 +520,35 @@ function AppContent() {
         onApplyCampaign={async (campaign) => {
           if (isLoggedIn && user?.role === 'creator') {
             try {
-              const { applyToCampaign, createNotification } = await import('./services/dbService');
-              await applyToCampaign(campaign.id, user.id);
-              if (campaign.brand_id) {
-                 await createNotification(
-                   campaign.brand_id,
-                   'طلب تقديم جديد',
-                   `قام ${user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaign.title}".`
-                 );
+              // Check if campaign ID is a valid UUID (real DB record) vs mock data
+              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaign.id);
+              
+              if (isUUID) {
+                const { applyToCampaign, createNotification } = await import('./services/dbService');
+                await applyToCampaign(campaign.id, user.id);
+                if (campaign.brand_id) {
+                   await createNotification(
+                     campaign.brand_id,
+                     'طلب تقديم جديد',
+                     `قام ${user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaign.title}".`
+                   );
+                }
               }
-              alert("تم التقديم بنجاح!");
+              // Success for both mock and real campaigns
+              setToast({ type: 'success', message: t('applicationSuccess') || 'تم التقديم بنجاح! ✅' });
               setSelectedStore(null);
               handleOpenDashboard('opportunities');
             } catch (err) {
               console.error(err);
-              alert("حدث خطأ أثناء التقديم");
+              // Show specific error for duplicate applications
+              if (err?.code === '23505') {
+                setToast({ type: 'error', message: t('alreadyApplied') || 'لقد قدمت على هذه الحملة سابقاً' });
+              } else {
+                setToast({ type: 'error', message: t('applicationError') || 'حدث خطأ أثناء التقديم' });
+              }
             }
           } else if (isLoggedIn) {
-            alert("فقط صناع المحتوى يمكنهم التقديم");
+            setToast({ type: 'error', message: t('onlyCreatorsCanApply') || 'فقط صناع المحتوى يمكنهم التقديم' });
           } else {
             setSelectedStore(null);
             handleOpenAuth('signup', 'creator');
@@ -551,6 +565,10 @@ function AppContent() {
         isOpen={!!reviewCreator}
         onClose={handleCloseReview}
         creator={reviewCreator}
+      />
+      <ProfileSettingsModal
+        isOpen={isProfileSettingsOpen}
+        onClose={() => setIsProfileSettingsOpen(false)}
       />
     </div>
   )

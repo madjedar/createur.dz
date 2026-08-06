@@ -9,6 +9,11 @@ export const translations = {
     adminDashboard: 'لوحة الأدمن',
     creatorDashboard: 'لوحة صانع المحتوى',
     brandDashboard: 'لوحة إدارة المتجر',
+    profileSettings: 'الملف الشخصي',
+    applicationSuccess: 'تم التقديم بنجاح! ✅',
+    alreadyApplied: 'لقد قدمت على هذه الحملة سابقاً',
+    applicationError: 'حدث خطأ أثناء التقديم',
+    onlyCreatorsCanApply: 'فقط صناع المحتوى يمكنهم التقديم',
 
     // ─── Hero ───
     heroTitle: 'حوّل إبداعك إلى مداخيل حقيقية',
@@ -248,6 +253,11 @@ export const translations = {
     adminDashboard: 'Admin',
     creatorDashboard: 'Espace Créateur',
     brandDashboard: 'Espace Marque',
+    profileSettings: 'Profil',
+    applicationSuccess: 'Candidature envoyée avec succès! ✅',
+    alreadyApplied: 'Vous avez déjà postulé à cette campagne',
+    applicationError: 'Erreur lors de la candidature',
+    onlyCreatorsCanApply: 'Seuls les créateurs peuvent postuler',
 
     // ─── Hero ───
     heroTitle: 'Transformez votre créativité en revenus',
@@ -487,6 +497,11 @@ export const translations = {
     adminDashboard: 'Admin Panel',
     creatorDashboard: 'Creator Dashboard',
     brandDashboard: 'Store Dashboard',
+    profileSettings: 'Profile',
+    applicationSuccess: 'Application submitted successfully! ✅',
+    alreadyApplied: 'You have already applied to this campaign',
+    applicationError: 'Error submitting application',
+    onlyCreatorsCanApply: 'Only creators can apply',
 
     // ─── Hero ───
     heroTitle: 'Turn your creativity into real income',

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Menu, X, User, LogOut, LayoutDashboard, PlusCircle, Sparkles, Building2, Globe, ShieldAlert } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, PlusCircle, Sparkles, Building2, Globe, ShieldAlert, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import NotificationDropdown from './NotificationDropdown';
 
-const Header = ({ onOpenAuth, onOpenDashboard }) => {
+const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
   const { user: realUser, logout } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -95,6 +95,14 @@ const Header = ({ onOpenAuth, onOpenDashboard }) => {
                     <span>{t('creatorDashboard')}</span>
                   </button>
                 )}
+
+                <button
+                  onClick={onOpenProfileSettings}
+                  className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm px-2 py-1"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>{t('profileSettings') || 'الملف الشخصي'}</span>
+                </button>
 
                 <button
                   onClick={logout}
@@ -202,6 +210,14 @@ const Header = ({ onOpenAuth, onOpenDashboard }) => {
                   <span>{t('creatorDashboard')}</span>
                 </button>
               )}
+
+              <button
+                onClick={() => { setIsMobileMenuOpen(false); onOpenProfileSettings(); }}
+                className="w-full py-3 rounded-xl bg-white/5 text-white flex items-center justify-center gap-2 font-bold border border-white/10"
+              >
+                <Settings className="w-5 h-5 text-slate-400" />
+                <span>{t('profileSettings') || 'الملف الشخصي'}</span>
+              </button>
 
               <button
                 onClick={() => { setIsMobileMenuOpen(false); logout(); }}

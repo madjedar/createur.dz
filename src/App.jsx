@@ -53,6 +53,7 @@ function AppContent() {
   const [checkoutData, setCheckoutData] = useState(null)
   const [reviewCreator, setReviewCreator] = useState(null)
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
+  const [isProfileMandatory, setIsProfileMandatory] = useState(false)
 
   // Showcase Tab & Filters
   const [showcaseTab, setShowcaseTab] = useState('creators') // 'creators' | 'stores'
@@ -114,7 +115,7 @@ function AppContent() {
     }
   }, [toast])
 
-  // Auto redirect on login
+  // Auto redirect on login and Mandatory Onboarding
   useEffect(() => {
     const isOAuthLogin = sessionStorage.getItem('oauth_login') === 'true';
     
@@ -126,8 +127,19 @@ function AppContent() {
       return;
     }
 
+    // Check mandatory profile completion
+    if (user && user.role && user.profile) {
+      if (!user.profile.full_name) {
+        setIsProfileMandatory(true);
+        setIsProfileSettingsOpen(true);
+        return; // Stop them from going to dashboard yet
+      } else {
+        setIsProfileMandatory(false);
+      }
+    }
+
     // If user has a role and just logged in, or if auth modal was open when they logged in (via password)
-    if (user && user.role && (authModal.open || isOAuthLogin)) {
+    if (user && user.role && user.profile?.full_name && (authModal.open || isOAuthLogin)) {
       handleCloseAuth();
       if (isOAuthLogin) sessionStorage.removeItem('oauth_login');
       
@@ -137,7 +149,7 @@ function AppContent() {
         handleOpenDashboard('overview');
       }
     }
-  }, [user?.id, user?.role, authModal.open]);
+  }, [user?.id, user?.role, user?.profile, authModal.open]);
 
   // Role-based default showcase tab
   useEffect(() => {
@@ -566,9 +578,12 @@ function AppContent() {
         onClose={handleCloseReview}
         creator={reviewCreator}
       />
-      <ProfileSettingsModal
-        isOpen={isProfileSettingsOpen}
-        onClose={() => setIsProfileSettingsOpen(false)}
+      <ProfileSettingsModal 
+        isOpen={isProfileSettingsOpen} 
+        onClose={() => {
+          if (!isProfileMandatory) setIsProfileSettingsOpen(false);
+        }}
+        isMandatory={isProfileMandatory}
       />
     </div>
   )

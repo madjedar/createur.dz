@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Save, User, Phone, MapPin, AtSign, PlayCircle, Share2, Globe, DollarSign, Briefcase, Camera } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import { supabase } from '../lib/supabase';
 
 const wilayas = [
   "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
@@ -75,9 +76,10 @@ const translations = {
   }
 };
 
-const ProfileSettingsModal = ({ isOpen, onClose }) => {
+const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
   const { user, profile, updateProfileData } = useAuth();
   const { language } = useLanguage();
+  const [uploading, setUploading] = useState(false);
   
   const [formData, setFormData] = useState({
     full_name: '',
@@ -122,7 +124,7 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !isMandatory) onClose();
     };
     
     if (isOpen) {
@@ -132,9 +134,37 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isMandatory]);
 
   if (!isOpen) return null;
+
+  const handleAvatarUpload = async (e) => {
+    try {
+      if (!e.target.files || e.target.files.length === 0) return;
+      const file = e.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+      
+      setUploading(true);
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+        
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+        
+      setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
+    } catch (error) {
+      console.error(error);
+      alert('Error uploading avatar!');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -188,15 +218,24 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-900/50">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-            {tLocal.profileSettings}
-          </h2>
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-          >
-            <X size={20} />
-          </button>
+          <div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+              {tLocal.profileSettings}
+            </h2>
+            {isMandatory && (
+              <p className="text-emerald-400 mt-1 font-bold text-xs">
+                يرجى إكمال ملفك الشخصي للمتابعة (الاسم الكامل مطلوب)
+              </p>
+            )}
+          </div>
+          {!isMandatory && (
+            <button 
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
 
         {/* Form Content */}
@@ -247,14 +286,21 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
                     <Camera size={16} className="text-emerald-500" />
                     {tLocal.avatarUrl}
                   </label>
-                  <input
-                    type="url"
-                    name="avatar_url"
-                    value={formData.avatar_url}
-                    onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
-                    placeholder="https://..."
-                  />
+                  <div className="flex items-center gap-3">
+                    {formData.avatar_url && (
+                      <img src={formData.avatar_url} alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-white/20" />
+                    )}
+                    <label className="cursor-pointer bg-slate-800/50 hover:bg-slate-700/50 border border-white/10 rounded-xl px-4 py-3 text-white transition-all text-sm flex-1 text-center font-bold">
+                      {uploading ? 'جاري الرفع...' : 'اختر صورة من جهازك'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        disabled={uploading}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
                 
                 <div>
@@ -422,13 +468,15 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <div className="p-6 border-t border-white/10 bg-slate-900/50 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-3 rounded-xl font-bold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 transition-all"
-          >
-            {tLocal.cancel}
-          </button>
+          {!isMandatory && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 rounded-xl font-bold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 transition-all"
+            >
+              {tLocal.cancel}
+            </button>
+          )}
           <button
             type="submit"
             form="profile-settings-form"

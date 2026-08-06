@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, LayoutDashboard, User, Briefcase, Wallet, 
-  TrendingUp, DollarSign, Lock, Send, Calendar, Star, Sparkles, CheckCircle2, Play, Camera, Globe
+  TrendingUp, DollarSign, Lock, Send, Calendar, Star, Sparkles, CheckCircle2, Play, Camera, Globe, MessageSquare, SendHorizontal
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { mockCampaigns, mockWallet, mockTransactions, mockPayoutRequests, getLocalizedItem } from '../data/mockData';
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
 
-export default function CreatorDashboardModal({ isOpen, onClose }) {
+export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'overview' }) {
   const { user, updateProfileData } = useAuth();
   const { t, language } = useLanguage();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab);
   
+  // Track applied campaigns
+  const [appliedCampaigns, setAppliedCampaigns] = useState([]);
+
   // Profile State
   const [profileData, setProfileData] = useState({
     fullName: user?.profile?.full_name || user?.user_metadata?.full_name || '',
@@ -32,6 +35,20 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
   // Payout Form State
   const [payoutForm, setPayoutForm] = useState({ amount: '', ripNumber: '', method: 'baridimob' });
   const [payoutSuccess, setPayoutSuccess] = useState(false);
+
+  // Chat State
+  const [chatMessage, setChatMessage] = useState('');
+  const [messages, setMessages] = useState([
+    { id: 1, sender: 'brand', text: 'مرحباً، هل أنت متاح لحملتنا الإعلانية القادمة؟', time: '10:00 AM' },
+    { id: 2, sender: 'me', text: 'أهلاً بك! نعم بالتأكيد، يمكننا مناقشة التفاصيل.', time: '10:05 AM' },
+    { id: 3, sender: 'brand', text: 'رائع، الميزانية هي 45,000 د.ج مقابل ريلز و 2 ستوري. ما رأيك؟', time: '10:15 AM' },
+  ]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -74,6 +91,25 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
     }, 3000);
   };
 
+  const handleApply = (campaignId) => {
+    if (!appliedCampaigns.includes(campaignId)) {
+      setAppliedCampaigns([...appliedCampaigns, campaignId]);
+    }
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    const newMsg = {
+      id: messages.length + 1,
+      sender: 'me',
+      text: chatMessage,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages([...messages, newMsg]);
+    setChatMessage('');
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/98 backdrop-blur-md overflow-y-auto" dir="rtl">
       {/* Header Bar */}
@@ -106,6 +142,7 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
           {[
             { id: 'overview', label: t('dashOverview'), icon: LayoutDashboard },
             { id: 'opportunities', label: t('dashOpportunities'), icon: Briefcase },
+            { id: 'messages', label: 'الرسائل والمحادثات', icon: MessageSquare },
             { id: 'profile', label: t('dashProfile'), icon: User },
             { id: 'wallet', label: `${t('dashWallet')} 💰`, icon: Wallet },
           ].map((tab) => {
@@ -236,13 +273,97 @@ export default function CreatorDashboardModal({ isOpen, onClose }) {
                       </div>
                     </div>
 
-                    <button className="btn-primary w-full py-3 flex items-center justify-center gap-2">
-                      <Send className="w-4 h-4" />
-                      <span>{t('applyNow')}</span>
-                    </button>
+                    {appliedCampaigns.includes(campaign.id) ? (
+                      <button disabled className="btn-secondary w-full py-3 flex items-center justify-center gap-2 opacity-50 cursor-not-allowed">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span className="text-emerald-400">تم التقديم - قيد المراجعة</span>
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handleApply(campaign.id)}
+                        className="btn-primary w-full py-3 flex items-center justify-center gap-2"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>{t('applyNow')}</span>
+                      </button>
+                    )}
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2.5: Messages (Chat) */}
+        {activeTab === 'messages' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] animate-fade-in">
+            {/* Sidebar - Contacts */}
+            <div className="glass-card flex flex-col h-full lg:col-span-1">
+              <div className="p-4 border-b border-white/10 font-bold text-white flex items-center justify-between">
+                <span>المحادثات</span>
+                <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">1 جديد</span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 border-l-2 border-l-emerald-500 bg-white/5 cursor-pointer flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xl">
+                    🛍️
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">متجر الأناقة</h4>
+                    <p className="text-xs text-emerald-400 truncate w-40">رائع، الميزانية هي 45,000 د.ج...</p>
+                  </div>
+                </div>
+                <div className="p-4 hover:bg-white/5 cursor-pointer flex items-center gap-3 opacity-60">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 text-xl">
+                    📱
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">Tech Store DZ</h4>
+                    <p className="text-xs text-slate-400 truncate w-40">شكراً لك، سنراجع طلبك قريباً.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Chat Area */}
+            <div className="glass-card flex flex-col h-full lg:col-span-2">
+              <div className="p-4 border-b border-white/10 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 text-xl">
+                  🛍️
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">متجر الأناقة</h3>
+                  <span className="text-xs text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> متصل الآن
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/30">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col max-w-[75%] ${msg.sender === 'me' ? 'mr-auto items-end' : 'ml-auto items-start'}`}>
+                    <div className={`p-3 rounded-2xl ${msg.sender === 'me' ? 'bg-emerald-500 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none'}`}>
+                      {msg.text}
+                    </div>
+                    <span className="text-[10px] text-slate-500 mt-1">{msg.time}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 border-t border-white/10">
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="اكتب رسالتك هنا..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                  />
+                  <button type="submit" disabled={!chatMessage.trim()} className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white p-2.5 rounded-xl transition-colors">
+                    <SendHorizontal className="w-5 h-5" />
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         )}

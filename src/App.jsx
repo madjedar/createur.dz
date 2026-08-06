@@ -477,6 +477,7 @@ function AppContent() {
         <CreatorDashboardModal
           isOpen={dashboardState.open}
           onClose={handleCloseDashboard}
+          initialTab={dashboardState.tab}
         />
       )}
       <CreatorDetailsModal

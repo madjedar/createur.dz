@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, LayoutDashboard, PlusCircle, Users, CreditCard, 
-  Building2, TrendingUp, DollarSign, Lock, ShieldCheck, CheckCircle2, Search, Filter, Star, BadgeCheck, User, Globe, Phone, MapPin
+  Building2, TrendingUp, DollarSign, Lock, ShieldCheck, CheckCircle2, Search, Filter, Star, BadgeCheck, User, Globe, Phone, MapPin, MessageSquare, SendHorizontal
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -49,6 +49,27 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
     { id: 1, creatorName: 'ياسين براهيمي', campaignTitle: 'حملة إطلاق متجر الملابس', budget: 45000, status: 'funded', deliverableUrl: 'https://instagram.com/p/mock123' },
     { id: 2, creatorName: 'أمينة بن علي', campaignTitle: 'ترويج منتجات العناية بالبشرة', budget: 25000, status: 'review_pending', deliverableUrl: 'https://tiktok.com/@mock/video/456' },
   ]);
+
+  // Chat State
+  const [chatMessage, setChatMessage] = useState('');
+  const [messages, setMessages] = useState([
+    { id: 1, sender: 'me', text: 'مرحباً، هل أنت متاح لحملتنا الإعلانية القادمة؟', time: '10:00 AM' },
+    { id: 2, sender: 'creator', text: 'أهلاً بك! نعم بالتأكيد، يمكننا مناقشة التفاصيل.', time: '10:05 AM' },
+    { id: 3, sender: 'me', text: 'رائع، الميزانية هي 45,000 د.ج مقابل ريلز و 2 ستوري. ما رأيك؟', time: '10:15 AM' },
+  ]);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    const newMsg = {
+      id: messages.length + 1,
+      sender: 'me',
+      text: chatMessage,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages([...messages, newMsg]);
+    setChatMessage('');
+  };
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -136,6 +157,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
             { id: 'overview', label: t('dashOverview'), icon: LayoutDashboard },
             { id: 'create', label: t('addCampaign'), icon: PlusCircle },
             { id: 'creators', label: t('creatorDirectory'), icon: Users },
+            { id: 'messages', label: 'الرسائل والمحادثات', icon: MessageSquare },
             { id: 'escrow', label: t('escrowDeals'), icon: Lock },
             { id: 'profile', label: t('storeProfile'), icon: User },
           ].map((tab) => {
@@ -449,6 +471,80 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3.5: Messages (Chat) */}
+        {activeTab === 'messages' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] animate-fade-in">
+            {/* Sidebar - Contacts */}
+            <div className="glass-card flex flex-col h-full lg:col-span-1">
+              <div className="p-4 border-b border-white/10 font-bold text-white flex items-center justify-between">
+                <span>المحادثات</span>
+                <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-full">1 جديد</span>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 border-l-2 border-l-blue-500 bg-white/5 cursor-pointer flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl">
+                    👨‍💻
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">ياسين براهيمي</h4>
+                    <p className="text-xs text-blue-400 truncate w-40">أهلاً بك! نعم بالتأكيد، يمكننا...</p>
+                  </div>
+                </div>
+                <div className="p-4 hover:bg-white/5 cursor-pointer flex items-center gap-3 opacity-60">
+                  <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 text-xl">
+                    👩‍🎨
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">أمينة بن علي</h4>
+                    <p className="text-xs text-slate-400 truncate w-40">تم استلام الدفعة الأولى، شكراً!</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Chat Area */}
+            <div className="glass-card flex flex-col h-full lg:col-span-2">
+              <div className="p-4 border-b border-white/10 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl">
+                  👨‍💻
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">ياسين براهيمي</h3>
+                  <span className="text-xs text-blue-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> متصل الآن
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/30">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col max-w-[75%] ${msg.sender === 'me' ? 'mr-auto items-end' : 'ml-auto items-start'}`}>
+                    <div className={`p-3 rounded-2xl ${msg.sender === 'me' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none'}`}>
+                      {msg.text}
+                    </div>
+                    <span className="text-[10px] text-slate-500 mt-1">{msg.time}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 border-t border-white/10">
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="اكتب رسالتك هنا..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                  />
+                  <button type="submit" disabled={!chatMessage.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white p-2.5 rounded-xl transition-colors">
+                    <SendHorizontal className="w-5 h-5" />
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, LayoutDashboard, User, Briefcase, Wallet, 
-  TrendingUp, DollarSign, Lock, Send, Calendar, Star, Sparkles, CheckCircle2, Play, Camera, Globe, MessageSquare, SendHorizontal
+  TrendingUp, DollarSign, Lock, Send, Calendar, Star, Sparkles, CheckCircle2, Play, Camera, Globe, MessageSquare, SendHorizontal, Upload, Clock, CreditCard
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';

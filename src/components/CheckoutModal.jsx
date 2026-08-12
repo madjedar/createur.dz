@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ShieldCheck, Lock, CreditCard, CheckCircle, Loader2, Landmark } from 'lucide-react';
+import { X, ShieldCheck, Lock, CreditCard, CheckCircle, Loader2, Landmark, Smartphone } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { calculateFees, formatDZD, createCheckoutSession } from '../services/chargilyService';
 
@@ -133,20 +133,27 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
             {/* Payment Method Selection */}
             <div className="mb-6">
               <h3 className="mb-3 text-sm font-medium text-brand-brownLight">اختر طريقة الدفع:</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setPaymentMethod('edahabia')}
                   className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'edahabia' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
                 >
                   <CreditCard className={`w-8 h-8 mb-2 ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
-                  <span className={`font-semibold ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>البطاقة الذهبية</span>
+                  <span className={`font-semibold text-sm ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>البطاقة الذهبية</span>
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('baridimob')}
+                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'baridimob' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
+                >
+                  <Smartphone className={`w-8 h-8 mb-2 ${paymentMethod === 'baridimob' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
+                  <span className={`font-semibold text-sm ${paymentMethod === 'baridimob' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بريدي موب</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod('cib')}
                   className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'cib' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
                 >
                   <Landmark className={`w-8 h-8 mb-2 ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
-                  <span className={`font-semibold ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بطاقة CIB</span>
+                  <span className={`font-semibold text-sm ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بطاقة CIB</span>
                 </button>
               </div>
             </div>
@@ -212,7 +219,7 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
             {/* Security Badge */}
             <div className="flex items-center justify-center gap-2 mt-4 text-xs text-brand-brownLight font-medium">
               <ShieldCheck className="w-4 h-4 text-green-500" />
-              <span>معاملات مالية آمنة ومشفّرة 100% (بطاقة الذهبية / CIB)</span>
+              <span>معاملات مالية آمنة ومشفّرة 100% (بريدي موب / الذهبية / CIB)</span>
             </div>
           </>
         )}

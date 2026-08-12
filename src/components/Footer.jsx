@@ -60,9 +60,11 @@ const Footer = ({ onLinkClick }) => {
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 py-6 border-t border-brand-border">
           <span className="text-brand-brownLight text-sm">{t('paymentPartners')}:</span>
           <div className="flex items-center gap-3 flex-wrap justify-center">
-            <span className="badge-edahabia">💳 {t('checkoutEdahabia')}</span>
+            <span className="badge-edahabia text-brand-brownLight bg-brand-cream px-3 py-1 rounded-full text-xs font-medium border border-brand-border">📱 {t('checkoutBaridimob')}</span>
             <div className="w-px h-4 bg-brand-border"></div>
-            <span className="badge-cib">🏦 {t('checkoutCIB')}</span>
+            <span className="badge-edahabia text-brand-brownLight bg-brand-cream px-3 py-1 rounded-full text-xs font-medium border border-brand-border">💳 {t('checkoutEdahabia')}</span>
+            <div className="w-px h-4 bg-brand-border"></div>
+            <span className="badge-cib text-brand-brownLight bg-brand-cream px-3 py-1 rounded-full text-xs font-medium border border-brand-border">🏦 {t('checkoutCIB')}</span>
           </div>
         </div>
 

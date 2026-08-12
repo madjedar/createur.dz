@@ -92,22 +92,25 @@ export function AuthProvider({ children }) {
       updated_at: new Date().toISOString(),
       ...profileFields
     };
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
-      .upsert(payload);
+      .upsert(payload)
+      .select()
+      .single();
     if (error) {
       console.error('Error saving profile:', error);
       throw error;
     }
-    setProfile(prev => ({ ...(prev || {}), ...payload }));
+    setProfile(data);
   };
 
   const updateRole = async (role) => {
     if (!user || !supabase) return
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .upsert({ id: user.id, role, full_name: user.user_metadata?.full_name || '' })
-    
+      .select()
+      .single();
     if (error) {
       console.error('Error updating role:', error);
       throw error;

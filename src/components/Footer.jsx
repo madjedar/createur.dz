@@ -2,7 +2,7 @@ import React from 'react';
 import { Globe, MessageCircle, Camera, Mail, MapPin, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-const Footer = () => {
+const Footer = ({ onLinkClick }) => {
   const { t } = useLanguage();
   return (
     <footer className="border-t border-brand-border bg-white mt-auto">
@@ -24,8 +24,22 @@ const Footer = () => {
           <div>
             <h4 className="text-brand-brown font-semibold mb-4">{t('footerLinks')}</h4>
             <ul className="space-y-3">
-              <li><a href="#creators" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerCreators')}</a></li>
-              <li><a href="#creators" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerBrands')}</a></li>
+              <li>
+                <button 
+                  onClick={() => onLinkClick?.('creators')} 
+                  className="text-brand-brownLight hover:text-brand-orange transition-colors block text-right"
+                >
+                  {t('footerCreators')}
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onLinkClick?.('stores')} 
+                  className="text-brand-brownLight hover:text-brand-orange transition-colors block text-right"
+                >
+                  {t('footerBrands')}
+                </button>
+              </li>
             </ul>
           </div>
 

@@ -503,7 +503,19 @@ function AppContent() {
       )}
 
       {/* ─── Footer ─── */}
-      <Footer />
+      <Footer 
+        onLinkClick={(tab) => {
+          if (!isLoggedIn) {
+            handleOpenAuth('login');
+          } else {
+            setShowcaseTab(tab);
+            setTimeout(() => {
+              const el = document.getElementById('creators');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }
+        }} 
+      />
 
       {/* ─── Modals ─── */}
       <AuthModal

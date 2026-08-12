@@ -17,28 +17,15 @@ const Footer = () => {
             <p className="text-brand-brownLight text-sm mb-6 leading-relaxed">
               {t('footerAbout')}
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full border border-brand-border flex items-center justify-center text-brand-orange hover:text-white hover:bg-brand-orange transition-colors shadow-sm">
-                <MessageCircle className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full border border-brand-border flex items-center justify-center text-brand-orange hover:text-white hover:bg-brand-orange transition-colors shadow-sm">
-                <Camera className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full border border-brand-border flex items-center justify-center text-brand-orange hover:text-white hover:bg-brand-orange transition-colors shadow-sm">
-                <Globe className="w-5 h-5" />
-              </a>
-            </div>
+
           </div>
 
           {/* Column 2 - Quick Links */}
           <div>
             <h4 className="text-brand-brown font-semibold mb-4">{t('footerLinks')}</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerPlatform')}</a></li>
               <li><a href="#creators" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerCreators')}</a></li>
-              <li><a href="#" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerBrands')}</a></li>
-              <li><a href="#" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerPricing')}</a></li>
-              <li><a href="#" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerSupport')}</a></li>
+              <li><a href="#creators" className="text-brand-brownLight hover:text-brand-orange transition-colors block">{t('footerBrands')}</a></li>
             </ul>
           </div>
 
@@ -46,10 +33,7 @@ const Footer = () => {
           <div>
             <h4 className="text-brand-brown font-semibold mb-4">{t('footerContact')}</h4>
             <ul className="space-y-4">
-              <li className="flex items-center gap-3 text-brand-brownLight">
-                <Mail className="w-5 h-5 text-brand-orange" />
-                <span>contact@createur-dz.com</span>
-              </li>
+
               <li className="flex items-center gap-3 text-brand-brownLight">
                 <MapPin className="w-5 h-5 text-brand-orange" />
                 <span>{t('footerCity')}</span>

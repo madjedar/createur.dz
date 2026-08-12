@@ -58,41 +58,6 @@ const Hero = ({ onOpenAuth, onOpenDashboard }) => {
 
 
 
-        {/* Stats Row */}
-        <div className="flex flex-wrap justify-center gap-8 sm:gap-16 border-t border-brand-border/50 pt-8 mt-4 w-full max-w-4xl text-brand-brown">
-          <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
-              <img src="https://i.pravatar.cc/100?img=1" className="w-8 h-8 rounded-full border-2 border-brand-cream" />
-              <img src="https://i.pravatar.cc/100?img=2" className="w-8 h-8 rounded-full border-2 border-brand-cream" />
-              <img src="https://i.pravatar.cc/100?img=3" className="w-8 h-8 rounded-full border-2 border-brand-cream" />
-            </div>
-            <div className="text-start">
-              <p className="font-bold text-lg">1.3 M+</p>
-              <p className="text-xs text-brand-brownLight">Customer review</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brand-orange/10 flex items-center justify-center text-brand-orange">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div className="text-start">
-              <p className="font-bold text-lg">4.7 M+</p>
-              <p className="text-xs text-brand-brownLight">Active members</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-brand-orange/10 flex items-center justify-center text-brand-orange">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div className="text-start">
-              <p className="font-bold text-lg">100%</p>
-              <p className="text-xs text-brand-brownLight">Secure platform</p>
-            </div>
-          </div>
-        </div>
-
       </div>
     </section>
   );

@@ -170,7 +170,7 @@ export const getMessages = async (userId1, userId2) => {
   const { data, error } = await supabase
     .from('messages')
     .select('*')
-    .or(`and(sender_id.eq."${userId1}",receiver_id.eq."${userId2}"),and(sender_id.eq."${userId2}",receiver_id.eq."${userId1}")`)
+    .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
     .order('created_at', { ascending: true });
     
   if (error) throw error;

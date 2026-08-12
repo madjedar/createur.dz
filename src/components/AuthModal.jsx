@@ -29,7 +29,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
 
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && mode !== 'select_role') onClose();
     };
     if (isOpen) {
       window.addEventListener('keydown', handleEscape);
@@ -50,8 +50,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { 
-          redirectTo: window.location.origin, 
-          data: { role } 
+          redirectTo: window.location.origin
         }
       });
       if (error) throw error;
@@ -114,7 +113,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
   };
 
   return (
-    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={() => { if (mode !== 'select_role') onClose(); }}>
       <div 
         className="modal-content glass-card relative w-full max-w-md p-6 sm:p-8 animate-fade-in-up border border-white/10 rounded-2xl bg-slate-900 shadow-2xl" 
         onClick={(e) => e.stopPropagation()}

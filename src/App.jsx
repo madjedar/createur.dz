@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth, AuthProvider } from './context/AuthContext'
 import { LanguageProvider, useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
-import { mockCreators, mockCampaigns, mockStores, categories, getLocalizedItem } from './data/mockData'
+import { categories, getLocalizedItem } from './data/mockData'
 import { formatDZD } from './services/chargilyService'
 import Header from './components/Header'
 import Hero from './components/Hero'
@@ -70,15 +70,14 @@ function AppContent() {
     import('./services/dbService').then(({ getStoreProfiles, getCreatorProfiles }) => {
       Promise.all([getStoreProfiles(), getCreatorProfiles()])
         .then(([fetchedStores, fetchedCreators]) => {
-          setStores(fetchedStores.length > 0 ? fetchedStores : mockStores);
-          setCreators(fetchedCreators.length > 0 ? fetchedCreators : mockCreators);
+          setStores(fetchedStores);
+          setCreators(fetchedCreators);
           setLoadingData(false);
         })
         .catch(err => {
           console.error("Error fetching from DB:", err);
-          // Fallback to mock data if there's a DB error (e.g. no rows yet or network issue)
-          setStores(mockStores);
-          setCreators(mockCreators);
+          setStores([]);
+          setCreators([]);
           setLoadingData(false);
         });
     });
@@ -163,14 +162,28 @@ function AppContent() {
   // Handlers
   const handleOpenAuth = (mode = 'login', role = 'creator') => setAuthModal({ open: true, mode, role })
   const handleCloseAuth = () => setAuthModal({ open: false, mode: 'login', role: 'creator' })
-  const handleOpenDashboard = (tab = 'overview') => setDashboardState({ open: true, tab })
-  const handleCloseDashboard = () => setDashboardState({ open: false, tab: 'overview' })
+  const handleOpenDashboard = (tab = 'overview', type = 'creator', contactId = null) => {
+    setDashboardState({ open: true, tab, type, contactId })
+  }
+  const handleCloseDashboard = () => setDashboardState({ open: false, tab: 'overview', type: 'creator', contactId: null })
   const handleSelectCreator = (creator) => setSelectedCreator(creator)
   const handleCloseCreator = () => setSelectedCreator(null)
-  const handleHireCreator = (creator) => {
+  
+  const handleContactCreator = (creator) => {
+    setSelectedCreator(null);
+    if (!isLoggedIn) {
+      handleOpenAuth('login');
+      return;
+    }
+    // Open dashboard in messages tab pre-selected with this creator
+    handleOpenDashboard('messages', user?.role || 'brand', creator.id);
+  };
+
+  const handleHireCreator = (creator, applicationId = null) => {
     setSelectedCreator(null)
     setCheckoutData({
       creator,
+      applicationId,
       campaign: {
         title: `صفقة رعاية مع ${creator.name}`,
         budget: creator.ratePerPost,
@@ -187,7 +200,7 @@ function AppContent() {
 
   // Filtered creators
   const filteredCreators = creators.filter((c) => {
-    const rawCategory = typeof c.category === 'object' ? c.category.ar : c.category
+    const rawCategory = (c.category && typeof c.category === 'object') ? c.category.ar : (c.category || '')
     const matchCategory = selectedCategory === 'الكل' || rawCategory === selectedCategory
     const bioText = getLocalizedItem(c, 'bio', language)
     const categoryText = getLocalizedItem(c, 'category', language)
@@ -202,7 +215,7 @@ function AppContent() {
 
   // Filtered stores
   const filteredStores = stores.filter((s) => {
-    const rawSector = typeof s.sector === 'object' ? s.sector.ar : s.sector
+    const rawSector = (s.sector && typeof s.sector === 'object') ? s.sector.ar : (s.sector || '')
     const matchCategory = selectedCategory === 'الكل' || rawSector === selectedCategory
     const nameText = getLocalizedItem(s, 'name', language)
     const bioText = getLocalizedItem(s, 'bio', language)
@@ -509,14 +522,16 @@ function AppContent() {
         <BrandDashboardModal
           isOpen={dashboardState.open}
           onClose={handleCloseDashboard}
-          onHireCreator={handleHireCreator}
           initialTab={dashboardState.tab}
+          initialContactId={dashboardState.contactId}
+          onHireCreator={handleHireCreator}
         />
       ) : (
         <CreatorDashboardModal
           isOpen={dashboardState.open}
           onClose={handleCloseDashboard}
           initialTab={dashboardState.tab}
+          initialContactId={dashboardState.contactId}
         />
       )}
       <CreatorDetailsModal
@@ -524,6 +539,7 @@ function AppContent() {
         onClose={handleCloseCreator}
         creator={selectedCreator}
         onHire={handleHireCreator}
+        onContact={handleContactCreator}
       />
       <StoreDetailsModal
         isOpen={!!selectedStore}
@@ -572,6 +588,7 @@ function AppContent() {
         onClose={handleCloseCheckout}
         creator={checkoutData?.creator}
         campaign={checkoutData?.campaign}
+        applicationId={checkoutData?.applicationId}
       />
       <ReviewModal
         isOpen={!!reviewCreator}

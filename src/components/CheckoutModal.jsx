@@ -3,7 +3,7 @@ import { X, ShieldCheck, Lock, CreditCard, CheckCircle, Loader2, Landmark } from
 import { useLanguage } from '../context/LanguageContext';
 import { calculateFees, formatDZD, createCheckoutSession } from '../services/chargilyService';
 
-export default function CheckoutModal({ isOpen, onClose, creator, campaign }) {
+export default function CheckoutModal({ isOpen, onClose, creator, campaign, applicationId }) {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -48,8 +48,18 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign }) {
       });
       
       if (result.success && result.checkoutUrl) {
+        // Bug #3 fix: Approve application before redirecting to payment
+        if (applicationId) {
+          const { updateApplicationStatus } = await import('../services/dbService');
+          await updateApplicationStatus(applicationId, 'approved');
+        }
         window.location.href = result.checkoutUrl;
       } else if (result.success && !result.checkoutUrl) {
+        // Bug #3 fix: Approve application on direct success
+        if (applicationId) {
+          const { updateApplicationStatus } = await import('../services/dbService');
+          await updateApplicationStatus(applicationId, 'approved');
+        }
         setSuccess(true);
       } else {
         setError(result.error || t('checkoutError'));

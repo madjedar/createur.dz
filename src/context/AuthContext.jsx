@@ -40,14 +40,17 @@ export function AuthProvider({ children }) {
       return
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Bug #5 fix: await fetchProfile before setLoading(false)
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       const currentUser = session?.user ?? null
       setUser(currentUser)
       if (currentUser) {
-        fetchProfile(currentUser.id)
+        await fetchProfile(currentUser.id)
       }
       setLoading(false)
-    })
+    }
+    initSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -81,37 +84,37 @@ export function AuthProvider({ children }) {
     setProfile(null)
   }
 
+  // Bug #12 fix: propagate errors instead of silently swallowing
   const updateProfileData = async (profileFields) => {
     if (!user || !supabase) return;
-    try {
-      const payload = {
-        id: user.id,
-        updated_at: new Date().toISOString(),
-        ...profileFields
-      };
-      const { error } = await supabase
-        .from('profiles')
-        .upsert(payload);
-      if (error) console.error('Error saving profile:', error);
-      setProfile(prev => ({ ...(prev || {}), ...payload }));
-    } catch (err) {
-      console.error('Error in updateProfileData:', err);
+    const payload = {
+      id: user.id,
+      updated_at: new Date().toISOString(),
+      ...profileFields
+    };
+    const { error } = await supabase
+      .from('profiles')
+      .upsert(payload);
+    if (error) {
+      console.error('Error saving profile:', error);
+      throw error;
     }
+    setProfile(prev => ({ ...(prev || {}), ...payload }));
   };
 
   const updateRole = async (role) => {
     if (!user || !supabase) return
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({ id: user.id, role, full_name: user.user_metadata?.full_name || '' })
-      
-      await supabase.auth.updateUser({ data: { role } })
-
-      setProfile(prev => ({ ...(prev || {}), id: user.id, role }))
-    } catch (err) {
-      console.error('Error updating role:', err)
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, role, full_name: user.user_metadata?.full_name || '' })
+    
+    if (error) {
+      console.error('Error updating role:', error);
+      throw error;
     }
+
+    await supabase.auth.updateUser({ data: { role } })
+    setProfile(prev => ({ ...(prev || {}), id: user.id, role }))
   }
 
   const ADMIN_EMAILS = [

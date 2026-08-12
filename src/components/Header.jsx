@@ -128,8 +128,8 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
                   className={`w-9 h-9 rounded-full overflow-hidden border-2 cursor-pointer hover:scale-105 transition-transform ${isAdmin ? 'border-purple-500 font-bold' : isBrand ? 'border-blue-500' : 'border-emerald-500'}`}
                   title={user.user_metadata?.full_name || 'Profile'}
                 >
-                  {user.user_metadata?.avatar_url ? (
-                    <img src={user.user_metadata.avatar_url} alt="User" className="w-full h-full object-cover" />
+                  {(user.profile?.avatar_url || user.user_metadata?.avatar_url) ? (
+                    <img src={user.profile?.avatar_url || user.user_metadata.avatar_url} alt="User" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-300">
                       <User className="w-5 h-5" />

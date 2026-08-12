@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { formatDZD } from '../services/chargilyService';
 import { getLocalizedItem } from '../data/mockData';
 
-export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }) {
+export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, onContact }) {
   const { t, language } = useLanguage();
   useEffect(() => {
     const handleEscape = (e) => {
@@ -186,7 +186,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire }
             {t('creatorHire')}
           </button>
           <button 
-            onClick={() => alert(`Starting chat with ${getLocalizedItem(creator, 'name', language)}...`)}
+            onClick={() => onContact && onContact(creator)}
             className="flex-1 sm:flex-none py-3 px-6 rounded-xl font-bold text-slate-300 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2">
             {t('creatorContact')}
           </button>

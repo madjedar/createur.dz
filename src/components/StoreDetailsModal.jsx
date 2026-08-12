@@ -1,11 +1,40 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, MapPin, Star, Building2, BadgeCheck, Briefcase, Send, CheckCircle2, ShieldCheck, ExternalLink, Globe } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { formatDZD } from '../services/chargilyService';
-import { getLocalizedItem, mockCampaigns } from '../data/mockData';
+import { getLocalizedItem } from '../data/mockData';
 
 export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampaign }) {
   const { t, language } = useLanguage();
+  const [storeCampaigns, setStoreCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      if (!store) return;
+      setLoading(true);
+      try {
+        const { getCampaigns } = await import('../services/dbService');
+        const allCampaigns = await getCampaigns();
+        
+        // Filter campaigns where brand_id matches the store's user id, or fallback to matching store name
+        const myCampaigns = allCampaigns.filter(c => 
+          c.brand_id === store.id || 
+          (c.brand_name && c.brand_name.toLowerCase().includes(store.name?.toLowerCase()))
+        );
+        
+        setStoreCampaigns(myCampaigns);
+      } catch (error) {
+        console.error("Error fetching store campaigns:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (isOpen) {
+      fetchCampaigns();
+    }
+  }, [isOpen, store]);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -22,11 +51,7 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
   const storeLocation = getLocalizedItem(store, 'location', language);
   const storeBio = getLocalizedItem(store, 'bio', language);
 
-  // Find related campaigns for this store or fallback to available campaigns
-  const storeCampaigns = mockCampaigns.filter(
-    (c) => c.brand.toLowerCase().includes(store.name.toLowerCase()) || store.name.toLowerCase().includes(c.brand.toLowerCase())
-  );
-  const displayCampaigns = storeCampaigns.length > 0 ? storeCampaigns : mockCampaigns.slice(0, 2);
+  const displayCampaigns = storeCampaigns;
 
   return (
     <div 

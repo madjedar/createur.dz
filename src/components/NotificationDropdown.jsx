@@ -8,24 +8,28 @@ export default function NotificationDropdown() {
   const [notifications, setNotifications] = useState([]);
   const dropdownRef = useRef(null);
 
+  const subscriptionRef = useRef(null);
+
   useEffect(() => {
     if (!user?.id) return;
 
-    let subscription = null;
+    let isMounted = true;
     import('../services/dbService').then(({ getNotifications, subscribeToNotifications }) => {
+      if (!isMounted) return;
       getNotifications(user.id).then(fetched => {
-        setNotifications(fetched || []);
+        if (isMounted) setNotifications(fetched || []);
       }).catch(err => console.error("Error fetching notifications:", err));
 
-      subscription = subscribeToNotifications(user.id, (newNotif) => {
-        setNotifications(prev => [newNotif, ...prev]);
+      subscriptionRef.current = subscribeToNotifications(user.id, (newNotif) => {
+        if (isMounted) setNotifications(prev => [newNotif, ...prev]);
       });
     });
 
     return () => {
-      if (subscription) subscription.unsubscribe();
+      isMounted = false;
+      if (subscriptionRef.current) subscriptionRef.current.unsubscribe();
     };
-  }, [user]);
+  }, [user?.id]);
 
   // Handle outside click to close
   useEffect(() => {

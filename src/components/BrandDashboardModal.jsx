@@ -5,14 +5,16 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { mockCreators, mockCampaigns, getLocalizedItem } from '../data/mockData';
+import { getLocalizedItem } from '../data/mockData';
 import { formatDZD, calculateFees } from '../services/chargilyService';
 
-export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, initialTab = 'overview' }) {
+export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, initialTab = 'overview', initialContactId = null }) {
   const { user, updateProfileData } = useAuth();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(initialTab);
   const [applications, setApplications] = useState([]);
+  const [campaigns, setCampaigns] = useState([]);
+  const [allCreators, setAllCreators] = useState([]);
   const [activeCampaignId, setActiveCampaignId] = useState(null);
   const messagesEndRef = React.useRef(null);
 
@@ -26,8 +28,13 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
   useEffect(() => {
     if (user?.id) {
-      import('../services/dbService').then(({ getBrandApplications }) => {
+      import('../services/dbService').then(({ getBrandApplications, getCampaigns, getCreators }) => {
         getBrandApplications(user.id).then(setApplications).catch(console.error);
+        getCampaigns().then(allCampaigns => {
+          const myCampaigns = allCampaigns.filter(c => c.brand_id === user.id);
+          setCampaigns(myCampaigns);
+        }).catch(console.error);
+        getCreators().then(setAllCreators).catch(console.error);
       });
     }
   }, [user?.id]);
@@ -59,16 +66,18 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('الكل');
 
-  // Active Deals Mock State
-  const [deals, setDeals] = useState([
-    { id: 1, creatorName: 'ياسين براهيمي', campaignTitle: 'حملة إطلاق متجر الملابس', budget: 45000, status: 'funded', deliverableUrl: 'https://instagram.com/p/mock123' },
-    { id: 2, creatorName: 'أمينة بن علي', campaignTitle: 'ترويج منتجات العناية بالبشرة', budget: 25000, status: 'review_pending', deliverableUrl: 'https://tiktok.com/@mock/video/456' },
-  ]);
+
 
   // Chat State
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [selectedContactId, setSelectedContactId] = useState(null);
+  const [selectedContactId, setSelectedContactId] = useState(initialContactId);
+
+  useEffect(() => {
+    if (initialContactId) {
+      setSelectedContactId(initialContactId);
+    }
+  }, [initialContactId]);
 
   // Derive unique creator contacts from applications
   const contacts = Array.from(new Map(
@@ -130,7 +139,10 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
     if (!newCampaign.title || !newCampaign.budget) return;
     try {
       const { createCampaign } = await import('../services/dbService');
-      await createCampaign({ ...newCampaign, brand_id: user.id });
+      const newCampaigns = await createCampaign({ ...newCampaign, brand_id: user.id });
+      if (newCampaigns && newCampaigns[0]) {
+        setCampaigns(prev => [newCampaigns[0], ...prev]);
+      }
       setCampaignSuccess(true);
       setTimeout(() => {
         setCampaignSuccess(false);
@@ -182,6 +194,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
   const baseCreatorsList = activeCampaignId 
     ? applications.filter(app => app.campaign_id === activeCampaignId).map(app => ({
         id: app.creator_id,
+        applicationId: app.id,
         name: app.creator?.full_name || 'بدون اسم',
         category: app.creator?.category || 'صانع محتوى',
         bio: app.creator?.bio || 'صانع محتوى على المنصة',
@@ -191,7 +204,17 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
         engagementRate: '...',
         platform: 'instagram'
       }))
-    : mockCreators;
+    : allCreators.map(c => ({
+        id: c.id,
+        name: c.full_name || c.username || 'بدون اسم',
+        category: c.category || 'صانع محتوى',
+        bio: c.bio || 'صانع محتوى على المنصة',
+        avatarUrl: c.avatar_url,
+        ratePerPost: c.rate_per_post || 0,
+        followers: '...',
+        engagementRate: '...',
+        platform: 'instagram'
+    }));
 
   const filteredCreators = baseCreatorsList.filter(c => {
     const matchCat = selectedCategory === 'الكل' || c.category === selectedCategory;
@@ -309,23 +332,30 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 </div>
 
                 <div className="space-y-4">
-                  {mockCampaigns.map((camp) => (
-                    <div key={camp.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <h4 className="font-bold text-white">{camp.title}</h4>
-                        <p className="text-xs text-slate-400 mt-1">الميزانية: <span className="text-emerald-400 font-bold">{formatDZD(camp.budget)}</span> | المتقدمون: <span className="text-white font-bold">{camp.applicantsCount} مبدع</span></p>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          setActiveCampaignId(camp.id);
-                          setActiveTab('creators');
-                        }}
-                        className="btn-secondary text-xs px-4 py-2 whitespace-nowrap"
-                      >
-                        استعراض المتقدمين
-                      </button>
-                    </div>
-                  ))}
+                  {campaigns.length === 0 ? (
+                    <p className="text-slate-400 text-sm text-center py-4">لم تنشئ أي حملة بعد. أنشئ حملتك الأولى الآن!</p>
+                  ) : (
+                    campaigns.map((camp) => {
+                      const appCount = applications.filter(a => a.campaign_id === camp.id).length;
+                      return (
+                        <div key={camp.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div>
+                            <h4 className="font-bold text-white">{camp.title}</h4>
+                            <p className="text-xs text-slate-400 mt-1">الميزانية: <span className="text-emerald-400 font-bold">{formatDZD(camp.budget)}</span> | المتقدمون: <span className="text-white font-bold">{appCount} مبدع</span></p>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              setActiveCampaignId(camp.id);
+                              setActiveTab('creators');
+                            }}
+                            className="btn-secondary text-xs px-4 py-2 whitespace-nowrap"
+                          >
+                            استعراض المتقدمين
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -513,7 +543,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 <div key={creator.id} className="glass-card p-6 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-4">
-                      <img src={creator.avatar} alt={getLocalizedItem(creator, 'name', language)} className="w-14 h-14 rounded-full bg-white/10" />
+                      <img src={creator.avatarUrl || creator.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator'} alt={getLocalizedItem(creator, 'name', language)} className="w-14 h-14 rounded-full bg-white/10" />
                       <div>
                         <h4 className="font-bold text-white flex items-center gap-1.5">
                           {getLocalizedItem(creator, 'name', language)}
@@ -540,7 +570,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                   <button
                     onClick={() => {
                       onClose();
-                      onHireCreator(creator);
+                      onHireCreator(creator, creator.applicationId);
                     }}
                     className="btn-gold w-full py-3 text-sm font-bold flex items-center justify-center gap-2"
                   >

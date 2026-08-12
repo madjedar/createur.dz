@@ -5,10 +5,10 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { mockCampaigns, mockWallet, mockTransactions, mockPayoutRequests, getLocalizedItem } from '../data/mockData';
+import { mockWallet, mockTransactions, mockPayoutRequests, getLocalizedItem } from '../data/mockData';
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
 
-export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'overview' }) {
+export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'overview', initialContactId = null }) {
   const { user, updateProfileData } = useAuth();
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -40,8 +40,14 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   // Chat State
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
-  const [selectedContactId, setSelectedContactId] = useState(null);
+  const [selectedContactId, setSelectedContactId] = useState(initialContactId);
   const messagesEndRef = React.useRef(null);
+
+  useEffect(() => {
+    if (initialContactId) {
+      setSelectedContactId(initialContactId);
+    }
+  }, [initialContactId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -141,7 +147,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
     import('../services/dbService').then(({ getCampaigns, getCreatorApplications }) => {
       Promise.all([getCampaigns(), getCreatorApplications(user.id)])
         .then(([allCampaigns, apps]) => {
-          setCampaigns(allCampaigns.length > 0 ? allCampaigns : mockCampaigns);
+          setCampaigns(allCampaigns);
           if (apps && apps.length > 0) {
             setApplications(apps);
             setAppliedCampaigns(apps.map(app => app.campaign_id));
@@ -149,7 +155,6 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
         })
         .catch(err => {
           console.error("Error fetching creator data:", err);
-          setCampaigns(mockCampaigns);
         });
     });
   }, [isOpen, user]);
@@ -219,22 +224,24 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const handleApply = async (campaignId) => {
     if (!appliedCampaigns.includes(campaignId) && user?.id) {
       try {
-        const { applyToCampaign, createNotification } = await import('../services/dbService');
-        const newAppArray = await applyToCampaign(campaignId, user.id);
-        if (newAppArray && newAppArray.length > 0) {
-          const newApp = newAppArray[0];
-          setApplications([...applications, newApp]);
-          
-          const campaign = campaigns.find(c => c.id === campaignId);
-          if (campaign && campaign.brand_id) {
-             await createNotification(
-               campaign.brand_id,
-               'طلب تقديم جديد',
-               `قام ${user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaign.title}".`
-             );
-          }
+        const { applyToCampaign, createNotification, getCreatorApplications } = await import('../services/dbService');
+        await applyToCampaign(campaignId, user.id);
+        
+        // Bug #10 fix: Re-fetch full applications with campaign join
+        const freshApps = await getCreatorApplications(user.id);
+        if (freshApps) {
+          setApplications(freshApps);
+          setAppliedCampaigns(freshApps.map(app => app.campaign_id));
         }
-        setAppliedCampaigns([...appliedCampaigns, campaignId]);
+        
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (campaign && campaign.brand_id) {
+           await createNotification(
+             campaign.brand_id,
+             'طلب تقديم جديد',
+             `قام ${user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaign.title}".`
+           );
+        }
       } catch (err) {
         console.error("Error applying to campaign:", err);
       }
@@ -389,7 +396,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                     <div>
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <span className="text-3xl">{campaign.brandLogo}</span>
+                          <img src={campaign.brand?.avatar_url || campaign.brandLogo || 'https://api.dicebear.com/7.x/shapes/svg?seed=brand'} alt="Brand" className="w-10 h-10 rounded-full bg-white/10" />
                           <div>
                             <h4 className="font-bold text-white text-lg">{campaignTitle}</h4>
                             <span className="text-xs text-slate-400">{campaignCategory}</span>

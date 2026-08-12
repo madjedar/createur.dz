@@ -99,6 +99,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
   
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
   
   const tLocal = translations[language] || translations.en;
   
@@ -124,7 +125,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
 
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape' && !isMandatory) onClose();
+      if (e.key === 'Escape') onClose();
     };
     
     if (isOpen) {
@@ -192,10 +193,15 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
     }
 
     setIsSaving(true);
+    setErrorMsg(null);
     
     try {
       if (updateProfileData) {
-        await updateProfileData(formData);
+        const cleanedData = { ...formData };
+        if (cleanedData.rate_per_post === '') {
+          cleanedData.rate_per_post = null;
+        }
+        await updateProfileData(cleanedData);
       }
       if (isMounted.current) {
         setShowSuccess(true);
@@ -208,6 +214,9 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
       }
     } catch (error) {
       console.error('Error updating profile:', error);
+      if (isMounted.current) {
+        setErrorMsg(error.message || 'Error updating profile');
+      }
     } finally {
       if (isMounted.current) {
         setIsSaving(false);
@@ -237,19 +246,22 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
               </p>
             )}
           </div>
-          {!isMandatory && (
             <button 
               onClick={onClose}
               className="p-2 text-brand-brownLight hover:text-brand-brown hover:bg-brand-brown/5 rounded-full transition-colors"
             >
               <X size={20} />
             </button>
-          )}
         </div>
 
         {/* Form Content */}
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-brand-border p-6 bg-brand-cream/30">
           <form id="profile-settings-form" onSubmit={handleSubmit} className="space-y-8">
+            {errorMsg && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-medium">
+                {errorMsg}
+              </div>
+            )}
             
             {/* Basic Info Section */}
             <div className="space-y-4">

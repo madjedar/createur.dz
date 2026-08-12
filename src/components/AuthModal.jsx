@@ -113,74 +113,74 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
   };
 
   return (
-    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm" onClick={() => { if (mode !== 'select_role') onClose(); }}>
+    <div className="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => { if (mode !== 'select_role') onClose(); }}>
       <div 
-        className="modal-content glass-card relative w-full max-w-md p-6 sm:p-8 animate-fade-in-up border border-white/10 rounded-2xl bg-slate-900 shadow-2xl" 
+        className="modal-content relative w-full max-w-md p-6 sm:p-8 animate-fade-in-up shadow-2xl" 
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
         <button 
           onClick={onClose}
-          className="absolute top-4 left-4 p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+          className="absolute top-4 left-4 p-2 text-brand-brownLight hover:text-brand-brown rounded-full hover:bg-brand-cream transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex justify-center mb-4">
-          <img src="/logo.png" alt="Créateur DZ" className="h-16 w-auto object-contain rounded-2xl bg-white/10 p-1.5 shadow-lg" />
+          <img src="/logo.png" alt="Créateur DZ" className="h-16 w-auto object-contain rounded-2xl bg-brand-cream p-1.5 shadow-sm border border-brand-border" />
         </div>
 
         {mode === 'select_role' ? (
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">{t('selectAccountType')}</h2>
-            <p className="text-sm text-slate-400 mb-6">{t('selectRoleSub')}</p>
+            <h2 className="text-2xl font-bold text-brand-brown mb-2">{t('selectAccountType')}</h2>
+            <p className="text-sm text-brand-brownLight mb-6">{t('selectRoleSub')}</p>
             
             <div className="grid grid-cols-2 gap-4 mb-6">
               <button
                 type="button"
                 onClick={() => handleRoleSelection('creator')}
                 disabled={loading}
-                className="p-5 rounded-2xl border border-white/10 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all text-center group flex flex-col items-center gap-3"
+                className="p-5 rounded-3xl border border-brand-border bg-white hover:bg-brand-cream transition-all text-center group flex flex-col items-center gap-3 shadow-sm hover:shadow-md"
               >
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-full bg-brand-cream text-brand-orange flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <span className="font-bold text-white block">{t('roleCreator')}</span>
-                <span className="text-xs text-slate-400 block">{t('roleCreatorSub')}</span>
+                <span className="font-bold text-brand-brown block">{t('roleCreator')}</span>
+                <span className="text-xs text-brand-brownLight block">{t('roleCreatorSub')}</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => handleRoleSelection('brand')}
                 disabled={loading}
-                className="p-5 rounded-2xl border border-white/10 bg-white/5 hover:bg-blue-500/10 hover:border-blue-500/50 transition-all text-center group flex flex-col items-center gap-3"
+                className="p-5 rounded-3xl border border-brand-border bg-white hover:bg-brand-cream transition-all text-center group flex flex-col items-center gap-3 shadow-sm hover:shadow-md"
               >
-                <div className="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 rounded-full bg-brand-cream text-brand-orange flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Building2 className="w-6 h-6" />
                 </div>
-                <span className="font-bold text-white block">{t('roleBrand')}</span>
-                <span className="text-xs text-slate-400 block">{t('roleBrandSub')}</span>
+                <span className="font-bold text-brand-brown block">{t('roleBrand')}</span>
+                <span className="text-xs text-brand-brownLight block">{t('roleBrandSub')}</span>
               </button>
             </div>
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">
+            <h2 className="text-2xl font-bold text-brand-brown mb-6 text-center">
               {mode === 'login' ? t('authLoginTitle') : t('authSignupTitle')}
             </h2>
 
             {/* Role Switcher in Signup Mode */}
             {mode === 'signup' && (
               <div className="mb-6">
-                <label className="block text-xs font-semibold text-slate-400 mb-2">{t('accountType')}</label>
+                <label className="block text-xs font-semibold text-brand-brownLight mb-2">{t('accountType')}</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setRole('creator')}
-                    className={`py-2.5 px-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                    className={`py-2.5 px-3 rounded-full border text-sm font-bold flex items-center justify-center gap-2 transition-all ${
                       role === 'creator'
-                        ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400 shadow-md'
-                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                        ? 'bg-brand-orange/10 border-brand-orange text-brand-orange shadow-sm'
+                        : 'bg-white border-brand-border text-brand-brownLight hover:text-brand-brown hover:bg-brand-cream'
                     }`}
                   >
                     <Sparkles className="w-4 h-4" />
@@ -190,10 +190,10 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                   <button
                     type="button"
                     onClick={() => setRole('brand')}
-                    className={`py-2.5 px-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                    className={`py-2.5 px-3 rounded-full border text-sm font-bold flex items-center justify-center gap-2 transition-all ${
                       role === 'brand'
-                        ? 'bg-blue-500/20 border-blue-500 text-blue-400 shadow-md'
-                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                        ? 'bg-brand-orange/10 border-brand-orange text-brand-orange shadow-sm'
+                        : 'bg-white border-brand-border text-brand-brownLight hover:text-brand-brown hover:bg-brand-cream'
                     }`}
                   >
                     <Building2 className="w-4 h-4" />
@@ -206,7 +206,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
             <button 
               onClick={handleGoogleAuth}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-3 bg-white text-slate-800 hover:bg-slate-100 rounded-xl py-3 font-semibold transition-colors mb-6 disabled:opacity-70"
+              className="w-full flex items-center justify-center gap-3 bg-white border border-brand-border text-brand-brown hover:bg-brand-cream rounded-full py-3 font-semibold transition-colors mb-6 disabled:opacity-70 shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -218,21 +218,21 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
             </button>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-red-500/20 border border-red-500/50 text-red-300 text-xs font-semibold text-center animate-fade-in">
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-semibold text-center animate-fade-in">
                 {error}
               </div>
             )}
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="flex-1 h-px bg-white/10"></div>
-              <span className="text-sm text-slate-400">{t('authOr')}</span>
-              <div className="flex-1 h-px bg-white/10"></div>
+              <div className="flex-1 h-px bg-brand-border"></div>
+              <span className="text-sm text-brand-brownLight">{t('authOr')}</span>
+              <div className="flex-1 h-px bg-brand-border"></div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <div className="relative">
-                  <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <User className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
                   <input 
                     type="text" 
                     placeholder={t('authFullName')}
@@ -244,7 +244,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                 </div>
               )}
               <div className="relative">
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
                 <input 
                   type="email" 
                   placeholder={t('authEmail')}
@@ -255,7 +255,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                 />
               </div>
               <div className="relative">
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
                 <input 
                   type="password" 
                   placeholder={t('authPassword')}
@@ -266,7 +266,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                 />
               </div>
 
-              {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
+              {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
 
               <button 
                 type="submit" 
@@ -287,7 +287,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
             <div className="mt-6 text-center">
               <button 
                 onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                className="text-sm text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                className="text-sm text-brand-orange hover:text-brand-orangeLight font-medium transition-colors"
               >
                 {mode === 'login' 
                   ? t('authSwitchToSignup') 

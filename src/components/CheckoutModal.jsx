@@ -72,42 +72,42 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-slate-950/80 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" onClick={onClose}>
       <div 
-        className="relative w-full max-w-lg p-6 overflow-hidden modal-content bg-slate-900 border border-white/10 rounded-2xl animate-scale-in"
+        className="relative w-full max-w-lg p-6 overflow-hidden modal-content rounded-[32px] bg-white shadow-2xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
         <button 
           onClick={onClose}
-          className="absolute text-slate-400 top-4 left-4 hover:text-white transition-colors"
+          className="absolute text-brand-brownLight top-4 left-4 hover:text-brand-brown hover:bg-brand-cream p-2 rounded-full transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {success ? (
           <div className="flex flex-col items-center justify-center py-10 text-center animate-fade-in-up">
-            <CheckCircle className="w-16 h-16 text-emerald-500 mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">{t('checkoutSuccessTitle') || 'تم الدفع بنجاح!'}</h2>
-            <p className="text-slate-400 mb-6">{t('checkoutSuccessDesc') || 'تم حجز المبلغ في حساب الضمان (Escrow). يمكنك الآن متابعة العمل مع صانع المحتوى.'}</p>
+            <CheckCircle className="w-16 h-16 text-brand-orange mb-4" />
+            <h2 className="text-2xl font-bold text-brand-brown mb-2">{t('checkoutSuccessTitle') || 'تم الدفع بنجاح!'}</h2>
+            <p className="text-brand-brownLight mb-6">{t('checkoutSuccessDesc') || 'تم حجز المبلغ في حساب الضمان (Escrow). يمكنك الآن متابعة العمل مع صانع المحتوى.'}</p>
             <button
               onClick={onClose}
-              className="btn-primary px-8 py-3 rounded-xl font-bold"
+              className="btn-primary px-8 py-3 rounded-full font-bold"
             >
               متابعة
             </button>
           </div>
         ) : (
           <>
-            <h2 className="mb-6 text-2xl font-bold text-white">{t('checkoutTitle')}</h2>
+            <h2 className="mb-6 text-2xl font-bold text-brand-brown">{t('checkoutTitle')}</h2>
 
             {/* Deal Summary */}
-            <div className="p-4 mb-6 glass-card rounded-xl">
-              <h3 className="mb-2 font-semibold text-white text-lg">{campaign?.title || 'حملة إعلانية'}</h3>
-              <p className="text-sm text-slate-400 mb-3">مع: <span className="text-slate-200">{creator?.name || 'صانع محتوى'}</span></p>
+            <div className="p-4 mb-6 bg-brand-cream border border-brand-border rounded-2xl">
+              <h3 className="mb-2 font-semibold text-brand-brown text-lg">{campaign?.title || 'حملة إعلانية'}</h3>
+              <p className="text-sm text-brand-brownLight mb-3">مع: <span className="text-brand-brown">{creator?.name || 'صانع محتوى'}</span></p>
               <div className="flex flex-wrap gap-2">
                 {(campaign?.deliverables || ['منشور إنستغرام', 'قصة (Story)']).map((item, idx) => (
-                  <span key={idx} className="px-2 py-1 text-xs rounded-md bg-white/5 text-slate-300 border border-white/5">
+                  <span key={idx} className="px-3 py-1 text-xs rounded-full bg-white text-brand-brownLight border border-brand-border shadow-sm">
                     {item}
                   </span>
                 ))}
@@ -115,57 +115,57 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
             </div>
 
             {/* Fee Breakdown */}
-            <div className="p-4 mb-6 rounded-xl bg-slate-800/50 border border-white/5 space-y-3">
-              <div className="flex justify-between items-center text-slate-300">
+            <div className="p-4 mb-6 rounded-2xl bg-brand-cream border border-brand-border space-y-3">
+              <div className="flex justify-between items-center text-brand-brownLight">
                 <span>تكلفة الحملة:</span>
-                <span>{formatDZD(baseAmount)}</span>
+                <span className="font-medium text-brand-brown">{formatDZD(baseAmount)}</span>
               </div>
-              <div className="flex justify-between items-center text-slate-300">
+              <div className="flex justify-between items-center text-brand-brownLight">
                 <span>رسوم الضمان (Escrow):</span>
-                <span>{formatDZD(platformFee)}</span>
+                <span className="font-medium text-brand-brown">{formatDZD(platformFee)}</span>
               </div>
-              <div className="pt-3 mt-3 border-t border-white/10 flex justify-between items-center">
-                <span className="font-bold text-white">المجموع الإجمالي:</span>
-                <span className="text-xl font-bold gradient-text">{formatDZD(total)}</span>
+              <div className="pt-3 mt-3 border-t border-brand-border flex justify-between items-center">
+                <span className="font-bold text-brand-brown">المجموع الإجمالي:</span>
+                <span className="text-xl font-black text-brand-orange">{formatDZD(total)}</span>
               </div>
             </div>
 
             {/* Payment Method Selection */}
             <div className="mb-6">
-              <h3 className="mb-3 text-sm font-medium text-slate-300">اختر طريقة الدفع:</h3>
+              <h3 className="mb-3 text-sm font-medium text-brand-brownLight">اختر طريقة الدفع:</h3>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setPaymentMethod('edahabia')}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${paymentMethod === 'edahabia' ? 'border-amber-500 bg-amber-500/10 ring-2 ring-amber-500/50' : 'border-white/10 hover:border-amber-500/50 bg-white/5'}`}
+                  className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'edahabia' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
                 >
-                  <CreditCard className={`w-8 h-8 mb-2 ${paymentMethod === 'edahabia' ? 'text-amber-500' : 'text-slate-400'}`} />
-                  <span className={`font-semibold ${paymentMethod === 'edahabia' ? 'text-amber-500' : 'text-slate-300'}`}>البطاقة الذهبية</span>
+                  <CreditCard className={`w-8 h-8 mb-2 ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
+                  <span className={`font-semibold ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>البطاقة الذهبية</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod('cib')}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${paymentMethod === 'cib' ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/50' : 'border-white/10 hover:border-blue-500/50 bg-white/5'}`}
+                  className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'cib' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
                 >
-                  <Landmark className={`w-8 h-8 mb-2 ${paymentMethod === 'cib' ? 'text-blue-500' : 'text-slate-400'}`} />
-                  <span className={`font-semibold ${paymentMethod === 'cib' ? 'text-blue-500' : 'text-slate-300'}`}>بطاقة CIB</span>
+                  <Landmark className={`w-8 h-8 mb-2 ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
+                  <span className={`font-semibold ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بطاقة CIB</span>
                 </button>
               </div>
             </div>
 
             {/* Escrow Flow Visual */}
             <div className="mb-6 relative">
-              <div className="absolute top-1/2 left-4 right-4 h-[2px] bg-white/10 -translate-y-1/2 z-0"></div>
+              <div className="absolute top-1/2 left-4 right-4 h-[2px] bg-brand-border -translate-y-1/2 z-0"></div>
               <div className="relative z-10 flex justify-between gap-2">
-                <div className="flex-1 p-2 text-center rounded-lg glass-card">
-                  <div className="w-8 h-8 mx-auto mb-1 bg-slate-800 rounded-full flex items-center justify-center border border-white/10">💰</div>
-                  <span className="text-[10px] text-slate-300 block">{t('checkoutStep1')}</span>
+                <div className="flex-1 p-2 text-center rounded-2xl bg-white border border-brand-border shadow-sm">
+                  <div className="w-8 h-8 mx-auto mb-1 bg-brand-cream rounded-full flex items-center justify-center">💰</div>
+                  <span className="text-[10px] text-brand-brownLight font-medium block">{t('checkoutStep1')}</span>
                 </div>
-                <div className="flex-1 p-2 text-center rounded-lg glass-card border-blue-500/30">
-                  <div className="w-8 h-8 mx-auto mb-1 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center border border-blue-500/50">🔒</div>
-                  <span className="text-[10px] text-slate-300 block">{t('checkoutStep2')}</span>
+                <div className="flex-1 p-2 text-center rounded-2xl bg-white border border-brand-orange/50 shadow-sm ring-1 ring-brand-orange/20">
+                  <div className="w-8 h-8 mx-auto mb-1 bg-brand-orange/10 text-brand-orange rounded-full flex items-center justify-center">🔒</div>
+                  <span className="text-[10px] text-brand-brownLight font-medium block">{t('checkoutStep2')}</span>
                 </div>
-                <div className="flex-1 p-2 text-center rounded-lg glass-card">
-                  <div className="w-8 h-8 mx-auto mb-1 bg-slate-800 rounded-full flex items-center justify-center border border-white/10">✅</div>
-                  <span className="text-[10px] text-slate-300 block">{t('checkoutStep3')}</span>
+                <div className="flex-1 p-2 text-center rounded-2xl bg-white border border-brand-border shadow-sm">
+                  <div className="w-8 h-8 mx-auto mb-1 bg-brand-cream rounded-full flex items-center justify-center">✅</div>
+                  <span className="text-[10px] text-brand-brownLight font-medium block">{t('checkoutStep3')}</span>
                 </div>
               </div>
             </div>
@@ -181,13 +181,13 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
               <div className="relative flex items-center pt-1">
                 <input 
                   type="checkbox" 
-                  className="w-5 h-5 transition-all border-2 rounded bg-slate-900 border-slate-600 checked:bg-amber-500 checked:border-amber-500 focus:ring-amber-500/50 focus:ring-offset-slate-900 cursor-pointer appearance-none"
+                  className="w-5 h-5 transition-all border-2 rounded bg-white border-brand-border checked:bg-brand-orange checked:border-brand-orange focus:ring-brand-orange/50 cursor-pointer appearance-none"
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
                 />
-                <CheckCircle className={`absolute inset-0 w-5 h-5 text-slate-900 pointer-events-none transition-opacity ${agreed ? 'opacity-100' : 'opacity-0'}`} />
+                <CheckCircle className={`absolute inset-0 w-5 h-5 text-white pointer-events-none transition-opacity ${agreed ? 'opacity-100' : 'opacity-0'}`} />
               </div>
-              <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+              <span className="text-sm text-brand-brownLight group-hover:text-brand-brown transition-colors">
                 {t('checkoutTerms')}
               </span>
             </label>
@@ -196,22 +196,22 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
             <button
               onClick={handlePay}
               disabled={!agreed || loading}
-              className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center transition-all ${
+              className={`btn-primary w-full py-3.5 rounded-full font-bold flex items-center justify-center transition-all ${
                 !agreed 
-                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-900 shadow-lg shadow-amber-500/25'
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'shadow-lg shadow-brand-orange/20'
               }`}
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin text-white" />
               ) : (
                 <>{t('checkoutPayBtn')} — {formatDZD(total)}</>
               )}
             </button>
 
             {/* Security Badge */}
-            <div className="flex items-center justify-center gap-2 mt-4 text-xs text-slate-400">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center justify-center gap-2 mt-4 text-xs text-brand-brownLight font-medium">
+              <ShieldCheck className="w-4 h-4 text-green-500" />
               <span>معاملات مالية آمنة ومشفّرة 100% (بطاقة الذهبية / CIB)</span>
             </div>
           </>

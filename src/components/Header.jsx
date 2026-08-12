@@ -35,7 +35,7 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+    <header className="sticky top-0 z-50 bg-brand-cream border-b border-brand-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -43,9 +43,9 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
             <img 
               src="/logo.png" 
               alt="Créateur DZ Logo" 
-              className="h-10 sm:h-11 w-auto object-contain rounded-xl bg-white/10 p-1 group-hover:scale-105 transition-transform duration-200 shadow-md"
+              className="h-10 sm:h-11 w-auto object-contain rounded-xl bg-white p-1 group-hover:scale-105 transition-transform duration-200"
             />
-            <span className="text-xl sm:text-2xl font-bold gradient-text font-inter tracking-wide" dir="ltr">Créateur DZ</span>
+            <span className="text-xl sm:text-2xl font-bold font-inter tracking-wide text-brand-orange" dir="ltr">Créateur DZ</span>
           </a>
 
           {/* Desktop Nav */}
@@ -55,16 +55,16 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
             <div className="relative" ref={langMenuRef}>
               <button 
                 onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors font-bold text-sm"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-brand-brownLight hover:text-brand-brown hover:bg-white/50 transition-colors font-bold text-sm"
               >
                 <Globe className="w-4 h-4" />
                 <span className="uppercase">{language}</span>
               </button>
               {isLangMenuOpen && (
-                <div className="absolute top-full mt-2 w-32 bg-slate-800 border border-white/10 rounded-xl shadow-xl overflow-hidden py-1 z-50 ltr:right-0 rtl:left-0">
-                  <button onClick={() => { setLanguage('ar'); setIsLangMenuOpen(false); }} className="w-full text-start px-4 py-2 hover:bg-white/5 text-sm font-bold">🇩🇿 العربية</button>
-                  <button onClick={() => { setLanguage('fr'); setIsLangMenuOpen(false); }} className="w-full text-start px-4 py-2 hover:bg-white/5 text-sm font-bold">🇫🇷 Français</button>
-                  <button onClick={() => { setLanguage('en'); setIsLangMenuOpen(false); }} className="w-full text-start px-4 py-2 hover:bg-white/5 text-sm font-bold">🇬🇧 English</button>
+                <div className="absolute top-full mt-2 w-32 bg-white border border-brand-border rounded-[20px] shadow-xl overflow-hidden py-1 z-50 ltr:right-0 rtl:left-0">
+                  <button onClick={() => { setLanguage('ar'); setIsLangMenuOpen(false); }} className="w-full text-start px-4 py-2 hover:bg-brand-cream text-brand-brown text-sm font-bold">🇩🇿 العربية</button>
+                  <button onClick={() => { setLanguage('fr'); setIsLangMenuOpen(false); }} className="w-full text-start px-4 py-2 hover:bg-brand-cream text-brand-brown text-sm font-bold">🇫🇷 Français</button>
+                  <button onClick={() => { setLanguage('en'); setIsLangMenuOpen(false); }} className="w-full text-start px-4 py-2 hover:bg-brand-cream text-brand-brown text-sm font-bold">🇬🇧 English</button>
                 </div>
               )}
             </div>
@@ -75,41 +75,41 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
                 {isAdmin ? (
                   <button
                     onClick={() => onOpenDashboard('admin')}
-                    className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-purple-300 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 transition-all font-bold text-sm shadow-md"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-purple-600 hover:bg-white transition-colors font-bold text-sm"
                   >
-                    <ShieldAlert className="w-4 h-4 text-purple-400" />
+                    <ShieldAlert className="w-4 h-4" />
                     <span>{t('adminDashboard')}</span>
                   </button>
                 ) : isBrand ? (
                   <>
                     <button
                       onClick={() => onOpenDashboard('create')}
-                      className="btn-primary text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 font-bold shadow-lg"
+                      className="btn-primary text-xs flex items-center gap-1.5"
                     >
                       <PlusCircle className="w-4 h-4" />
                       <span>{t('addCampaign')}</span>
                     </button>
                     <button
                       onClick={() => onOpenDashboard('overview')}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors font-bold text-sm"
+                      className="flex items-center gap-2 px-4 py-2 rounded-full text-brand-brown hover:bg-white transition-colors font-bold text-sm"
                     >
-                      <Building2 className="w-4 h-4 text-blue-400" />
+                      <Building2 className="w-4 h-4 text-brand-orange" />
                       <span>{t('brandDashboard')}</span>
                     </button>
                   </>
                 ) : (
                   <button
                     onClick={() => onOpenDashboard('overview')}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors font-bold text-sm"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-brand-brown hover:bg-white transition-colors font-bold text-sm"
                   >
-                    <Sparkles className="w-4 h-4 text-emerald-400" />
+                    <Sparkles className="w-4 h-4 text-brand-orange" />
                     <span>{t('creatorDashboard')}</span>
                   </button>
                 )}
 
                 <button
                   onClick={onOpenProfileSettings}
-                  className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm px-2 py-1"
+                  className="flex items-center gap-2 text-brand-brownLight hover:text-brand-brown transition-colors text-sm px-3 py-2 rounded-full hover:bg-white"
                 >
                   <Settings className="w-4 h-4" />
                   <span>{t('profileSettings') || 'الملف الشخصي'}</span>
@@ -117,7 +117,7 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
 
                 <button
                   onClick={logout}
-                  className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm px-2 py-1"
+                  className="flex items-center gap-2 text-brand-brownLight hover:text-brand-brown transition-colors text-sm px-3 py-2 rounded-full hover:bg-white"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>{t('logout')}</span>
@@ -125,13 +125,13 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
 
                 <div 
                   onClick={() => onOpenDashboard(isAdmin ? 'admin' : 'overview')}
-                  className={`w-9 h-9 rounded-full overflow-hidden border-2 cursor-pointer hover:scale-105 transition-transform ${isAdmin ? 'border-purple-500 font-bold' : isBrand ? 'border-blue-500' : 'border-emerald-500'}`}
+                  className={`w-10 h-10 rounded-full overflow-hidden border-2 cursor-pointer hover:scale-105 transition-transform ${isAdmin ? 'border-purple-500' : 'border-brand-orange'}`}
                   title={user.user_metadata?.full_name || 'Profile'}
                 >
                   {(user.profile?.avatar_url || user.user_metadata?.avatar_url) ? (
                     <img src={user.profile?.avatar_url || user.user_metadata.avatar_url} alt="User" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full bg-slate-800 flex items-center justify-center text-slate-300">
+                    <div className="w-full h-full bg-brand-border flex items-center justify-center text-brand-brownLight">
                       <User className="w-5 h-5" />
                     </div>
                   )}
@@ -141,22 +141,22 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
               <>
                 <button
                   onClick={() => onOpenAuth('login')}
-                  className="text-slate-300 hover:text-white transition-colors text-sm font-bold px-3 py-2"
+                  className="text-brand-brown hover:text-brand-orange transition-colors text-sm font-bold px-4 py-2 rounded-full"
                 >
                   {t('login')}
                 </button>
                 <button
                   onClick={() => onOpenAuth('signup', 'creator')}
-                  className="btn-primary text-xs px-4 py-2.5 rounded-xl font-bold flex items-center gap-1.5"
+                  className="btn-primary text-xs flex items-center gap-1.5"
                 >
                   <Sparkles className="w-4 h-4" />
                   <span>{t('joinCreator')}</span>
                 </button>
                 <button
                   onClick={() => onOpenAuth('signup', 'brand')}
-                  className="btn-secondary text-xs px-4 py-2.5 rounded-xl font-bold flex items-center gap-1.5 border border-white/10"
+                  className="btn-secondary text-xs flex items-center gap-1.5"
                 >
-                  <Building2 className="w-4 h-4 text-blue-400" />
+                  <Building2 className="w-4 h-4" />
                   <span>{t('joinBrand')}</span>
                 </button>
               </>
@@ -167,7 +167,7 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-slate-300 hover:text-white p-2"
+              className="text-brand-brown hover:text-brand-orange p-2"
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -177,12 +177,12 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
 
       {/* Mobile Drawer */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-slate-900 border-b border-white/10 px-4 py-6 space-y-4">
+        <div className="md:hidden bg-brand-cream border-b border-brand-border px-4 py-6 space-y-4">
           {/* Mobile Language Switcher */}
-          <div className="flex items-center gap-2 mb-4 bg-white/5 p-2 rounded-xl justify-center">
-            <button onClick={() => { setLanguage('ar'); setIsMobileMenuOpen(false); }} className={`flex-1 py-2 rounded-lg text-sm font-bold ${language === 'ar' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400'}`}>العربية</button>
-            <button onClick={() => { setLanguage('fr'); setIsMobileMenuOpen(false); }} className={`flex-1 py-2 rounded-lg text-sm font-bold ${language === 'fr' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400'}`}>Français</button>
-            <button onClick={() => { setLanguage('en'); setIsMobileMenuOpen(false); }} className={`flex-1 py-2 rounded-lg text-sm font-bold ${language === 'en' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400'}`}>English</button>
+          <div className="flex items-center gap-2 mb-4 bg-white p-2 rounded-full shadow-sm justify-center">
+            <button onClick={() => { setLanguage('ar'); setIsMobileMenuOpen(false); }} className={`flex-1 py-2 rounded-full text-sm font-bold ${language === 'ar' ? 'bg-brand-orange/10 text-brand-orange' : 'text-brand-brownLight'}`}>العربية</button>
+            <button onClick={() => { setLanguage('fr'); setIsMobileMenuOpen(false); }} className={`flex-1 py-2 rounded-full text-sm font-bold ${language === 'fr' ? 'bg-brand-orange/10 text-brand-orange' : 'text-brand-brownLight'}`}>Français</button>
+            <button onClick={() => { setLanguage('en'); setIsMobileMenuOpen(false); }} className={`flex-1 py-2 rounded-full text-sm font-bold ${language === 'en' ? 'bg-brand-orange/10 text-brand-orange' : 'text-brand-brownLight'}`}>English</button>
           </div>
 
           {user ? (
@@ -190,7 +190,7 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
               {isAdmin ? (
                 <button
                   onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('admin'); }}
-                  className="w-full py-3 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center gap-2 font-bold border border-purple-500/20"
+                  className="w-full py-3 rounded-full bg-white text-purple-600 flex items-center justify-center gap-2 font-bold shadow-sm"
                 >
                   <ShieldAlert className="w-5 h-5" />
                   <span>{t('adminDashboard')}</span>
@@ -199,40 +199,40 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
                 <>
                   <button
                     onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('create'); }}
-                    className="btn-primary w-full py-3 rounded-xl flex items-center justify-center gap-2 font-bold"
+                    className="btn-primary w-full flex items-center justify-center gap-2"
                   >
                     <PlusCircle className="w-5 h-5" />
                     <span>{t('addCampaign')}</span>
                   </button>
                   <button
                     onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('overview'); }}
-                    className="w-full py-3 rounded-xl bg-white/5 text-white flex items-center justify-center gap-2 font-bold"
+                    className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
                   >
-                    <Building2 className="w-5 h-5 text-blue-400" />
+                    <Building2 className="w-5 h-5 text-brand-orange" />
                     <span>{t('brandDashboard')}</span>
                   </button>
                 </>
               ) : (
                 <button
                   onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('overview'); }}
-                  className="w-full py-3 rounded-xl bg-white/5 text-white flex items-center justify-center gap-2 font-bold"
+                  className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
                 >
-                  <Sparkles className="w-5 h-5 text-emerald-400" />
+                  <Sparkles className="w-5 h-5 text-brand-orange" />
                   <span>{t('creatorDashboard')}</span>
                 </button>
               )}
 
               <button
                 onClick={() => { setIsMobileMenuOpen(false); onOpenProfileSettings(); }}
-                className="w-full py-3 rounded-xl bg-white/5 text-white flex items-center justify-center gap-2 font-bold border border-white/10"
+                className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
               >
-                <Settings className="w-5 h-5 text-slate-400" />
+                <Settings className="w-5 h-5 text-brand-brownLight" />
                 <span>{t('profileSettings') || 'الملف الشخصي'}</span>
               </button>
 
               <button
                 onClick={() => { setIsMobileMenuOpen(false); logout(); }}
-                className="w-full py-2 text-slate-400 flex items-center justify-center gap-2 text-sm"
+                className="w-full py-2 text-brand-brownLight hover:text-brand-brown flex items-center justify-center gap-2 text-sm font-bold"
               >
                 <LogOut className="w-4 h-4" />
                 <span>{t('logout')}</span>
@@ -242,22 +242,22 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
             <div className="space-y-3">
               <button
                 onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('login'); }}
-                className="w-full py-3 rounded-xl bg-white/5 text-white font-bold"
+                className="w-full py-3 rounded-full bg-white text-brand-brown font-bold shadow-sm"
               >
                 {t('login')}
               </button>
               <button
                 onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('signup', 'creator'); }}
-                className="btn-primary w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+                className="btn-primary w-full flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-5 h-5" />
                 <span>{t('joinCreator')}</span>
               </button>
               <button
                 onClick={() => { setIsMobileMenuOpen(false); onOpenAuth('signup', 'brand'); }}
-                className="btn-secondary w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+                className="btn-secondary w-full flex items-center justify-center gap-2"
               >
-                <Building2 className="w-5 h-5 text-blue-400" />
+                <Building2 className="w-5 h-5" />
                 <span>{t('joinBrand')}</span>
               </button>
             </div>

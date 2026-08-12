@@ -55,59 +55,59 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay overflow-y-auto"
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-2xl my-auto p-0 overflow-hidden modal-content bg-slate-900 border border-white/10 rounded-2xl animate-scale-in flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-2xl my-auto p-0 overflow-hidden modal-content bg-white rounded-[32px] shadow-2xl animate-scale-in flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button 
           onClick={onClose}
-          className="absolute z-10 p-2 text-slate-400 top-3 left-3 bg-slate-900/60 rounded-full hover:bg-slate-800 hover:text-white transition-all backdrop-blur-md"
+          className="absolute z-10 p-2 text-brand-brownLight top-4 left-4 bg-white/80 rounded-full hover:bg-brand-cream hover:text-brand-brown transition-all backdrop-blur-md shadow-sm"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="overflow-y-auto p-6 sm:p-8 scrollbar-thin scrollbar-thumb-white/10 space-y-8">
+        <div className="overflow-y-auto p-6 sm:p-8 scrollbar-thin scrollbar-thumb-brand-border space-y-8">
           {/* Header & Logo */}
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-right border-b border-white/10 pb-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-right border-b border-brand-border pb-6">
             <div className="relative">
               <img 
                 src={store.logo || 'https://via.placeholder.com/150'} 
                 alt={storeName} 
-                className="w-24 h-24 md:w-28 md:h-28 rounded-2xl object-cover bg-blue-500/10 p-2 border-2 border-blue-500/20 shadow-xl"
+                className="w-24 h-24 md:w-28 md:h-28 rounded-2xl object-cover bg-brand-cream p-2 border border-brand-border shadow-lg"
               />
               {store.verified && (
-                <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1 border-2 border-slate-900 shadow-sm text-white">
+                <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1 border-2 border-white shadow-sm text-white">
                   <BadgeCheck className="w-5 h-5" />
                 </div>
               )}
             </div>
 
             <div className="flex-1 space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center justify-center md:justify-start gap-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-brand-brown flex items-center justify-center md:justify-start gap-2">
                 {storeName}
               </h1>
 
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-slate-400">
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-brand-brownLight">
                 <span className="flex items-center gap-1">
-                  <Building2 className="w-4 h-4 text-blue-400" />
+                  <Building2 className="w-4 h-4 text-brand-orange" />
                   {storeSector}
                 </span>
-                <span className="flex items-center gap-1 text-slate-300">
-                  <MapPin className="w-4 h-4 text-emerald-400" />
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-4 h-4 text-brand-orange" />
                   {storeLocation}
                 </span>
-                <span className="flex items-center gap-1 text-amber-400">
-                  <Star className="w-4 h-4 fill-amber-400" />
-                  <span className="font-medium">{store.rating || 4.9}</span>
-                  <span className="text-slate-500">({store.reviewCount || 42})</span>
+                <span className="flex items-center gap-1 text-amber-500">
+                  <Star className="w-4 h-4 fill-amber-500" />
+                  <span className="font-bold text-brand-brown">{store.rating || 4.9}</span>
+                  <span className="text-brand-brownLight">({store.reviewCount || 42})</span>
                 </span>
               </div>
 
-              <p className="text-sm text-slate-300 leading-relaxed max-w-lg mt-3">
+              <p className="text-sm text-brand-brownLight leading-relaxed max-w-lg mt-3 font-medium">
                 {storeBio}
               </p>
             </div>
@@ -115,20 +115,20 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 glass-card rounded-xl border border-white/10 text-center">
-              <span className="text-xs text-slate-400 block mb-1">{t('activeCampaignsCount')}</span>
-              <span className="text-2xl font-black text-blue-400">{store.activeCampaigns} {t('applicants')}</span>
+            <div className="p-4 bg-white border border-brand-border rounded-2xl text-center shadow-sm">
+              <span className="text-xs text-brand-brownLight font-medium block mb-1">{t('activeCampaignsCount')}</span>
+              <span className="text-2xl font-black text-brand-orange">{store.activeCampaigns} {t('applicants')}</span>
             </div>
-            <div className="p-4 glass-card rounded-xl border border-white/10 text-center">
-              <span className="text-xs text-slate-400 block mb-1">{t('budgetOffer')}</span>
-              <span className="text-2xl font-black text-emerald-400">{formatDZD(store.totalBudget, language)}</span>
+            <div className="p-4 bg-white border border-brand-border rounded-2xl text-center shadow-sm">
+              <span className="text-xs text-brand-brownLight font-medium block mb-1">{t('budgetOffer')}</span>
+              <span className="text-2xl font-black text-brand-orange">{formatDZD(store.totalBudget, language)}</span>
             </div>
           </div>
 
           {/* Store Campaigns Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-lg font-black text-brand-brown flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-brand-orange" />
               {t('availableOpportunities')}
             </h3>
 
@@ -139,20 +139,20 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
                 const campaignDeliverables = (campaign.deliverables && campaign.deliverables[language]) || campaign.deliverables?.ar || campaign.deliverables || [];
 
                 return (
-                  <div key={campaign.id} className="glass-card p-5 border border-white/10 rounded-xl flex flex-col justify-between space-y-4">
+                  <div key={campaign.id} className="bg-white p-5 border border-brand-border rounded-[24px] flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-bold text-white text-base">{campaignTitle}</h4>
-                        <p className="text-xs text-slate-300 mt-1 leading-relaxed">{campaignDesc}</p>
+                        <h4 className="font-bold text-brand-brown text-base">{campaignTitle}</h4>
+                        <p className="text-xs text-brand-brownLight mt-1 leading-relaxed font-medium">{campaignDesc}</p>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
+                      <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-orange/10 text-brand-orange border border-brand-orange/20 whitespace-nowrap">
                         {formatDZD(campaign.budget, language)}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-brand-border">
                       {(Array.isArray(campaignDeliverables) ? campaignDeliverables : (typeof campaignDeliverables === 'string' ? [campaignDeliverables] : [])).map((deliv, idx) => (
-                        <span key={idx} className="px-2.5 py-1 rounded-md bg-white/5 text-slate-300 text-xs border border-white/5">
+                        <span key={idx} className="px-2.5 py-1 rounded-md bg-brand-cream border-brand-border text-brand-brownLight text-xs border font-medium">
                           ✓ {deliv}
                         </span>
                       ))}
@@ -160,7 +160,7 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
 
                     <button 
                       onClick={() => onApplyCampaign(campaign)}
-                      className="btn-primary py-2.5 w-full flex items-center justify-center gap-2 text-sm font-bold shadow-lg shadow-emerald-500/20"
+                      className="btn-primary w-full py-2.5 flex items-center justify-center gap-2 text-sm"
                     >
                       <Send className="w-4 h-4" />
                       <span>{t('applyNow')}</span>
@@ -172,11 +172,11 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
           </div>
 
           {/* Guarantee Security Note */}
-          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300 flex items-center gap-3">
-            <ShieldCheck className="w-6 h-6 text-blue-400 flex-shrink-0" />
+          <div className="p-4 rounded-2xl bg-brand-cream border border-brand-border text-xs text-brand-brownLight flex items-center gap-3">
+            <ShieldCheck className="w-6 h-6 text-brand-orange flex-shrink-0" />
             <div>
-              <span className="font-bold text-white block">{t('checkoutTerms')}</span>
-              <span>تضمن منصة Créateur DZ حماية الميزانية عبر حساب الضمان المالي المباشر.</span>
+              <span className="font-bold text-brand-brown block">{t('checkoutTerms')}</span>
+              <span className="font-medium mt-0.5 block">تضمن منصة Créateur DZ حماية الميزانية عبر حساب الضمان المالي المباشر.</span>
             </div>
           </div>
         </div>

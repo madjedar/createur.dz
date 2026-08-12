@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════ */
-/* Créateur DZ — Editorial Dark Minimalist Theme  */
-/* ═══════════════════════════════════════════════ */
-
 @layer base {
   * {
     margin: 0;
@@ -19,8 +15,8 @@
 
   body {
     font-family: 'Cairo', 'Inter', sans-serif;
-    background: #080C14;
-    color: #F3F4F6;
+    background: #FDF8F3;
+    color: #2C1E16;
     min-height: 100vh;
     overflow-x: hidden;
     direction: rtl;
@@ -28,109 +24,77 @@
 
   /* Custom Scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
-
   ::-webkit-scrollbar-track {
-    background: #080C14;
+    background: #FDF8F3;
   }
-
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 3px;
+    background: #E8DFD3;
+    border-radius: 4px;
   }
-
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(16, 185, 129, 0.4);
+    background: #D4C6B3;
   }
 }
 
 @layer components {
-  /* ── Cyber Minimalist Glass Card ── */
+  /* ── Flat Post / Card ── */
   .glass-card {
-    @apply bg-[#0C121E]/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-xl;
+    @apply bg-white border border-brand-border rounded-[32px] shadow-sm;
   }
 
   .glass-card-hover {
-    @apply glass-card transition-all duration-300 ease-out;
+    @apply glass-card transition-all duration-300;
   }
 
   .glass-card-hover:hover {
-    @apply bg-[#11192A] border-emerald-500/30 shadow-2xl;
-    box-shadow: 0 20px 40px -15px rgba(16, 185, 129, 0.12);
-    transform: translateY(-4px);
-  }
-
-  /* ── High-Contrast Gradient Text ── */
-  .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #FFFFFF 0%, #34D399 50%, #10B981 100%);
-  }
-
-  .gradient-text-mint {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #6EE7B7 0%, #34D399 50%, #10B981 100%);
-  }
-
-  .gradient-text-gold {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+    @apply border-brand-orangeLight shadow-md -translate-y-1;
   }
 
   /* ── Buttons ── */
   .btn-primary {
-    @apply px-6 py-3.5 rounded-xl font-extrabold text-slate-950 transition-all duration-300 ease-out bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 hover:scale-[1.02];
+    @apply px-6 py-3 rounded-full font-bold text-white bg-brand-orange transition-all hover:bg-brand-orangeLight hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0;
   }
 
   .btn-secondary {
-    @apply px-6 py-3.5 rounded-xl font-bold text-slate-200 border border-white/15 transition-all duration-300 ease-out bg-white/5 hover:bg-white/10 hover:border-white/30;
+    @apply px-6 py-3 rounded-full font-bold text-brand-orange border-2 border-brand-orange bg-transparent transition-all hover:bg-brand-orange/5 active:scale-95;
   }
 
   .btn-gold {
-    @apply px-6 py-3.5 rounded-xl font-bold text-slate-950 transition-all duration-300 ease-out bg-amber-400 hover:bg-amber-300 shadow-lg shadow-amber-500/20 hover:scale-[1.02];
+    @apply px-6 py-3 rounded-full font-bold text-white bg-brand-brown transition-all hover:bg-brand-brownLight active:scale-95;
   }
 
   /* ── Modal Overlay ── */
   .modal-overlay {
-    @apply fixed inset-0 z-50 flex items-center justify-center;
-    background: rgba(3, 5, 9, 0.88);
-    backdrop-filter: blur(12px);
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-brand-brown/40 backdrop-blur-sm;
   }
 
   .modal-content {
-    @apply glass-card p-6 sm:p-8 w-full max-h-[90vh] overflow-y-auto animate-scale-in;
+    @apply bg-brand-cream border border-brand-border p-6 sm:p-8 w-full max-h-[90vh] overflow-y-auto animate-scale-in rounded-[32px] shadow-2xl;
   }
 
   /* ── Payment Badges ── */
   .badge-edahabia {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs;
-    background: linear-gradient(135deg, #F59E0B, #D97706);
-    color: #000;
+    @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs bg-yellow-50 text-yellow-600 border border-yellow-200;
   }
 
   .badge-cib {
-    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-xs text-white;
-    background: linear-gradient(135deg, #003DA5, #2563EB);
+    @apply inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-xs bg-blue-50 text-blue-600 border border-blue-200;
   }
 
   /* ── Input Styles ── */
   .input-field {
-    @apply w-full px-4 py-3.5 rounded-xl bg-[#080C14] border border-white/10 text-white placeholder-slate-500 outline-none transition-all duration-200;
+    @apply w-full px-5 py-3.5 rounded-full bg-white border border-brand-border text-brand-brown placeholder-brand-brownLight/50 outline-none transition-all duration-300;
   }
 
   .input-field:focus {
-    @apply border-emerald-400 bg-[#0C121E] ring-2 ring-emerald-400/20;
+    @apply border-brand-orange ring-2 ring-brand-orange/20;
   }
 }
 
 @layer utilities {
-  .bg-mesh {
-    background-image:
-      radial-gradient(at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
-      radial-gradient(at 90% 80%, rgba(52, 211, 153, 0.06) 0%, transparent 60%);
-  }
-
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

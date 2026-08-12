@@ -182,6 +182,14 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (isMandatory) {
+      if (!formData.full_name || !formData.phone || !formData.wilaya) {
+        alert(isRTL ? "يرجى ملء جميع الحقول المطلوبة (الاسم، الهاتف، الولاية)" : "Please fill all required fields (Name, Phone, Wilaya)");
+        return;
+      }
+    }
+
     setIsSaving(true);
     
     try {
@@ -211,19 +219,19 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
   const isRTL = language === 'ar';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div 
-        className={`relative w-full max-w-2xl my-auto overflow-hidden bg-slate-900 border border-white/10 rounded-2xl animate-scale-in flex flex-col max-h-[90vh] ${isRTL ? 'text-right' : 'text-left'}`}
+        className={`relative w-full max-w-2xl my-auto overflow-hidden bg-brand-cream border border-brand-border rounded-[24px] animate-scale-in flex flex-col max-h-[90vh] shadow-xl ${isRTL ? 'text-right' : 'text-left'}`}
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-900/50">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-brand-border bg-white">
           <div>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+            <h2 className="text-xl font-black text-brand-brown tracking-wide">
               {tLocal.profileSettings}
             </h2>
             {isMandatory && (
-              <p className="text-emerald-400 mt-1 font-bold text-xs">
+              <p className="text-brand-orange mt-1 font-bold text-xs">
                 يرجى إكمال ملفك الشخصي للمتابعة (الاسم الكامل مطلوب)
               </p>
             )}
@@ -231,7 +239,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
           {!isMandatory && (
             <button 
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+              className="p-2 text-brand-brownLight hover:text-brand-brown hover:bg-brand-brown/5 rounded-full transition-colors"
             >
               <X size={20} />
             </button>
@@ -239,19 +247,19 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
         </div>
 
         {/* Form Content */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 p-6">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-brand-border p-6 bg-brand-cream/30">
           <form id="profile-settings-form" onSubmit={handleSubmit} className="space-y-8">
             
             {/* Basic Info Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-4 border-b border-white/5 pb-2">
+              <h3 className="text-lg font-black text-brand-brown mb-4 border-b border-brand-border pb-2">
                 {tLocal.basicInfo}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <User size={16} className="text-emerald-500" />
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <User size={16} className="text-brand-orange" />
                     {tLocal.fullName}
                   </label>
                   <input
@@ -259,15 +267,15 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     name="full_name"
                     value={formData.full_name}
                     onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                    className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder={`${tLocal.enterYour} ${tLocal.fullName}`}
                   />
                 </div>
 
                 {isBrand && (
                   <div>
-                    <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                      <Briefcase size={16} className="text-emerald-500" />
+                    <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                      <Briefcase size={16} className="text-brand-orange" />
                       {tLocal.brandName}
                     </label>
                     <input
@@ -275,22 +283,22 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                       name="brand_name"
                       value={formData.brand_name}
                       onChange={handleChange}
-                      className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                      className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                       placeholder={`${tLocal.enterYour} ${tLocal.brandName}`}
                     />
                   </div>
                 )}
                 
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Camera size={16} className="text-emerald-500" />
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <Camera size={16} className="text-brand-orange" />
                     {tLocal.avatarUrl}
                   </label>
                   <div className="flex items-center gap-3">
                     {formData.avatar_url && (
-                      <img src={formData.avatar_url} alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-white/20" />
+                      <img src={formData.avatar_url} alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-brand-border shadow-sm" />
                     )}
-                    <label className="cursor-pointer bg-slate-800/50 hover:bg-slate-700/50 border border-white/10 rounded-xl px-4 py-3 text-white transition-all text-sm flex-1 text-center font-bold">
+                    <label className="cursor-pointer bg-white hover:bg-[#FAFAFA] border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown transition-all text-sm flex-1 text-center font-bold shadow-sm">
                       {uploading ? 'جاري الرفع...' : 'اختر صورة من جهازك'}
                       <input
                         type="file"
@@ -304,8 +312,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                 </div>
                 
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Phone size={16} className="text-emerald-500" />
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <Phone size={16} className="text-brand-orange" />
                     {tLocal.phone}
                   </label>
                   <input
@@ -313,22 +321,22 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                    className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="05..."
                     dir="ltr"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <MapPin size={16} className="text-emerald-500" />
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <MapPin size={16} className="text-brand-orange" />
                     {tLocal.location}
                   </label>
                   <select
                     name="wilaya"
                     value={formData.wilaya}
                     onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm appearance-none"
+                    className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm appearance-none shadow-sm"
                   >
                     <option value="">--</option>
                     {wilayas.map((w, i) => (
@@ -339,8 +347,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                 
                 {isCreator && (
                   <div>
-                    <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                      <DollarSign size={16} className="text-emerald-500" />
+                    <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                      <DollarSign size={16} className="text-brand-orange" />
                       {tLocal.ratePerPost}
                     </label>
                     <input
@@ -348,7 +356,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                       name="rate_per_post"
                       value={formData.rate_per_post}
                       onChange={handleChange}
-                      className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                      className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm font-mono"
                       placeholder="DZD"
                       dir="ltr"
                     />
@@ -357,8 +365,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
               </div>
 
               <div>
-                <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                  <User size={16} className="text-emerald-500" />
+                <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                  <User size={16} className="text-brand-orange" />
                   {tLocal.bio}
                 </label>
                 <textarea
@@ -366,7 +374,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                   value={formData.bio}
                   onChange={handleChange}
                   rows={4}
-                  className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm resize-none"
+                  className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm resize-none shadow-sm"
                   placeholder={`${tLocal.enterYour} ${tLocal.bio}`}
                 />
               </div>
@@ -374,14 +382,14 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
 
             {/* Social Links Section */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white mb-4 border-b border-white/5 pb-2">
+              <h3 className="text-lg font-black text-brand-brown mb-4 border-b border-brand-border pb-2">
                 {tLocal.socialLinks}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <AtSign size={16} className="text-pink-500" />
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <AtSign size={16} className="text-brand-orange" />
                     Instagram
                   </label>
                   <input
@@ -389,15 +397,15 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     name="instagram_url"
                     value={formData.instagram_url}
                     onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                    className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://instagram.com/..."
                     dir="ltr"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <span className="font-bold text-white text-xs">TikTok</span>
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <span className="font-bold text-brand-brown text-xs">TikTok</span>
                     {tLocal.tiktok}
                   </label>
                   <input
@@ -405,15 +413,15 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     name="tiktok_url"
                     value={formData.tiktok_url}
                     onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                    className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://tiktok.com/@..."
                     dir="ltr"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <PlayCircle size={16} className="text-red-500" />
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <PlayCircle size={16} className="text-brand-orange" />
                     YouTube
                   </label>
                   <input
@@ -421,15 +429,15 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     name="youtube_url"
                     value={formData.youtube_url}
                     onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                    className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://youtube.com/..."
                     dir="ltr"
                   />
                 </div>
                 
                 <div>
-                  <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Share2 size={16} className="text-blue-500" />
+                  <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                    <Share2 size={16} className="text-brand-orange" />
                     Facebook
                   </label>
                   <input
@@ -437,7 +445,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     name="facebook_url"
                     value={formData.facebook_url}
                     onChange={handleChange}
-                    className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                    className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://facebook.com/..."
                     dir="ltr"
                   />
@@ -445,8 +453,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
 
                 {isBrand && (
                   <div className="md:col-span-2">
-                    <label className="text-sm font-semibold text-slate-300 mb-1.5 flex items-center gap-2">
-                      <Globe size={16} className="text-emerald-500" />
+                    <label className="text-sm font-bold text-brand-brown mb-1.5 flex items-center gap-2">
+                      <Globe size={16} className="text-brand-orange" />
                       {tLocal.websiteUrl}
                     </label>
                     <input
@@ -454,7 +462,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                       name="website_url"
                       value={formData.website_url}
                       onChange={handleChange}
-                      className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 outline-none transition-all text-sm"
+                      className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                       placeholder="https://..."
                       dir="ltr"
                     />
@@ -467,12 +475,12 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-white/10 bg-slate-900/50 flex justify-end gap-3">
+        <div className="p-6 border-t border-brand-border bg-white flex justify-end gap-3">
           {!isMandatory && (
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 rounded-xl font-bold text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 transition-all"
+              className="px-6 py-3 rounded-[16px] font-bold text-brand-brownLight hover:text-brand-brown bg-brand-cream border border-brand-border hover:bg-[#FAFAFA] transition-all"
             >
               {tLocal.cancel}
             </button>
@@ -481,7 +489,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
             type="submit"
             form="profile-settings-form"
             disabled={isSaving || showSuccess}
-            className={`btn-primary px-6 py-3 rounded-xl font-bold flex items-center gap-2 ${
+            className={`btn-primary px-6 py-3 rounded-[16px] font-bold flex items-center gap-2 ${
               isSaving || showSuccess ? 'opacity-75 cursor-not-allowed' : ''
             }`}
           >

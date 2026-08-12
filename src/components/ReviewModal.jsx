@@ -64,7 +64,7 @@ const ReviewModal = ({ isOpen, onClose, creator }) => {
   return (
     <div className="modal-overlay flex items-center justify-center p-4 z-50 fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div 
-        className="modal-content glass-card max-w-md w-full p-6 relative animate-scale-in"
+        className="modal-content bg-black border border-neutral-800 rounded-2xl max-w-md w-full p-6 relative animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
@@ -86,7 +86,7 @@ const ReviewModal = ({ isOpen, onClose, creator }) => {
             <h2 className="text-2xl font-bold text-white mb-6">{t('reviewTitle')}</h2>
             
             {creator && (
-              <div className="glass-card p-4 flex items-center gap-4 mb-6">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex items-center gap-4 mb-6">
                 <img src={creator.avatar || 'https://via.placeholder.com/50'} alt={creator.name} className="w-12 h-12 rounded-full object-cover" />
                 <div>
                   <h4 className="text-white font-semibold">{creator.name}</h4>
@@ -126,7 +126,7 @@ const ReviewModal = ({ isOpen, onClose, creator }) => {
             <button
               onClick={handleSubmit}
               disabled={rating === 0}
-              className={`btn-primary w-full py-3 ${rating === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`bg-[#1d9bf0] text-black hover:bg-blue-500 font-bold rounded-xl w-full py-3 ${rating === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               إرسال التقييم
             </button>

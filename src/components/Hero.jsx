@@ -8,20 +8,21 @@ const Hero = ({ onOpenAuth, onOpenDashboard }) => {
   const { t } = useLanguage();
 
   return (
-    <section className="relative overflow-hidden bg-[#080C14] py-20 lg:py-28 px-4 sm:px-6 lg:px-8 border-b border-white/5">
-      {/* Glow Orbs */}
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-emerald-400/5 rounded-full blur-[100px] pointer-events-none"></div>
+    <section className="relative overflow-hidden bg-brand-cream py-20 lg:py-28 px-4 sm:px-6 lg:px-8">
+      {/* Decorative Arch Background */}
+      <div className="absolute top-0 right-0 w-1/2 h-[80%] bg-brand-orange rounded-bl-[150px] sm:rounded-bl-[250px] opacity-10 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-orangeLight rounded-tr-[150px] opacity-10 pointer-events-none"></div>
 
       <div className="relative z-10 max-w-5xl mx-auto text-center flex flex-col items-center">
         
         {/* Headline */}
-        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white mb-6 leading-tight sm:leading-tight lg:leading-tight tracking-wide">
-          {t('heroTitle')}
+        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-brand-brown mb-6 leading-tight sm:leading-tight lg:leading-tight tracking-wide relative">
+          <span className="block mb-2 text-brand-brownLight text-3xl sm:text-5xl font-semibold">Make you</span>
+          <span className="text-brand-orange">feel luxury</span>
         </h1>
         
         {/* Subtitle */}
-        <p className="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+        <p className="text-lg sm:text-xl text-brand-brownLight max-w-2xl mx-auto mb-10 leading-relaxed">
           {t('heroSubtitle')}
         </p>
 
@@ -30,7 +31,7 @@ const Hero = ({ onOpenAuth, onOpenDashboard }) => {
           {user ? (
             <button 
               onClick={() => onOpenDashboard('overview')}
-              className="btn-primary px-8 py-4 rounded-2xl text-lg font-bold flex items-center justify-center gap-3 w-full sm:w-auto shadow-xl shadow-emerald-500/20"
+              className="btn-primary px-8 py-4 text-lg w-full sm:w-auto flex items-center justify-center gap-3 shadow-lg shadow-brand-orange/20"
             >
               <Sparkles className="w-5 h-5" />
               <span>{t('goToDashboard')}</span>
@@ -39,14 +40,14 @@ const Hero = ({ onOpenAuth, onOpenDashboard }) => {
             <>
               <button 
                 onClick={() => onOpenAuth('signup', 'brand')}
-                className="px-8 py-4 rounded-2xl text-lg font-bold flex items-center justify-center gap-3 w-full sm:w-auto bg-slate-800 text-white hover:bg-slate-700 transition-colors border border-white/10"
+                className="btn-secondary px-8 py-4 text-lg w-full sm:w-auto flex items-center justify-center gap-3"
               >
-                <Building2 className="w-5 h-5 text-blue-400" />
+                <Building2 className="w-5 h-5" />
                 <span>{t('joinBrand')}</span>
               </button>
               <button 
                 onClick={() => onOpenAuth('signup', 'creator')}
-                className="btn-primary px-8 py-4 rounded-2xl text-lg font-bold flex items-center justify-center gap-3 w-full sm:w-auto shadow-xl shadow-emerald-500/20"
+                className="btn-primary px-8 py-4 text-lg w-full sm:w-auto flex items-center justify-center gap-3 shadow-lg shadow-brand-orange/20"
               >
                 <Sparkles className="w-5 h-5" />
                 <span>{t('joinCreator')}</span>
@@ -55,48 +56,39 @@ const Hero = ({ onOpenAuth, onOpenDashboard }) => {
           )}
         </div>
 
-        {/* Clean Interactive App Preview Mockup Card */}
-        <div className="w-full max-w-4xl glass-card p-6 sm:p-8 border border-white/15 shadow-2xl relative overflow-hidden group">
-          {/* Top Bar Mockup */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
-              <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-              <span className="text-xs text-slate-500 font-mono mr-2">createur-dz.com / deal-flow</span>
+
+
+        {/* Stats Row */}
+        <div className="flex flex-wrap justify-center gap-8 sm:gap-16 border-t border-brand-border/50 pt-8 mt-4 w-full max-w-4xl text-brand-brown">
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-2">
+              <img src="https://i.pravatar.cc/100?img=1" className="w-8 h-8 rounded-full border-2 border-brand-cream" />
+              <img src="https://i.pravatar.cc/100?img=2" className="w-8 h-8 rounded-full border-2 border-brand-cream" />
+              <img src="https://i.pravatar.cc/100?img=3" className="w-8 h-8 rounded-full border-2 border-brand-cream" />
             </div>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-              🔒 {t('heroTrust')}
-            </span>
+            <div className="text-start">
+              <p className="font-bold text-lg">1.3 M+</p>
+              <p className="text-xs text-brand-brownLight">Customer review</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-brand-orange/10 flex items-center justify-center text-brand-orange">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="text-start">
+              <p className="font-bold text-lg">4.7 M+</p>
+              <p className="text-xs text-brand-brownLight">Active members</p>
+            </div>
           </div>
 
-          {/* Interactive Deal Flow Preview */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-right">
-            <div className="p-4 rounded-xl bg-[#080C14] border border-white/10">
-              <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
-                <CreditCard className="w-4 h-4 text-blue-400" />
-                <span>{t('step1')}</span>
-              </div>
-              <p className="font-bold text-white text-sm">{t('step1Desc')}</p>
-              <p className="text-xs text-emerald-400 mt-1">{t('paymentMethods')}</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-brand-orange/10 flex items-center justify-center text-brand-orange">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-
-            <div className="p-4 rounded-xl bg-[#080C14] border border-emerald-500/30">
-              <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
-                <Lock className="w-4 h-4 text-amber-400" />
-                <span>{t('step2')}</span>
-              </div>
-              <p className="font-bold text-white text-sm">{t('step2Desc')}</p>
-              <p className="text-xs text-amber-400 mt-1">{t('secureFunds')}</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#080C14] border border-white/10">
-              <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                <span className="text-sm font-semibold text-slate-300">{t('heroTrust')}</span>
-              </div>
-              <p className="font-bold text-white text-sm">{t('step3Desc')}</p>
-              <p className="text-xs text-slate-400 mt-1">{t('payoutMethods')}</p>
+            <div className="text-start">
+              <p className="font-bold text-lg">100%</p>
+              <p className="text-xs text-brand-brownLight">Secure platform</p>
             </div>
           </div>
         </div>

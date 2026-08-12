@@ -223,22 +223,22 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/98 backdrop-blur-md overflow-y-auto" dir="rtl">
+    <div className="fixed inset-0 z-50 bg-brand-cream/95 backdrop-blur-md overflow-y-auto" dir="rtl">
       {/* Header Bar */}
-      <div className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-8 py-4 flex justify-between items-center">
+      <div className="sticky top-0 z-10 bg-white border-b border-brand-border px-4 sm:px-8 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
-            <Building2 className="w-5 h-5" />
+          <div className="w-12 h-12 rounded-[16px] bg-brand-orange/10 text-brand-orange flex items-center justify-center font-bold">
+            <Building2 className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white tracking-wide">{t('brandDashboard')}</h2>
-            <p className="text-xs text-slate-400">{t('welcomeUser')}، {user?.user_metadata?.full_name || t('roleBrand')}</p>
+            <h2 className="text-xl font-black text-brand-brown tracking-wide">{t('brandDashboard')}</h2>
+            <p className="text-sm font-medium text-brand-brownLight mt-1">{t('welcomeUser')}، {user?.user_metadata?.full_name || t('roleBrand')}</p>
           </div>
         </div>
 
         <button 
           onClick={onClose}
-          className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+          className="p-2.5 text-brand-brownLight hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
@@ -247,7 +247,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
         {/* Navigation Tabs */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-8 border-b border-white/10">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-6 mb-8 border-b border-brand-border">
           {[
             { id: 'overview', label: t('dashOverview'), icon: LayoutDashboard },
             { id: 'create', label: t('addCampaign'), icon: PlusCircle },
@@ -262,13 +262,13 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2.5 transition-all whitespace-nowrap ${
+                className={`px-6 py-3 rounded-full font-bold text-sm flex items-center gap-2.5 transition-all whitespace-nowrap border ${
                   isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-emerald-500 text-white shadow-lg shadow-blue-500/20 scale-105'
-                    : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
+                    ? 'bg-brand-orange text-white border-brand-orange shadow-md'
+                    : 'bg-white text-brand-brownLight border-brand-border hover:border-brand-orange/30 hover:text-brand-orange'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-5 h-5" />
                 <span>{tab.label}</span>
               </button>
             );
@@ -280,75 +280,75 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
           <div className="space-y-8 animate-fade-in">
             {/* Business Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="glass-card p-6">
+              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-slate-400 text-sm font-semibold">إجمالي الميزانية المستثمرة</span>
-                  <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg"><DollarSign className="w-5 h-5" /></div>
+                  <span className="text-brand-brownLight text-sm font-bold">إجمالي الميزانية المستثمرة</span>
+                  <div className="p-2 bg-brand-orange/10 text-brand-orange rounded-[12px]"><DollarSign className="w-5 h-5" /></div>
                 </div>
-                <div className="text-3xl font-bold gradient-text">{formatDZD(320000)}</div>
-                <p className="text-xs text-slate-400 mt-2">مدفوعة عبر ChargilyPay</p>
+                <div className="text-3xl font-black text-brand-brown">{formatDZD(320000)}</div>
+                <p className="text-xs font-medium text-brand-brownLight mt-2">مدفوعة عبر ChargilyPay</p>
               </div>
 
-              <div className="glass-card p-6">
+              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-slate-400 text-sm font-semibold">الحملات النشطة</span>
-                  <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><PlusCircle className="w-5 h-5" /></div>
+                  <span className="text-brand-brownLight text-sm font-bold">الحملات النشطة</span>
+                  <div className="p-2 bg-emerald-50 text-emerald-500 rounded-[12px] border border-emerald-100"><PlusCircle className="w-5 h-5" /></div>
                 </div>
-                <div className="text-3xl font-bold text-white">4 حملات</div>
-                <p className="text-xs text-emerald-400 mt-2">تستقبل طلبات المبدعين الان</p>
+                <div className="text-3xl font-black text-brand-brown">4 حملات</div>
+                <p className="text-xs font-medium text-emerald-600 mt-2">تستقبل طلبات المبدعين الان</p>
               </div>
 
-              <div className="glass-card p-6">
+              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-slate-400 text-sm font-semibold">صنّاع المحتوى الموظفون</span>
-                  <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg"><Users className="w-5 h-5" /></div>
+                  <span className="text-brand-brownLight text-sm font-bold">صنّاع المحتوى الموظفون</span>
+                  <div className="p-2 bg-purple-50 text-purple-500 rounded-[12px] border border-purple-100"><Users className="w-5 h-5" /></div>
                 </div>
-                <div className="text-3xl font-bold text-purple-400">8 مبدعين</div>
-                <p className="text-xs text-slate-400 mt-2">عبر إنستغرام وتيك توك ويوتيوب</p>
+                <div className="text-3xl font-black text-brand-brown">8 مبدعين</div>
+                <p className="text-xs font-medium text-brand-brownLight mt-2">عبر إنستغرام وتيك توك ويوتيوب</p>
               </div>
 
-              <div className="glass-card p-6">
+              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4">
-                  <span className="text-slate-400 text-sm font-semibold">الوصول الإجمالي المقدر</span>
-                  <div className="p-2 bg-amber-500/10 text-amber-400 rounded-lg"><TrendingUp className="w-5 h-5" /></div>
+                  <span className="text-brand-brownLight text-sm font-bold">الوصول الإجمالي المقدر</span>
+                  <div className="p-2 bg-amber-50 text-amber-500 rounded-[12px] border border-amber-100"><TrendingUp className="w-5 h-5" /></div>
                 </div>
-                <div className="text-3xl font-bold text-amber-400">1.4M+</div>
-                <p className="text-xs text-slate-400 mt-2">مشاهدة وتفاعل كلي</p>
+                <div className="text-3xl font-black text-brand-brown">1.4M+</div>
+                <p className="text-xs font-medium text-brand-brownLight mt-2">مشاهدة وتفاعل كلي</p>
               </div>
             </div>
 
             {/* Quick Actions & Recent Campaigns */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 glass-card p-6">
+              <div className="lg:col-span-2 bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-bold text-white mb-6 tracking-wide">{t('dashWallet')}</h3>
+                  <h3 className="text-2xl font-black text-brand-brown tracking-wide">{t('dashWallet')}</h3>
                   <button 
                     onClick={() => setActiveTab('create')}
-                    className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5"
+                    className="btn-primary text-xs px-5 py-2.5 flex items-center gap-2"
                   >
-                    <PlusCircle className="w-5 h-5" />
+                    <PlusCircle className="w-4 h-4" />
                     <span>{t('addCampaign')}</span>
                   </button>
                 </div>
 
                 <div className="space-y-4">
                   {campaigns.length === 0 ? (
-                    <p className="text-slate-400 text-sm text-center py-4">لم تنشئ أي حملة بعد. أنشئ حملتك الأولى الآن!</p>
+                    <p className="text-brand-brownLight font-medium text-sm text-center py-4">لم تنشئ أي حملة بعد. أنشئ حملتك الأولى الآن!</p>
                   ) : (
                     campaigns.map((camp) => {
                       const appCount = applications.filter(a => a.campaign_id === camp.id).length;
                       return (
-                        <div key={camp.id} className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div key={camp.id} className="p-5 rounded-[20px] bg-brand-cream border border-brand-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                           <div>
-                            <h4 className="font-bold text-white">{camp.title}</h4>
-                            <p className="text-xs text-slate-400 mt-1">الميزانية: <span className="text-emerald-400 font-bold">{formatDZD(camp.budget)}</span> | المتقدمون: <span className="text-white font-bold">{appCount} مبدع</span></p>
+                            <h4 className="font-bold text-brand-brown text-lg">{camp.title}</h4>
+                            <p className="text-xs font-medium text-brand-brownLight mt-1">الميزانية: <span className="text-brand-orange font-bold font-mono">{formatDZD(camp.budget)}</span> | المتقدمون: <span className="text-brand-brown font-bold">{appCount} مبدع</span></p>
                           </div>
                           <button 
                             onClick={() => {
                               setActiveCampaignId(camp.id);
                               setActiveTab('creators');
                             }}
-                            className="btn-secondary text-xs px-4 py-2 whitespace-nowrap"
+                            className="btn-secondary text-xs px-5 py-2.5 whitespace-nowrap"
                           >
                             استعراض المتقدمين
                           </button>
@@ -360,31 +360,32 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               </div>
 
               {/* Escrow Status Summary Card */}
-              <div className="glass-card p-6 flex flex-col justify-between">
+              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
                 <div>
-                  <div className="flex items-center gap-2 text-emerald-400 mb-4 font-bold text-lg">
+                  <div className="flex items-center gap-3 text-brand-orange mb-4 font-black text-lg">
                     <ShieldCheck className="w-6 h-6" />
                     <span>حالة الضمان المالي</span>
                   </div>
-                  <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+                  <p className="text-brand-brownLight font-medium text-sm mb-6 leading-relaxed">
                     جميع أموال الرعاية تبقى محفوطة بحساب الضمان الشفاف ولا يتم تحويلها لصانع المحتوى حتى تراجع العمل وتوافق عليه.
                   </p>
 
-                  <div className="p-4 rounded-xl bg-white/5 space-y-3 mb-6">
-                    <div className="flex justify-between text-xs text-slate-400">
-                      <span>الأموال المحجوزة حالياً:</span>
-                      <span className="font-bold text-amber-400">{formatDZD(70000)}</span>
+                  <div className="p-4 rounded-[16px] bg-brand-cream border border-brand-border space-y-4 mb-6">
+                    <div className="flex justify-between items-center text-sm font-bold text-brand-brownLight">
+                      <span>الأموال المحجوزة:</span>
+                      <span className="font-black text-amber-500 font-mono">{formatDZD(70000)}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-slate-400">
+                    <div className="h-px w-full bg-brand-border"></div>
+                    <div className="flex justify-between items-center text-sm font-bold text-brand-brownLight">
                       <span>الأموال المحررة:</span>
-                      <span className="font-bold text-emerald-400">{formatDZD(250000)}</span>
+                      <span className="font-black text-emerald-600 font-mono">{formatDZD(250000)}</span>
                     </div>
                   </div>
                 </div>
 
                 <button 
                   onClick={() => setActiveTab('escrow')}
-                  className="btn-gold w-full py-3 text-sm font-bold flex items-center justify-center gap-2"
+                  className="btn-primary w-full py-3.5 text-sm flex items-center justify-center gap-2"
                 >
                   <Lock className="w-4 h-4" />
                   <span>إدارة صفقات الضمان النشطة</span>
@@ -396,13 +397,13 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
         {/* Tab 2: Create Campaign Brief */}
         {activeTab === 'create' && (
-          <div className="max-w-2xl mx-auto glass-card p-6 sm:p-8 animate-fade-in">
-            <h3 className="text-2xl font-bold text-white mb-6 tracking-wide">{t('dashOverview')}</h3>
-            <p className="text-slate-400 text-sm mb-6">انشر تفاصيل حملتك وميزانيتك ليصلك التقديم من أفضل صنّاع المحتوى في الجزائر</p>
+          <div className="max-w-2xl mx-auto bg-white border border-brand-border rounded-[24px] p-6 sm:p-8 animate-fade-in shadow-sm">
+            <h3 className="text-2xl font-black text-brand-brown mb-2 tracking-wide">إنشاء حملة إعلانية جديدة</h3>
+            <p className="text-brand-brownLight font-medium text-sm mb-6">انشر تفاصيل حملتك وميزانيتك ليصلك التقديم من أفضل صنّاع المحتوى في الجزائر</p>
 
             <form onSubmit={handleCreateCampaign} className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">عنوان الحملة الإعلانية</label>
+                <label className="block text-sm font-bold text-brand-brown mb-2">عنوان الحملة الإعلانية</label>
                 <input
                   type="text"
                   placeholder="مثال: ترويج تشكيلة الملابس الصيفية الجديدة"
@@ -415,7 +416,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">المجال / الفئة</label>
+                  <label className="block text-sm font-bold text-brand-brown mb-2">المجال / الفئة</label>
                   <select
                     className="input-field w-full"
                     value={newCampaign.category}
@@ -431,7 +432,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">الميزانية المقترحة (د.ج)</label>
+                  <label className="block text-sm font-bold text-brand-brown mb-2">الميزانية المقترحة (د.ج)</label>
                   <input
                     type="number"
                     placeholder="35000"
@@ -444,7 +445,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">التسليمات المطلوبة (مفصولة بفواصل)</label>
+                <label className="block text-sm font-bold text-brand-brown mb-2">التسليمات المطلوبة (مفصولة بفواصل)</label>
                 <input
                   type="text"
                   placeholder="منشور إنستغرام, 2 ستوري, فيديو ريلز 60 ثانية"
@@ -456,7 +457,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">وصف الحملة وشروط صانع المحتوى</label>
+                <label className="block text-sm font-bold text-brand-brown mb-2">وصف الحملة وشروط صانع المحتوى</label>
                 <textarea
                   rows={4}
                   placeholder="اشرح طبيعة المنتج، الجمهور المستهدف، والشروط الخاصة..."
@@ -468,31 +469,31 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               </div>
 
               {newCampaign.budget && (
-                <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-slate-300 space-y-1">
-                  <div className="flex justify-between">
+                <div className="p-4 rounded-[16px] bg-brand-cream border border-brand-border text-xs text-brand-brownLight font-medium space-y-2">
+                  <div className="flex justify-between items-center">
                     <span>ميزانية الحملة الأساسية:</span>
-                    <span className="font-bold text-white">{formatDZD(Number(newCampaign.budget))}</span>
+                    <span className="font-bold text-brand-brown font-mono">{formatDZD(Number(newCampaign.budget))}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span>رسوم الضمان والمنصة (10%):</span>
-                    <span className="font-bold text-emerald-400">{formatDZD(calculateFees(Number(newCampaign.budget)).platformFee)}</span>
+                    <span className="font-bold text-emerald-600 font-mono">{formatDZD(calculateFees(Number(newCampaign.budget)).platformFee)}</span>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-white/10 text-sm font-bold text-white">
+                  <div className="flex justify-between items-center pt-2 border-t border-brand-border text-sm font-bold text-brand-brown">
                     <span>المجموع الإجمالي لتأمين الصفقة:</span>
-                    <span className="gradient-text">{formatDZD(calculateFees(Number(newCampaign.budget)).total)}</span>
+                    <span className="text-brand-orange font-mono font-black">{formatDZD(calculateFees(Number(newCampaign.budget)).total)}</span>
                   </div>
                 </div>
               )}
 
               {campaignSuccess && (
-                <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-semibold text-center flex items-center justify-center gap-2">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-xl text-sm font-bold text-center flex items-center justify-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />
                   <span>تم نشر الحملة بنجاح! يمكن للصنّاع التقديم الآن.</span>
                 </div>
               )}
 
               <button type="submit" className="btn-primary w-full py-4 font-bold text-lg flex items-center justify-center gap-2">
-                <LayoutDashboard className="w-5 h-5" /> {t('dashOverview')} <span>نشر الحملة في السوق</span>
+                <LayoutDashboard className="w-5 h-5" /> <span>نشر الحملة في السوق</span>
               </button>
             </form>
           </div>
@@ -501,20 +502,20 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
         {/* Tab 3: Creator Directory */}
         {activeTab === 'creators' && (
           <div className="space-y-6 animate-fade-in">
-            <h3 className="text-xl font-bold text-white">دليل وتوظيف صنّاع المحتوى</h3>
-            <p className="text-slate-400 text-sm">ابحث عن أفضل المبدعين حسب المجال والتفاعل وظفهم مباشرة مع دفع آمن عبر ChargilyPay</p>
+            <h3 className="text-xl font-black text-brand-brown mb-2">دليل وتوظيف صنّاع المحتوى</h3>
+            <p className="text-brand-brownLight font-medium text-sm mb-6">ابحث عن أفضل المبدعين حسب المجال والتفاعل وظفهم مباشرة مع دفع آمن عبر ChargilyPay</p>
             {activeCampaignId && (
-               <button onClick={() => setActiveCampaignId(null)} className="text-sm text-blue-400 mb-2 hover:underline">عرض جميع صنّاع المحتوى</button>
+               <button onClick={() => setActiveCampaignId(null)} className="text-sm font-bold text-brand-orange mb-2 hover:underline">عرض جميع صنّاع المحتوى</button>
             )}
 
             {/* Search Filters */}
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
               <div className="relative flex-1">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
                 <input
                   type="text"
                   placeholder="ابحث باسم صانع المحتوى..."
-                  className="input-field w-full pr-10"
+                  className="w-full bg-white border border-brand-border rounded-full pl-6 pr-12 py-3 text-brand-brown text-sm font-medium focus:outline-none focus:border-brand-orange transition-colors shadow-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -525,10 +526,10 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    className={`px-5 py-3 rounded-full text-sm font-bold whitespace-nowrap transition-all border shadow-sm ${
                       selectedCategory === cat
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white/5 text-slate-400 hover:text-white'
+                        ? 'bg-brand-orange text-white border-brand-orange'
+                        : 'bg-white text-brand-brownLight border-brand-border hover:border-brand-orange/30 hover:text-brand-orange'
                     }`}
                   >
                     {cat}
@@ -540,29 +541,29 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
             {/* Creators Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCreators.map((creator) => (
-                <div key={creator.id} className="glass-card p-6 flex flex-col justify-between">
+                <div key={creator.id} className="bg-white border border-brand-border rounded-[24px] shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-4">
-                      <img src={creator.avatarUrl || creator.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator'} alt={getLocalizedItem(creator, 'name', language)} className="w-14 h-14 rounded-full bg-white/10" />
+                      <img src={creator.avatarUrl || creator.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator'} alt={getLocalizedItem(creator, 'name', language)} className="w-14 h-14 rounded-full border border-brand-border bg-brand-cream object-cover" />
                       <div>
-                        <h4 className="font-bold text-white flex items-center gap-1.5">
+                        <h4 className="font-bold text-brand-brown text-lg flex items-center gap-1.5">
                           {getLocalizedItem(creator, 'name', language)}
-                          {creator.verified && <BadgeCheck className="w-4 h-4 text-emerald-400" />}
+                          {creator.verified && <BadgeCheck className="w-5 h-5 text-brand-orange" />}
                         </h4>
-                        <span className="text-xs text-slate-400">{getLocalizedItem(creator, 'category', language)}</span>
+                        <span className="text-xs font-medium text-brand-brownLight">{getLocalizedItem(creator, 'category', language)}</span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-2 mb-4">{getLocalizedItem(creator, 'bio', language)}</p>
+                    <p className="text-sm font-medium text-brand-brownLight line-clamp-2 mb-4 leading-relaxed">{getLocalizedItem(creator, 'bio', language)}</p>
 
-                    <div className="grid grid-cols-2 gap-2 mb-6 text-center">
-                      <div className="p-2 rounded-lg bg-white/5">
-                        <span className="text-xs text-slate-400 block">{t('creatorEngagement')}</span>
-                        <span className="font-bold text-emerald-400 text-sm">{creator.engagement}%</span>
+                    <div className="grid grid-cols-2 gap-3 mb-6 text-center">
+                      <div className="p-3 rounded-[16px] bg-brand-cream border border-brand-border">
+                        <span className="text-xs font-bold text-brand-brownLight block mb-1">{t('creatorEngagement')}</span>
+                        <span className="font-black text-brand-brown text-sm">{creator.engagement}%</span>
                       </div>
-                      <div className="p-2 rounded-lg bg-white/5">
-                        <span className="text-xs text-slate-400 block">{t('creatorRate')}</span>
-                        <span className="font-bold text-white text-sm">{formatDZD(creator.ratePerPost, language)}</span>
+                      <div className="p-3 rounded-[16px] bg-brand-cream border border-brand-border">
+                        <span className="text-xs font-bold text-brand-brownLight block mb-1">{t('creatorRate')}</span>
+                        <span className="font-black text-brand-brown text-sm">{formatDZD(creator.ratePerPost, language)}</span>
                       </div>
                     </div>
                   </div>
@@ -572,7 +573,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                       onClose();
                       onHireCreator(creator, creator.applicationId);
                     }}
-                    className="btn-gold w-full py-3 text-sm font-bold flex items-center justify-center gap-2"
+                    className="btn-primary w-full py-3.5 text-sm flex items-center justify-center gap-2"
                   >
                     <CreditCard className="w-4 h-4" />
                     <span>توظيف وإيداع بالضمان</span>
@@ -587,24 +588,24 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
         {activeTab === 'messages' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] animate-fade-in">
             {/* Sidebar - Contacts */}
-            <div className="glass-card flex flex-col h-full lg:col-span-1">
-              <div className="p-4 border-b border-white/10 font-bold text-white flex items-center justify-between">
+            <div className="bg-white border border-brand-border rounded-[24px] flex flex-col h-full lg:col-span-1 overflow-hidden shadow-sm">
+              <div className="p-5 border-b border-brand-border font-black text-brand-brown flex items-center justify-between bg-brand-cream/50">
                 <span>المحادثات</span>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto bg-white">
                 {contacts.length === 0 ? (
-                  <div className="p-4 text-slate-400 text-sm text-center">لا توجد محادثات بعد. سيظهر المبدعون هنا بمجرد التقديم.</div>
+                  <div className="p-6 text-brand-brownLight font-medium text-sm text-center">لا توجد محادثات بعد. سيظهر المبدعون هنا بمجرد التقديم.</div>
                 ) : (
                   contacts.map(contact => (
                     <div 
                       key={contact.id}
                       onClick={() => setSelectedContactId(contact.id)}
-                      className={`p-4 cursor-pointer flex items-center gap-3 ${selectedContactId === contact.id ? 'border-l-2 border-l-blue-500 bg-white/5' : 'hover:bg-white/5 opacity-60'}`}
+                      className={`p-4 cursor-pointer flex items-center gap-3 transition-colors ${selectedContactId === contact.id ? 'bg-brand-cream border-r-4 border-r-brand-orange' : 'hover:bg-brand-cream/50 border-r-4 border-r-transparent'}`}
                     >
-                      <img src={contact.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=c'} alt="Creator Avatar" className="w-10 h-10 rounded-full" />
+                      <img src={contact.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=c'} alt="Creator Avatar" className="w-12 h-12 rounded-full border border-brand-border object-cover" />
                       <div>
-                        <h4 className="font-bold text-white text-sm">{contact.full_name || 'بدون اسم'}</h4>
-                        <p className="text-xs text-slate-400 truncate w-40">{contact.category || 'صانع محتوى'}</p>
+                        <h4 className="font-bold text-brand-brown text-sm">{contact.full_name || 'بدون اسم'}</h4>
+                        <p className="text-xs font-medium text-brand-brownLight truncate w-40">{contact.category || 'صانع محتوى'}</p>
                       </div>
                     </div>
                   ))
@@ -613,29 +614,29 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
             </div>
 
             {/* Main Chat Area */}
-            <div className="glass-card flex flex-col h-full lg:col-span-2">
+            <div className="bg-white border border-brand-border rounded-[24px] flex flex-col h-full lg:col-span-2 overflow-hidden shadow-sm">
               {selectedContactId ? (
                 <>
-                  <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                    <img src={contacts.find(c => c.id === selectedContactId)?.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=c'} alt="Creator Avatar" className="w-10 h-10 rounded-full" />
+                  <div className="p-5 border-b border-brand-border flex items-center gap-3 bg-brand-cream/50">
+                    <img src={contacts.find(c => c.id === selectedContactId)?.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=c'} alt="Creator Avatar" className="w-12 h-12 rounded-full border border-brand-border object-cover" />
                     <div>
-                      <h3 className="font-bold text-white">{contacts.find(c => c.id === selectedContactId)?.full_name || 'صانع محتوى'}</h3>
-                      <span className="text-xs text-blue-400 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> متصل الآن
+                      <h3 className="font-bold text-brand-brown">{contacts.find(c => c.id === selectedContactId)?.full_name || 'صانع محتوى'}</h3>
+                      <span className="text-xs font-medium text-emerald-600 flex items-center gap-1.5 mt-0.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> متصل الآن
                       </span>
                     </div>
                   </div>
                   
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-900/30">
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#FAFAFA]">
                     {messages.length === 0 ? (
-                      <div className="text-center text-slate-500 text-sm mt-10">ابدأ المحادثة الآن...</div>
+                      <div className="text-center font-medium text-brand-brownLight text-sm mt-10">ابدأ المحادثة الآن...</div>
                     ) : (
                       messages.map((msg) => (
                         <div key={msg.id} className={`flex flex-col max-w-[75%] ${msg.sender_id === user?.id ? 'mr-auto items-end' : 'ml-auto items-start'}`}>
-                          <div className={`p-3 rounded-2xl ${msg.sender_id === user?.id ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white/10 text-slate-200 rounded-bl-none'}`}>
+                          <div className={`p-4 rounded-[20px] shadow-sm text-sm leading-relaxed ${msg.sender_id === user?.id ? 'bg-brand-brown text-white rounded-br-sm' : 'bg-white border border-brand-border text-brand-brown rounded-bl-sm'}`}>
                             {msg.text}
                           </div>
-                          <span className="text-[10px] text-slate-500 mt-1">
+                          <span className="text-[10px] font-medium text-brand-brownLight mt-1.5 px-1">
                             {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
@@ -644,25 +645,25 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                     <div ref={messagesEndRef} />
                   </div>
 
-                  <div className="p-4 border-t border-white/10">
+                  <div className="p-4 border-t border-brand-border bg-white">
                     <form onSubmit={handleSendMessage} className="flex gap-2">
                       <input
                         type="text"
                         placeholder="اكتب رسالتك هنا..."
-                        className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-blue-500/50"
+                        className="flex-1 bg-[#FAFAFA] border border-brand-border rounded-full px-6 py-3 text-brand-brown text-sm font-medium focus:outline-none focus:border-brand-orange transition-colors"
                         value={chatMessage}
                         onChange={(e) => setChatMessage(e.target.value)}
                       />
-                      <button type="submit" disabled={!chatMessage.trim()} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white p-2.5 rounded-xl transition-colors">
+                      <button type="submit" disabled={!chatMessage.trim()} className="bg-brand-orange hover:bg-brand-orange/90 disabled:opacity-50 text-white p-3 rounded-full transition-all shadow-sm flex items-center justify-center">
                         <SendHorizontal className="w-5 h-5" />
                       </button>
                     </form>
                   </div>
                 </>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 opacity-50">
-                  <MessageSquare className="w-16 h-16 mb-4" />
-                  <p>اختر محادثة للبدء</p>
+                <div className="flex-1 flex flex-col items-center justify-center text-brand-brownLight opacity-50 bg-[#FAFAFA]">
+                  <MessageSquare className="w-16 h-16 mb-4 text-brand-brown/30" />
+                  <p className="font-medium">اختر محادثة للبدء</p>
                 </div>
               )}
             </div>
@@ -672,25 +673,25 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
         {/* Tab 4: Escrow Deals Management */}
         {activeTab === 'escrow' && (
           <div className="space-y-6 animate-fade-in">
-            <h3 className="text-xl font-bold text-white mb-2">إدارة صفقات الضمان وتحرير الأموال</h3>
-            <p className="text-slate-400 text-sm mb-6">مراجعة أعمال المبدعين المستلمة والموافقة على تحرير الأموال من الضمان إلى محفظة صانع المحتوى</p>
+            <h3 className="text-xl font-black text-brand-brown mb-2">إدارة صفقات الضمان وتحرير الأموال</h3>
+            <p className="text-brand-brownLight font-medium text-sm mb-6">مراجعة أعمال المبدعين المستلمة والموافقة على تحرير الأموال من الضمان إلى محفظة صانع المحتوى</p>
 
             <div className="space-y-4">
               {applications.filter(app => app.status === 'approved' || app.status === 'completed').length === 0 ? (
-                <div className="text-center text-slate-400 text-sm mt-10">لا توجد صفقات في الضمان حالياً.</div>
+                <div className="text-center text-brand-brownLight font-medium text-sm mt-10">لا توجد صفقات في الضمان حالياً.</div>
               ) : (
                 applications.filter(app => app.status === 'approved' || app.status === 'completed').map((app) => (
-                  <div key={app.id} className="glass-card p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-lg">{app.campaign?.title}</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <div key={app.id} className="bg-white border border-brand-border rounded-[24px] shadow-sm p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-brand-brown text-lg">{app.campaign?.title}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${app.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-brand-cream text-brand-orange border-brand-orange/30'}`}>
                           {app.status === 'completed' ? 'تم تحرير الأموال ✅' : 'في حساب الضمان 🔒'}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400">المبدع المكلف: <span className="text-white font-semibold">{app.creator?.full_name || app.creator?.brand_name || 'بدون اسم'}</span> | المبلغ المحجوز: <span className="text-emerald-400 font-bold">{formatDZD(app.campaign?.budget)}</span></p>
+                      <p className="text-sm font-medium text-brand-brownLight">المبدع المكلف: <span className="text-brand-brown font-bold">{app.creator?.full_name || app.creator?.brand_name || 'بدون اسم'}</span> | المبلغ المحجوز: <span className="text-brand-orange font-black font-mono">{formatDZD(app.campaign?.budget)}</span></p>
                       {app.deliverable_url && (
-                        <a href={app.deliverable_url} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline block pt-1">
+                        <a href={app.deliverable_url} target="_blank" rel="noreferrer" className="text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline block pt-1">
                           🔗 معاينة المحتوى المنفذ ({app.deliverable_url})
                         </a>
                       )}
@@ -698,16 +699,16 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
                     <div>
                       {app.status === 'completed' ? (
-                        <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-4 h-4" />
+                        <span className="text-sm text-emerald-600 font-bold flex items-center gap-1.5 px-4 py-2 bg-emerald-50 rounded-full border border-emerald-100">
+                          <CheckCircle2 className="w-5 h-5" />
                           تمت العملية وتحرير المبلغ
                         </span>
                       ) : (
                         <button
                           onClick={() => handleApproveDeal(app.id)}
-                          className="btn-primary text-xs px-5 py-3 font-bold flex items-center gap-2 shadow-lg"
+                          className="btn-primary text-sm px-6 py-3 flex items-center gap-2"
                         >
-                          <ShieldCheck className="w-4 h-4" />
+                          <ShieldCheck className="w-5 h-5" />
                           <span>الموافقة وتحرير الأموال الآن</span>
                         </button>
                       )}
@@ -721,21 +722,21 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
 
         {/* Tab 5: Brand / Business Profile */}
         {activeTab === 'profile' && (
-          <div className="max-w-3xl mx-auto glass-card p-6 sm:p-8 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
-                <Building2 className="w-5 h-5" />
+          <div className="max-w-3xl mx-auto bg-white border border-brand-border rounded-[24px] shadow-sm p-6 sm:p-8 animate-fade-in">
+            <div className="flex items-center gap-4 mb-8 pb-6 border-b border-brand-border">
+              <div className="w-14 h-14 rounded-full bg-brand-cream border border-brand-border text-brand-orange flex items-center justify-center font-bold">
+                <Building2 className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">إعدادات ملف المتجر والمشروع التجاري</h3>
-                <p className="text-xs text-slate-400">بيانات متجرك أو عملك التجاري تظهر لصنّاع المحتوى عند التواصل ونشر الحملات الإعلانية</p>
+                <h3 className="text-2xl font-black text-brand-brown mb-1">إعدادات ملف المتجر والمشروع التجاري</h3>
+                <p className="text-sm font-medium text-brand-brownLight">بيانات متجرك أو عملك التجاري تظهر لصنّاع المحتوى عند التواصل ونشر الحملات الإعلانية</p>
               </div>
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">اسم المتجر / العلامة التجارية / الشركة</label>
+                  <label className="block text-sm font-bold text-brand-brown mb-2">اسم المتجر / العلامة التجارية / الشركة</label>
                   <input
                     type="text"
                     placeholder="مثال: متجر ستايل الجزائري"
@@ -747,7 +748,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">مجال النشاط التجاري (Sector)</label>
+                  <label className="block text-sm font-bold text-brand-brown mb-2">مجال النشاط التجاري (Sector)</label>
                   <select
                     className="input-field w-full"
                     value={profileData.sector}
@@ -766,7 +767,7 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">وصف النشاط التجاري والمنتجات (Bio / Description)</label>
+                <label className="block text-sm font-bold text-brand-brown mb-2">وصف النشاط التجاري والمنتجات (Bio / Description)</label>
                 <textarea
                   rows={4}
                   placeholder="اكتب نبذة مختصرة عن متجرك، المنتجات التي تقدمها، والفئة المستهدفة من الزبائن..."
@@ -776,15 +777,15 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">رقم هاتف التواصل والواتساب</label>
+                  <label className="block text-sm font-bold text-brand-brown mb-2">رقم هاتف التواصل والواتساب</label>
                   <div className="relative">
-                    <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Phone className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
                     <input
                       type="tel"
                       placeholder="0550123456"
-                      className="input-field w-full pr-9"
+                      className="input-field w-full pr-11"
                       value={profileData.phone}
                       onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                     />
@@ -792,13 +793,13 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">الولاية / المقر الرئيسي</label>
+                  <label className="block text-sm font-bold text-brand-brown mb-2">الولاية / المقر الرئيسي</label>
                   <div className="relative">
-                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <MapPin className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
                     <input
                       type="text"
                       placeholder="مثال: الجزائر العاصمة"
-                      className="input-field w-full pr-9"
+                      className="input-field w-full pr-11"
                       value={profileData.wilaya}
                       onChange={(e) => setProfileData({ ...profileData, wilaya: e.target.value })}
                     />
@@ -806,11 +807,11 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">رقم السجل التجاري / NIF (اختياري)</label>
+                  <label className="block text-sm font-bold text-brand-brown mb-2">رقم السجل التجاري / NIF (اختياري)</label>
                   <input
                     type="text"
                     placeholder="16/00-1234567"
-                    className="input-field w-full font-mono text-sm"
+                    className="input-field w-full font-mono text-left dir-ltr"
                     value={profileData.rcNumber}
                     onChange={(e) => setProfileData({ ...profileData, rcNumber: e.target.value })}
                   />
@@ -818,13 +819,13 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">رابط الموقع أو صفحة الانستغرام / فيسبوك</label>
+                <label className="block text-sm font-bold text-brand-brown mb-2">رابط الموقع أو صفحة الانستغرام / فيسبوك</label>
                 <div className="relative">
-                  <Globe className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
+                  <Globe className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
                   <input
                     type="url"
                     placeholder="https://instagram.com/my_store_dz"
-                    className="input-field w-full pr-10"
+                    className="input-field w-full pr-11 text-left dir-ltr"
                     value={profileData.websiteUrl}
                     onChange={(e) => setProfileData({ ...profileData, websiteUrl: e.target.value })}
                   />
@@ -832,13 +833,13 @@ export default function BrandDashboardModal({ isOpen, onClose, onHireCreator, in
               </div>
 
               {savedSuccess && (
-                <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl text-sm font-semibold text-center flex items-center justify-center gap-2">
+                <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-[16px] text-sm font-bold text-center flex items-center justify-center gap-2">
                   <CheckCircle2 className="w-5 h-5" />
                   <span>تم حفظ معلومات المتجر بنجاح!</span>
                 </div>
               )}
 
-              <button type="submit" className="btn-primary w-full py-3.5 font-bold text-base flex items-center justify-center gap-2">
+              <button type="submit" className="btn-primary w-full py-4 font-bold text-lg flex items-center justify-center gap-2 mt-4">
                 <span>حفظ بيانات المتجر والمشروع</span>
               </button>
             </form>

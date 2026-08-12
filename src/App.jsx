@@ -128,7 +128,7 @@ function AppContent() {
 
     // Check mandatory profile completion
     if (user && user.role && user.profile) {
-      if (!user.profile.full_name) {
+      if (!user.profile.full_name || !user.profile.phone || !user.profile.wilaya) {
         setIsProfileMandatory(true);
         setIsProfileSettingsOpen(true);
         return; // Stop them from going to dashboard yet
@@ -138,7 +138,7 @@ function AppContent() {
     }
 
     // If user has a role and just logged in, or if auth modal was open when they logged in (via password)
-    if (user && user.role && user.profile?.full_name && (authModal.open || isOAuthLogin)) {
+    if (user && user.role && user.profile?.full_name && user.profile?.phone && user.profile?.wilaya && (authModal.open || isOAuthLogin)) {
       handleCloseAuth();
       if (isOAuthLogin) sessionStorage.removeItem('oauth_login');
       
@@ -237,7 +237,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-dark">
+    <div className="min-h-screen bg-brand-cream">
       {/* ─── Toast Notification ─── */}
       {toast && (
         <div
@@ -276,38 +276,38 @@ function AppContent() {
           />
 
           {/* ─── Section 2: Direct 3-Step Process ─── */}
-          <section className="py-20 px-4 border-b border-white/5 relative bg-[#080C14]">
+          <section className="py-20 px-4 border-b border-brand-border relative bg-brand-cream">
             <div className="max-w-5xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-5xl font-black text-white mb-4 leading-relaxed">
-                {t('howItWorks')} <span className="gradient-text-mint">{t('howItWorksHighlight')}</span>
+              <h2 className="text-3xl sm:text-5xl font-black text-brand-brown mb-4 leading-relaxed">
+                {t('howItWorks')} <span className="text-brand-orange">{t('howItWorksHighlight')}</span>
               </h2>
-              <p className="text-slate-400 max-w-xl mx-auto text-sm sm:text-base mb-16 leading-relaxed">
+              <p className="text-brand-brownLight max-w-xl mx-auto text-sm sm:text-base mb-16 leading-relaxed">
                 {t('howItWorksSub')}
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="glass-card-hover p-8 text-center relative group">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                     1
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step1Title')}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{t('step1Desc')}</p>
+                  <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step1Title')}</h3>
+                  <p className="text-brand-brownLight text-sm leading-relaxed">{t('step1Desc')}</p>
                 </div>
 
-                <div className="glass-card-hover p-8 text-center relative group">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                     2
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step2Title')}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{t('step2Desc')}</p>
+                  <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step2Title')}</h3>
+                  <p className="text-brand-brownLight text-sm leading-relaxed">{t('step2Desc')}</p>
                 </div>
 
-                <div className="glass-card-hover p-8 text-center relative group">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
                     3
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-3 tracking-wide">{t('step3Title')}</h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">{t('step3Desc')}</p>
+                  <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step3Title')}</h3>
+                  <p className="text-brand-brownLight text-sm leading-relaxed">{t('step3Desc')}</p>
                 </div>
               </div>
             </div>
@@ -316,17 +316,18 @@ function AppContent() {
       )}
 
       {/* ─── Section 3: Clean Creators & Stores Showcase Grid ─── */}
-      <section id="creators" className="py-20 px-4 bg-[#080C14]">
+      {isLoggedIn && (
+        <section id="creators" className="py-20 px-4 bg-brand-cream">
         <div className="max-w-7xl mx-auto">
           {/* Main Showcase Toggle Tabs (Creators vs Stores) */}
           <div className="flex justify-center mb-10">
-            <div className="p-1.5 bg-white/5 border border-white/10 rounded-2xl flex gap-2">
+            <div className="p-1.5 bg-white border border-brand-border rounded-full flex gap-2 shadow-sm">
               <button
                 onClick={() => setShowcaseTab('creators')}
-                className={`px-6 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center gap-2 transition-all ${
+                className={`px-6 py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition-all ${
                   showcaseTab === 'creators'
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 scale-105'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20 scale-105'
+                    : 'text-brand-brownLight hover:text-brand-brown'
                 }`}
               >
                 <Sparkles className="w-5 h-5" />
@@ -335,10 +336,10 @@ function AppContent() {
 
               <button
                 onClick={() => setShowcaseTab('stores')}
-                className={`px-6 py-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center gap-2 transition-all ${
+                className={`px-6 py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition-all ${
                   showcaseTab === 'stores'
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-400 text-white shadow-lg shadow-blue-500/20 scale-105'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20 scale-105'
+                    : 'text-brand-brownLight hover:text-brand-brown'
                 }`}
               >
                 <Building2 className="w-5 h-5" />
@@ -349,10 +350,10 @@ function AppContent() {
 
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
             <div>
-              <h2 className="text-3xl sm:text-4xl font-black text-white mb-3 tracking-wide">
+              <h2 className="text-3xl sm:text-4xl font-black text-brand-brown mb-3 tracking-wide">
                 {showcaseTab === 'creators' ? t('featuredCreators') : t('featuredStores')}
               </h2>
-              <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
+              <p className="text-brand-brownLight text-sm sm:text-base leading-relaxed">
                 {showcaseTab === 'creators' ? t('featuredCreatorsSub') : t('featuredStoresSub')}
               </p>
             </div>
@@ -373,12 +374,10 @@ function AppContent() {
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 ${
+                    className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors duration-200 ${
                       selectedCategory === cat
-                        ? showcaseTab === 'creators' 
-                          ? 'bg-emerald-400 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
-                          : 'bg-blue-400 text-slate-950 font-black shadow-lg shadow-blue-500/20'
-                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/10'
+                        ? 'bg-brand-brown text-white'
+                        : 'bg-white text-brand-brownLight hover:bg-brand-cream hover:text-brand-brown border border-brand-border'
                     }`}
                   >
                     {categoryLabels[cat] || cat}
@@ -409,31 +408,31 @@ function AppContent() {
                 <div
                   key={creator.id}
                   onClick={() => handleSelectCreator(creator)}
-                  className="glass-card-hover p-6 cursor-pointer group flex flex-col justify-between"
+                  className="bg-brand-orange text-white hover:-translate-y-1 rounded-[40px] p-6 sm:p-8 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-lg"
                 >
                   <div>
                     <div className="flex items-center gap-3.5 mb-4">
                       <img
                         src={creator.avatar}
                         alt={getLocalizedItem(creator, 'name', language)}
-                        className="w-14 h-14 rounded-2xl bg-white/10 object-cover border border-white/10 group-hover:scale-105 transition-transform"
+                        className="w-16 h-16 rounded-full bg-white/20 object-cover border-2 border-white/30 group-hover:scale-105 transition-transform"
                       />
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-white text-base truncate group-hover:text-emerald-400 transition-colors">
+                        <h3 className="font-bold text-white text-lg truncate">
                           {getLocalizedItem(creator, 'name', language)}
                         </h3>
-                        <span className="text-xs text-slate-400 block mt-0.5">{getLocalizedItem(creator, 'category', language)}</span>
+                        <span className="text-xs text-white/80 block mt-0.5">{getLocalizedItem(creator, 'category', language)}</span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-6">
+                    <p className="text-sm text-white/90 line-clamp-2 leading-relaxed mb-6">
                       {getLocalizedItem(creator, 'bio', language)}
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                    <span className="text-xs text-slate-400 font-semibold">{t('deliveryStartsAt')}</span>
-                    <span className="font-extrabold text-emerald-400 text-sm">{formatDZD(creator.ratePerPost, language)}</span>
+                  <div className="pt-4 border-t border-white/20 flex items-center justify-between">
+                    <span className="text-xs text-white/80 font-semibold">{t('deliveryStartsAt')}</span>
+                    <span className="font-bold text-white text-base bg-white/20 px-3 py-1 rounded-full">{formatDZD(creator.ratePerPost, language)}</span>
                   </div>
                 </div>
               ))}
@@ -447,44 +446,44 @@ function AppContent() {
                 <div
                   key={store.id}
                   onClick={() => setSelectedStore(store)}
-                  className="glass-card-hover p-6 cursor-pointer group flex flex-col justify-between border border-blue-500/10 hover:border-blue-500/30"
+                  className="bg-white border border-brand-border hover:-translate-y-1 rounded-[40px] p-6 sm:p-8 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-lg"
                 >
                   <div>
                     <div className="flex items-center gap-3.5 mb-4">
                       <img
                         src={store.logo}
                         alt={getLocalizedItem(store, 'name', language)}
-                        className="w-14 h-14 rounded-2xl bg-blue-500/10 p-1 object-cover border border-blue-500/20 group-hover:scale-105 transition-transform"
+                        className="w-16 h-16 rounded-full bg-brand-cream object-cover border-2 border-brand-border group-hover:scale-105 transition-transform"
                       />
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-white text-base truncate group-hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                        <h3 className="font-bold text-brand-brown text-lg truncate flex items-center gap-1.5">
                           {getLocalizedItem(store, 'name', language)}
-                          {store.verified && <BadgeCheck className="w-4 h-4 text-blue-400" />}
+                          {store.verified && <BadgeCheck className="w-5 h-5 text-brand-orange" />}
                         </h3>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                        <div className="flex items-center gap-2 text-xs text-brand-brownLight mt-0.5">
                           <span>{getLocalizedItem(store, 'sector', language)}</span>
                           <span>•</span>
                           <span className="flex items-center gap-0.5">
-                            <MapPin className="w-3 h-3 text-slate-500" />
+                            <MapPin className="w-3 h-3" />
                             {getLocalizedItem(store, 'location', language)}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed mb-6">
+                    <p className="text-sm text-brand-brownLight line-clamp-2 leading-relaxed mb-6">
                       {getLocalizedItem(store, 'bio', language)}
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                  <div className="pt-4 border-t border-brand-border flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block">{t('activeCampaignsCount')}</span>
-                      <span className="font-extrabold text-blue-400 text-sm">{store.activeCampaigns} {t('applicants')}</span>
+                      <span className="text-[10px] text-brand-brownLight uppercase tracking-wider block">{t('activeCampaignsCount')}</span>
+                      <span className="font-bold text-brand-brown text-base">{store.activeCampaigns} {t('applicants')}</span>
                     </div>
                     <div className="text-left">
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block">{t('budgetOffer')}</span>
-                      <span className="font-extrabold text-emerald-400 text-sm">{formatDZD(store.totalBudget, language)}</span>
+                      <span className="text-[10px] text-brand-brownLight uppercase tracking-wider block">{t('budgetOffer')}</span>
+                      <span className="font-bold text-brand-orange text-base bg-brand-orange/10 px-3 py-1 rounded-full">{formatDZD(store.totalBudget, language)}</span>
                     </div>
                   </div>
                 </div>
@@ -501,6 +500,7 @@ function AppContent() {
           )}
         </div>
       </section>
+      )}
 
       {/* ─── Footer ─── */}
       <Footer />

@@ -180,14 +180,6 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const isMounted = React.useRef(true);
-  
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

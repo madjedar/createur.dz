@@ -597,9 +597,7 @@ function AppContent() {
       />
       <ProfileSettingsModal 
         isOpen={isProfileSettingsOpen} 
-        onClose={() => {
-          if (!isProfileMandatory) setIsProfileSettingsOpen(false);
-        }}
+        onClose={() => setIsProfileSettingsOpen(false)}
         isMandatory={isProfileMandatory}
       />
     </div>

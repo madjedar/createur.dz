@@ -136,6 +136,15 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
     };
   }, [isOpen, onClose, isMandatory]);
 
+  const isMounted = React.useRef(true);
+  
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   if (!isOpen) return null;
 
   const handleAvatarUpload = async (e) => {

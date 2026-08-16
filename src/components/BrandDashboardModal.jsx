@@ -75,6 +75,7 @@ export default function BrandDashboardModal({
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [selectedContactId, setSelectedContactId] = useState(initialContactId);
+  const [chatError, setChatError] = useState('');
   const messagesEndRef = useRef(null);
 
   // Load Data
@@ -396,6 +397,7 @@ export default function BrandDashboardModal({
     if (!chatMessage.trim() || !selectedContactId || !user?.id) return;
     const msgText = chatMessage.trim();
     setChatMessage('');
+    setChatError('');
 
     // Optimistic update — show message immediately in UI
     const optimisticMsg = {
@@ -416,9 +418,10 @@ export default function BrandDashboardModal({
       }
     } catch (err) {
       console.error("Error sending message:", err);
-      // Remove optimistic message and show error
+      // Remove optimistic message and show error in UI
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
       setChatMessage(msgText); // restore text so user can retry
+      setChatError(`خطأ: ${err?.message || err?.code || 'فشل إرسال الرسالة'} — Code: ${err?.code || 'unknown'}`);
     }
   };
 
@@ -1305,6 +1308,11 @@ export default function BrandDashboardModal({
                   </div>
 
                   <div className="p-3.5 border-t border-brand-border bg-white">
+                    {chatError && (
+                      <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[10px] font-medium break-all">
+                        ⚠️ {chatError}
+                      </div>
+                    )}
                     <form onSubmit={handleSendMessage} className="flex gap-2">
                       <input
                         type="text"

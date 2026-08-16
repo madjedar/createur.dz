@@ -229,7 +229,15 @@ export const getMessages = async (userId1, userId2) => {
     .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
     .order('created_at', { ascending: true });
     
-  if (error) throw error;
+  if (error) {
+    console.error('[getMessages] Supabase error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    throw error;
+  }
   return data;
 };
 
@@ -239,7 +247,16 @@ export const sendMessage = async (senderId, receiverId, text) => {
     .insert([{ sender_id: senderId, receiver_id: receiverId, text }])
     .select();
     
-  if (error) throw error;
+  if (error) {
+    // Log full Supabase error for debugging
+    console.error('[sendMessage] Supabase error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
+    throw error;
+  }
   return data;
 };
 

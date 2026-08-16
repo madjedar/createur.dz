@@ -45,6 +45,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [selectedContactId, setSelectedContactId] = useState(initialContactId);
+  const [chatError, setChatError] = useState('');
   const messagesEndRef = React.useRef(null);
 
   useEffect(() => {
@@ -145,6 +146,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
     
     const msgText = chatMessage.trim();
     setChatMessage('');
+    setChatError('');
 
     // Optimistic update — show message immediately in UI
     const optimisticMsg = {
@@ -165,9 +167,10 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
       }
     } catch (err) {
       console.error("Error sending message:", err);
-      // Remove optimistic message and restore text so user can retry
+      // Remove optimistic message and show error in UI
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
       setChatMessage(msgText);
+      setChatError(`خطأ: ${err?.message || err?.code || 'فشل إرسال الرسالة'} — Code: ${err?.code || 'unknown'}`);
     }
   };
 
@@ -633,6 +636,11 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                   </div>
 
                   <div className="p-4 border-t border-brand-border bg-white z-10">
+                    {chatError && (
+                      <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[10px] font-medium break-all">
+                        ⚠️ {chatError}
+                      </div>
+                    )}
                     <form onSubmit={handleSendMessage} className="flex gap-2">
                       <input
                         type="text"

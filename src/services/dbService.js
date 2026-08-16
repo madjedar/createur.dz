@@ -103,16 +103,61 @@ export const createCampaign = async (campaignData) => {
   return data;
 };
 
+export const updateCampaign = async (campaignId, updates) => {
+  const { data, error } = await supabase
+    .from('campaigns')
+    .update(updates)
+    .eq('id', campaignId)
+    .select();
+    
+  if (error) throw error;
+  return data;
+};
+
+export const deleteCampaign = async (campaignId) => {
+  // First delete associated applications to preserve referential integrity
+  await supabase
+    .from('applications')
+    .delete()
+    .eq('campaign_id', campaignId);
+
+  const { data, error } = await supabase
+    .from('campaigns')
+    .delete()
+    .eq('id', campaignId)
+    .select();
+    
+  if (error) throw error;
+  return data;
+};
+
 // ------------------------------------------------------------------
 // APPLICATIONS & DEALS
 // ------------------------------------------------------------------
 
-export const applyToCampaign = async (campaignId, creatorId) => {
-  const { data, error } = await supabase
+export const applyToCampaign = async (campaignId, creatorId, pitchData = {}) => {
+  const payload = {
+    campaign_id: campaignId,
+    creator_id: creatorId,
+    status: 'pending',
+    ...pitchData
+  };
+
+  let { data, error } = await supabase
     .from('applications')
-    .insert([{ campaign_id: campaignId, creator_id: creatorId, status: 'pending' }])
+    .insert([payload])
     .select();
     
+  // If specific extra columns don't exist yet in DB schema, fallback to core fields
+  if (error && (error.code === '42703' || error.message?.includes('column'))) {
+    const fallback = await supabase
+      .from('applications')
+      .insert([{ campaign_id: campaignId, creator_id: creatorId, status: 'pending' }])
+      .select();
+    if (fallback.error) throw fallback.error;
+    return fallback.data;
+  }
+
   if (error) throw error;
   return data;
 };
@@ -124,6 +169,17 @@ export const updateApplicationStatus = async (applicationId, status, deliverable
   const { data, error } = await supabase
     .from('applications')
     .update(updateData)
+    .eq('id', applicationId)
+    .select();
+    
+  if (error) throw error;
+  return data;
+};
+
+export const deleteApplication = async (applicationId) => {
+  const { data, error } = await supabase
+    .from('applications')
+    .delete()
     .eq('id', applicationId)
     .select();
     

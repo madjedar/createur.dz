@@ -16,6 +16,7 @@ import StoreDetailsModal from './components/StoreDetailsModal'
 import CheckoutModal from './components/CheckoutModal'
 import ReviewModal from './components/ReviewModal'
 import ProfileSettingsModal from './components/ProfileSettingsModal'
+import CampaignApplyModal from './components/CampaignApplyModal'
 import {
   Search,
   Filter,
@@ -38,7 +39,20 @@ import {
   MapPin,
   Briefcase,
   Sparkles,
+  SlidersHorizontal,
+  RotateCcw,
+  X,
+  ExternalLink
 } from 'lucide-react'
+
+const ALGERIAN_WILAYAS = [
+  'الجزائر', 'وهران', 'قسنطينة', 'عنابة', 'سطيف', 'باتنة', 'البليدة', 'تلمسان', 
+  'بجاية', 'تيزي وزو', 'الشلف', 'بسكرة', 'تبسة', 'جيجل', 'سكيكدة', 'سيدي بلعباس', 
+  'مستغانم', 'المسيلة', 'معسكر', 'ورقلة', 'برج بوعريريج', 'بومرداس', 'الطارف', 
+  'تندوف', 'تيسمسيلت', 'الوادي', 'خنشلة', 'سوق أهراس', 'تيبازة', 'ميلة', 'عين الدفلى', 
+  'النعامة', 'عين تموشنت', 'غرداية', 'غليزان', 'تيميمون', 'برج باجي مختار', 'أولاد جلال', 
+  'بني عباس', 'إن صالح', 'إن قزام', 'تقرت', 'جانت', 'المغير', 'المنيعة'
+]
 
 function AppContent() {
   const { user } = useAuth()
@@ -54,11 +68,17 @@ function AppContent() {
   const [reviewCreator, setReviewCreator] = useState(null)
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
   const [isProfileMandatory, setIsProfileMandatory] = useState(false)
+  const [selectedCampaignToApply, setSelectedCampaignToApply] = useState(null)
 
-  // Showcase Tab & Filters
+  // Showcase Tab & Advanced Filters
   const [showcaseTab, setShowcaseTab] = useState('creators') // 'creators' | 'stores'
   const [selectedCategory, setSelectedCategory] = useState('الكل')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedWilaya, setSelectedWilaya] = useState('all')
+  const [selectedPriceRange, setSelectedPriceRange] = useState('all')
+  const [selectedPlatform, setSelectedPlatform] = useState('all')
+  const [sortBy, setSortBy] = useState('featured')
+  const [showFiltersDrawer, setShowFiltersDrawer] = useState(false)
 
   // Database State
   const [creators, setCreators] = useState([])
@@ -198,29 +218,62 @@ function AppContent() {
   }
   const handleCloseReview = () => setReviewCreator(null)
 
-  // Filtered creators
+  // Filtered creators with Multi-dimensional Search & Sort
   const filteredCreators = creators.filter((c) => {
+    // 1. Category Filter
     const rawCategory = (c.category && typeof c.category === 'object') ? c.category.ar : (c.category || '')
     const matchCategory = selectedCategory === 'الكل' || rawCategory === selectedCategory
-    const bioText = getLocalizedItem(c, 'bio', language)
-    const categoryText = getLocalizedItem(c, 'category', language)
+
+    // 2. Wilaya / Location Filter
+    const creatorWilaya = c.wilaya || c.location || ''
+    const matchWilaya = selectedWilaya === 'all' || creatorWilaya.toLowerCase().includes(selectedWilaya.toLowerCase())
+
+    // 3. Price / Rate Filter
+    const rate = Number(c.rate_per_post || c.ratePerPost || 0)
+    let matchPrice = true
+    if (selectedPriceRange === 'under15k') matchPrice = rate > 0 && rate < 15000
+    else if (selectedPriceRange === '15k-30k') matchPrice = rate >= 15000 && rate <= 30000
+    else if (selectedPriceRange === '30k-60k') matchPrice = rate > 30000 && rate <= 60000
+    else if (selectedPriceRange === 'above60k') matchPrice = rate > 60000
+
+    // 4. Platform Filter
+    let matchPlatform = true
+    if (selectedPlatform === 'instagram') matchPlatform = Boolean(c.instagram_url || c.followers?.instagram)
+    else if (selectedPlatform === 'tiktok') matchPlatform = Boolean(c.tiktok_url || c.followers?.tiktok)
+    else if (selectedPlatform === 'youtube') matchPlatform = Boolean(c.youtube_url || c.followers?.youtube)
+
+    // 5. Search Query
+    const nameText = getLocalizedItem(c, 'name', language) || c.full_name || ''
+    const bioText = getLocalizedItem(c, 'bio', language) || c.bio || ''
+    const categoryText = getLocalizedItem(c, 'category', language) || rawCategory
     const matchSearch =
       searchQuery === '' ||
-      getLocalizedItem(c, 'name', language).toLowerCase().includes(searchQuery.toLowerCase()) ||
+      nameText.toLowerCase().includes(searchQuery.toLowerCase()) ||
       bioText.toLowerCase().includes(searchQuery.toLowerCase()) ||
       categoryText.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.tags && c.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
-    return matchCategory && matchSearch
+      creatorWilaya.toLowerCase().includes(searchQuery.toLowerCase())
+
+    return matchCategory && matchWilaya && matchPrice && matchPlatform && matchSearch
+  }).sort((a, b) => {
+    const rateA = Number(a.rate_per_post || a.ratePerPost || 0)
+    const rateB = Number(b.rate_per_post || b.ratePerPost || 0)
+    const nameA = (a.full_name || a.name || '').toLowerCase()
+    const nameB = (b.full_name || b.name || '').toLowerCase()
+
+    if (sortBy === 'rate-asc') return rateA - rateB
+    if (sortBy === 'rate-desc') return rateB - rateA
+    if (sortBy === 'name') return nameA.localeCompare(nameB)
+    return 0 // 'featured'
   })
 
   // Filtered stores
   const filteredStores = stores.filter((s) => {
     const rawSector = (s.sector && typeof s.sector === 'object') ? s.sector.ar : (s.sector || '')
     const matchCategory = selectedCategory === 'الكل' || rawSector === selectedCategory
-    const nameText = getLocalizedItem(s, 'name', language)
-    const bioText = getLocalizedItem(s, 'bio', language)
-    const sectorText = getLocalizedItem(s, 'sector', language)
-    const locationText = getLocalizedItem(s, 'location', language)
+    const nameText = getLocalizedItem(s, 'name', language) || s.brand_name || ''
+    const bioText = getLocalizedItem(s, 'bio', language) || s.bio || ''
+    const sectorText = getLocalizedItem(s, 'sector', language) || rawSector
+    const locationText = getLocalizedItem(s, 'location', language) || s.wilaya || ''
     const matchSearch =
       searchQuery === '' ||
       nameText.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -229,6 +282,23 @@ function AppContent() {
       locationText.toLowerCase().includes(searchQuery.toLowerCase())
     return matchCategory && matchSearch
   })
+
+  const resetAllFilters = () => {
+    setSelectedCategory('الكل')
+    setSearchQuery('')
+    setSelectedWilaya('all')
+    setSelectedPriceRange('all')
+    setSelectedPlatform('all')
+    setSortBy('featured')
+  }
+
+  const hasActiveFilters = 
+    selectedCategory !== 'الكل' || 
+    searchQuery !== '' || 
+    selectedWilaya !== 'all' || 
+    selectedPriceRange !== 'all' || 
+    selectedPlatform !== 'all' || 
+    sortBy !== 'featured'
 
   const formatFollowers = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -348,18 +418,69 @@ function AppContent() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-            <div>
-              <h2 className="text-3xl sm:text-4xl font-black text-brand-brown mb-3 tracking-wide">
-                {showcaseTab === 'creators' ? t('featuredCreators') : t('featuredStores')}
-              </h2>
-              <p className="text-brand-brownLight text-sm sm:text-base leading-relaxed">
-                {showcaseTab === 'creators' ? t('featuredCreatorsSub') : t('featuredStoresSub')}
-              </p>
+          <div className="mb-10 text-center sm:text-right">
+            <h2 className="text-3xl sm:text-4xl font-black text-brand-brown mb-3 tracking-wide">
+              {showcaseTab === 'creators' ? t('featuredCreators') : t('featuredStores')}
+            </h2>
+            <p className="text-brand-brownLight text-sm sm:text-base leading-relaxed">
+              {showcaseTab === 'creators' ? t('featuredCreatorsSub') : t('featuredStoresSub')}
+            </p>
+          </div>
+
+          {/* ─── Search & Category Bar ─── */}
+          <div className="bg-white border border-brand-border rounded-[28px] p-5 sm:p-6 mb-8 shadow-sm space-y-4">
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Search Box with Clear Button */}
+              <div className="relative flex-1">
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
+                <input
+                  type="text"
+                  placeholder={t('searchPlaceholder')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="input-field pr-12 pl-10 w-full text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-brand-brownLight hover:text-brand-brown rounded-full"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Advanced Filter Drawer Toggle */}
+              <button
+                onClick={() => setShowFiltersDrawer(!showFiltersDrawer)}
+                className={`px-5 py-3 rounded-full text-xs font-bold flex items-center justify-center gap-2 border transition-all ${
+                  showFiltersDrawer || hasActiveFilters
+                    ? 'bg-brand-orange text-white border-brand-orange shadow-md shadow-brand-orange/20'
+                    : 'bg-brand-cream text-brand-brown border-brand-border hover:border-brand-orange/40'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>{t('filters')}</span>
+                {hasActiveFilters && (
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                )}
+              </button>
+
+              {/* Reset Filters Button */}
+              {hasActiveFilters && (
+                <button
+                  onClick={resetAllFilters}
+                  className="px-4 py-3 rounded-full text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors flex items-center justify-center gap-1.5"
+                  title={t('clearFilters')}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{t('clearFilters')}</span>
+                </button>
+              )}
             </div>
 
-            {/* Category Filters */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+            {/* Category Chips Bar */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pt-1 pb-1">
               {categories.map((cat) => {
                 const categoryLabels = {
                   'الكل': t('catAll'),
@@ -370,14 +491,15 @@ function AppContent() {
                   'سفر وسياحة': t('catTravel'),
                   'رياضة ولياقة': t('catFitness')
                 };
+                const isSelected = selectedCategory === cat;
                 return (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors duration-200 ${
-                      selectedCategory === cat
-                        ? 'bg-brand-brown text-white'
-                        : 'bg-white text-brand-brownLight hover:bg-brand-cream hover:text-brand-brown border border-brand-border'
+                    className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border shadow-sm ${
+                      isSelected
+                        ? 'bg-brand-brown text-white border-brand-brown'
+                        : 'bg-white text-brand-brownLight hover:bg-brand-cream hover:text-brand-brown border-brand-border'
                     }`}
                   >
                     {categoryLabels[cat] || cat}
@@ -385,57 +507,174 @@ function AppContent() {
                 );
               })}
             </div>
-          </div>
 
-          {/* Search Box */}
-          <div className="mb-8">
-            <div className="relative max-w-md">
-              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-              <input
-                type="text"
-                placeholder={t('searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input-field pr-11"
-              />
+            {/* ─── Expandable Advanced Filter Drawer ─── */}
+            {showFiltersDrawer && (
+              <div className="pt-4 border-t border-brand-border/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
+                {/* Filter 1: Wilaya */}
+                <div>
+                  <label className="block text-[11px] font-bold text-brand-brown mb-1.5">{t('filterByWilaya')}</label>
+                  <select
+                    value={selectedWilaya}
+                    onChange={(e) => setSelectedWilaya(e.target.value)}
+                    className="input-field w-full text-xs py-2 bg-white"
+                  >
+                    <option value="all">{t('allWilayas')}</option>
+                    {ALGERIAN_WILAYAS.map((w) => (
+                      <option key={w} value={w}>{w}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filter 2: Price / Rate */}
+                <div>
+                  <label className="block text-[11px] font-bold text-brand-brown mb-1.5">{t('filterByPrice')}</label>
+                  <select
+                    value={selectedPriceRange}
+                    onChange={(e) => setSelectedPriceRange(e.target.value)}
+                    className="input-field w-full text-xs py-2 bg-white"
+                  >
+                    <option value="all">{t('allPrices')}</option>
+                    <option value="under15k">{t('priceUnder15k')}</option>
+                    <option value="15k-30k">{t('price15kTo30k')}</option>
+                    <option value="30k-60k">{t('price30kTo60k')}</option>
+                    <option value="above60k">{t('priceAbove60k')}</option>
+                  </select>
+                </div>
+
+                {/* Filter 3: Platform */}
+                <div>
+                  <label className="block text-[11px] font-bold text-brand-brown mb-1.5">{t('filterByPlatform')}</label>
+                  <select
+                    value={selectedPlatform}
+                    onChange={(e) => setSelectedPlatform(e.target.value)}
+                    className="input-field w-full text-xs py-2 bg-white"
+                  >
+                    <option value="all">{t('allPlatforms')}</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="youtube">YouTube</option>
+                  </select>
+                </div>
+
+                {/* Filter 4: Sort By */}
+                <div>
+                  <label className="block text-[11px] font-bold text-brand-brown mb-1.5">{t('sortBy')}</label>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="input-field w-full text-xs py-2 bg-white"
+                  >
+                    <option value="featured">{t('sortFeatured')}</option>
+                    <option value="rate-asc">{t('sortRateAsc')}</option>
+                    <option value="rate-desc">{t('sortRateDesc')}</option>
+                    <option value="name">{t('sortName')}</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Results Count Bar */}
+            <div className="pt-2 flex justify-between items-center text-xs font-bold text-brand-brownLight border-t border-brand-border/40">
+              <span>
+                {showcaseTab === 'creators' 
+                  ? `${filteredCreators.length} ${t('showingResults')}` 
+                  : `${filteredStores.length} متجر متاح`}
+              </span>
+              {hasActiveFilters && (
+                <span className="text-[11px] text-brand-orange">
+                  فلاتر نشطة مفعّلة
+                </span>
+              )}
             </div>
           </div>
 
           {/* Tab 1: Creators Grid */}
           {showcaseTab === 'creators' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredCreators.map((creator) => (
-                <div
-                  key={creator.id}
-                  onClick={() => handleSelectCreator(creator)}
-                  className="bg-brand-orange text-white hover:-translate-y-1 rounded-[40px] p-6 sm:p-8 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-lg"
-                >
-                  <div>
-                    <div className="flex items-center gap-3.5 mb-4">
-                      <img
-                        src={creator.avatar}
-                        alt={getLocalizedItem(creator, 'name', language)}
-                        className="w-16 h-16 rounded-full bg-white/20 object-cover border-2 border-white/30 group-hover:scale-105 transition-transform"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-white text-lg truncate">
-                          {getLocalizedItem(creator, 'name', language)}
-                        </h3>
-                        <span className="text-xs text-white/80 block mt-0.5">{getLocalizedItem(creator, 'category', language)}</span>
+              {filteredCreators.map((creator) => {
+                const creatorName = getLocalizedItem(creator, 'name', language) || creator.full_name || 'صانع محتوى'
+                const creatorAvatar = creator.avatar || creator.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator'
+                const creatorWilaya = creator.wilaya || creator.location || 'الجزائر'
+                const rate = creator.rate_per_post || creator.ratePerPost || 20000
+
+                return (
+                  <div
+                    key={creator.id}
+                    onClick={() => handleSelectCreator(creator)}
+                    className="bg-brand-orange text-white hover:-translate-y-1.5 rounded-[36px] p-6 sm:p-7 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-md hover:shadow-2xl relative overflow-hidden"
+                  >
+                    <div>
+                      {/* Top Bar: Avatar + Name + Badges */}
+                      <div className="flex items-center gap-3.5 mb-4">
+                        <img
+                          src={creatorAvatar}
+                          alt={creatorName}
+                          className="w-14 h-14 rounded-full bg-white/20 object-cover border-2 border-white/40 group-hover:scale-105 transition-transform"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-white text-base truncate flex items-center gap-1">
+                            <span>{creatorName}</span>
+                            {creator.verified && <BadgeCheck className="w-4 h-4 text-white" />}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs text-white/80 mt-0.5">
+                            <span className="truncate">{getLocalizedItem(creator, 'category', language) || 'مبدع'}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-0.5 shrink-0">
+                              <MapPin className="w-3 h-3" />
+                              <span>{creatorWilaya}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bio */}
+                      <p className="text-xs text-white/90 line-clamp-2 leading-relaxed mb-4">
+                        {getLocalizedItem(creator, 'bio', language) || 'صانع محتوى رقمي متألق على منصات التواصل الاجتماعي.'}
+                      </p>
+
+                      {/* Social Platforms Row */}
+                      <div className="flex items-center gap-2 mb-4">
+                        {creator.instagram_url && (
+                          <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-white flex items-center gap-1">
+                            <span>Instagram</span>
+                          </span>
+                        )}
+                        {creator.tiktok_url && (
+                          <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-white flex items-center gap-1">
+                            <span>TikTok</span>
+                          </span>
+                        )}
+                        {creator.youtube_url && (
+                          <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-white flex items-center gap-1">
+                            <span>YouTube</span>
+                          </span>
+                        )}
                       </div>
                     </div>
 
-                    <p className="text-sm text-white/90 line-clamp-2 leading-relaxed mb-6">
-                      {getLocalizedItem(creator, 'bio', language)}
-                    </p>
+                    {/* Bottom Pricing & Action */}
+                    <div className="pt-3 border-t border-white/20 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-white/80 font-medium block">{t('deliveryStartsAt')}</span>
+                        <span className="font-black text-white text-sm font-mono bg-white/20 px-2.5 py-0.5 rounded-full">
+                          {formatDZD(rate, language)}
+                        </span>
+                      </div>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleHireCreator(creator);
+                        }}
+                        className="px-3.5 py-1.5 rounded-full bg-white text-brand-orange hover:bg-brand-cream text-xs font-bold shadow-sm transition-all"
+                      >
+                        {t('creatorHire')}
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="pt-4 border-t border-white/20 flex items-center justify-between">
-                    <span className="text-xs text-white/80 font-semibold">{t('deliveryStartsAt')}</span>
-                    <span className="font-bold text-white text-base bg-white/20 px-3 py-1 rounded-full">{formatDZD(creator.ratePerPost, language)}</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -446,7 +685,7 @@ function AppContent() {
                 <div
                   key={store.id}
                   onClick={() => setSelectedStore(store)}
-                  className="bg-white border border-brand-border hover:-translate-y-1 rounded-[40px] p-6 sm:p-8 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-lg"
+                  className="bg-white border border-brand-border hover:-translate-y-1 rounded-[36px] p-6 sm:p-8 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-lg"
                 >
                   <div>
                     <div className="flex items-center gap-3.5 mb-4">
@@ -493,9 +732,17 @@ function AppContent() {
 
           {((showcaseTab === 'creators' && filteredCreators.length === 0) ||
             (showcaseTab === 'stores' && filteredStores.length === 0)) && (
-            <div className="text-center py-16">
-              <Search className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-              <p className="text-slate-400 text-lg">{t('noResults')}</p>
+            <div className="text-center py-16 bg-white rounded-[32px] border border-brand-border p-8 shadow-sm">
+              <Search className="w-12 h-12 text-brand-brownLight/40 mx-auto mb-3" />
+              <h4 className="font-bold text-brand-brown text-lg mb-1">{t('noResults')}</h4>
+              <p className="text-brand-brownLight text-xs mb-4 max-w-md mx-auto">{t('noCreatorsMatch')}</p>
+              <button
+                onClick={resetAllFilters}
+                className="btn-primary text-xs px-6 py-2.5 rounded-full inline-flex items-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{t('clearFilters')}</span>
+              </button>
             </div>
           )}
         </div>
@@ -557,42 +804,25 @@ function AppContent() {
         isOpen={!!selectedStore}
         onClose={() => setSelectedStore(null)}
         store={selectedStore}
-        onApplyCampaign={async (campaign) => {
-          if (isLoggedIn && user?.role === 'creator') {
-            try {
-              // Check if campaign ID is a valid UUID (real DB record) vs mock data
-              const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaign.id);
-              
-              if (isUUID) {
-                const { applyToCampaign, createNotification } = await import('./services/dbService');
-                await applyToCampaign(campaign.id, user.id);
-                if (campaign.brand_id) {
-                   await createNotification(
-                     campaign.brand_id,
-                     'طلب تقديم جديد',
-                     `قام ${user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaign.title}".`
-                   );
-                }
-              }
-              // Success for both mock and real campaigns
-              setToast({ type: 'success', message: t('applicationSuccess') || 'تم التقديم بنجاح! ✅' });
-              setSelectedStore(null);
-              handleOpenDashboard('opportunities');
-            } catch (err) {
-              console.error(err);
-              // Show specific error for duplicate applications
-              if (err?.code === '23505') {
-                setToast({ type: 'error', message: t('alreadyApplied') || 'لقد قدمت على هذه الحملة سابقاً' });
-              } else {
-                setToast({ type: 'error', message: t('applicationError') || 'حدث خطأ أثناء التقديم' });
-              }
-            }
-          } else if (isLoggedIn) {
-            setToast({ type: 'error', message: t('onlyCreatorsCanApply') || 'فقط صناع المحتوى يمكنهم التقديم' });
-          } else {
+        onApplyCampaign={(campaign) => {
+          if (!isLoggedIn) {
             setSelectedStore(null);
             handleOpenAuth('signup', 'creator');
+          } else if (user?.role !== 'creator') {
+            setToast({ type: 'error', message: t('onlyCreatorsCanApply') || 'فقط صناع المحتوى يمكنهم التقديم على الحملات' });
+          } else {
+            setSelectedStore(null);
+            setSelectedCampaignToApply(campaign);
           }
+        }}
+      />
+      <CampaignApplyModal
+        isOpen={!!selectedCampaignToApply}
+        onClose={() => setSelectedCampaignToApply(null)}
+        campaign={selectedCampaignToApply}
+        onSuccess={() => {
+          setToast({ type: 'success', message: t('applicationSuccess') || 'تم إرسال طلب التقديم بنجاح! 🎉' });
+          handleOpenDashboard('opportunities');
         }}
       />
       <CheckoutModal

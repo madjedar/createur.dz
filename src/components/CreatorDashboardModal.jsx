@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { mockWallet, mockTransactions, mockPayoutRequests, getLocalizedItem } from '../data/mockData';
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
+import CampaignApplyModal from './CampaignApplyModal';
 
 export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'overview', initialContactId = null }) {
   const { user, updateProfileData } = useAuth();
@@ -14,6 +15,9 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const [activeTab, setActiveTab] = useState(initialTab);
   
   const [campaigns, setCampaigns] = useState([]);
+  const [selectedCampaignToApply, setSelectedCampaignToApply] = useState(null);
+  const [opportunitySearch, setOpportunitySearch] = useState('');
+  const [opportunityCategory, setOpportunityCategory] = useState('الكل');
 
   // Profile State
   const [profileData, setProfileData] = useState({
@@ -381,14 +385,54 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
         {/* Tab 2: Opportunities */}
         {activeTab === 'opportunities' && (
           <div className="space-y-6 animate-fade-in">
-            <h3 className="text-xl font-black text-brand-brown mb-2">فرص الرعاية المتاحة للتقديم</h3>
-            <p className="text-brand-brownLight font-medium text-sm mb-6">{t('opportunitiesSub')}</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="text-xl font-black text-brand-brown mb-1">فرص الرعاية المتاحة للتقديم</h3>
+                <p className="text-brand-brownLight font-medium text-xs">{t('opportunitiesSub')}</p>
+              </div>
+            </div>
+
+            {/* Opportunities Search & Category Filter */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                placeholder="ابحث في الحملات بالاسم أو المجال..."
+                className="input-field text-xs flex-1 py-2.5 bg-white"
+                value={opportunitySearch}
+                onChange={(e) => setOpportunitySearch(e.target.value)}
+              />
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                {['الكل', 'تكنولوجيا', 'موضة وأزياء', 'تجميل وعناية', 'طبخ وأكل', 'سفر وسياحة'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setOpportunityCategory(cat)}
+                    className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                      opportunityCategory === cat
+                        ? 'bg-brand-orange text-white border-brand-orange shadow-sm'
+                        : 'bg-white text-brand-brownLight border-brand-border hover:border-brand-orange/30'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {campaigns.map((campaign) => {
-                const campaignTitle = getLocalizedItem(campaign, 'title', language);
-                const campaignCategory = getLocalizedItem(campaign, 'category', language);
-                const campaignDesc = getLocalizedItem(campaign, 'description', language);
+              {campaigns
+                .filter(c => {
+                  const matchCat = opportunityCategory === 'الكل' || c.category === opportunityCategory;
+                  const title = (c.title || '').toLowerCase();
+                  const desc = (c.description || '').toLowerCase();
+                  const matchSearch = opportunitySearch === '' || 
+                    title.includes(opportunitySearch.toLowerCase()) || 
+                    desc.includes(opportunitySearch.toLowerCase());
+                  return matchCat && matchSearch;
+                })
+                .map((campaign) => {
+                const campaignTitle = getLocalizedItem(campaign, 'title', language) || campaign.title;
+                const campaignCategory = getLocalizedItem(campaign, 'category', language) || campaign.category;
+                const campaignDesc = getLocalizedItem(campaign, 'description', language) || campaign.description;
                 const campaignDeliverables = (campaign.deliverables && campaign.deliverables[language]) || campaign.deliverables?.ar || campaign.deliverables || [];
 
                 return (
@@ -396,25 +440,25 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                     <div>
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <img src={campaign.brand?.avatar_url || campaign.brandLogo || 'https://api.dicebear.com/7.x/shapes/svg?seed=brand'} alt="Brand" className="w-12 h-12 rounded-[16px] bg-brand-cream border border-brand-border" />
+                          <img src={campaign.brand?.avatar_url || campaign.brandLogo || 'https://api.dicebear.com/7.x/shapes/svg?seed=brand'} alt="Brand" className="w-12 h-12 rounded-[16px] bg-brand-cream border border-brand-border object-cover" />
                           <div>
-                            <h4 className="font-bold text-brand-brown text-lg">{campaignTitle}</h4>
+                            <h4 className="font-bold text-brand-brown text-base">{campaignTitle}</h4>
                             <span className="text-xs font-medium text-brand-brownLight">{campaignCategory}</span>
                           </div>
                         </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-orange/10 text-brand-orange border border-brand-orange/20">
-                          {formatDZD(campaign.budget)}
+                        <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-orange/10 text-brand-orange border border-brand-orange/20 font-mono">
+                          {formatDZD(campaign.budget, language)}
                         </span>
                       </div>
 
-                      <p className="text-sm font-medium text-brand-brownLight mb-4 leading-relaxed">{campaignDesc}</p>
+                      <p className="text-xs font-medium text-brand-brownLight mb-4 leading-relaxed line-clamp-3">{campaignDesc}</p>
 
                       <div className="space-y-2 mb-6">
                         <span className="text-xs text-brand-brownLight font-bold block">{t('deliverablesRequired')}</span>
-                        <div className="flex flex-wrap gap-2">
-                          {Array.isArray(campaignDeliverables) && campaignDeliverables.map((item, idx) => (
-                            <span key={idx} className="px-2.5 py-1 rounded-md bg-brand-cream text-brand-brownLight font-medium text-xs border border-brand-border">
-                              {item}
+                        <div className="flex flex-wrap gap-1.5">
+                          {(Array.isArray(campaignDeliverables) ? campaignDeliverables : [campaignDeliverables]).map((item, idx) => (
+                            <span key={idx} className="px-2.5 py-1 rounded-md bg-brand-cream text-brand-brown font-medium text-[11px] border border-brand-border">
+                              ✓ {item}
                             </span>
                           ))}
                         </div>
@@ -426,53 +470,59 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                       if (app) {
                         if (app.status === 'pending') {
                           return (
-                            <button disabled className="bg-brand-cream border border-brand-border text-brand-brownLight font-bold rounded-full w-full py-3 flex items-center justify-center gap-2 opacity-75 cursor-not-allowed">
+                            <button disabled className="bg-brand-cream border border-brand-border text-brand-brownLight font-bold rounded-full w-full py-3 flex items-center justify-center gap-2 opacity-75 cursor-not-allowed text-xs">
                               <CheckCircle2 className="w-4 h-4" />
-                              <span>تم التقديم - قيد المراجعة</span>
+                              <span>تم التقديم - قيد مراجعة المتجر ⏳</span>
                             </button>
                           );
                         } else if (app.status === 'approved') {
                           if (app.deliverable_url) {
                             return (
-                              <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-center text-sm text-emerald-600 font-bold flex items-center justify-center gap-2">
-                                <CheckCircle2 className="w-5 h-5" />
-                                <span>تم إرسال العمل بنجاح</span>
+                              <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-center text-xs text-emerald-700 font-bold flex items-center justify-center gap-2">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>تم إرسال العمل وبانتظار المراجعة والتحرير 📦</span>
                               </div>
                             );
                           }
                           return (
-                            <div className="space-y-3">
-                              <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 text-sm font-bold text-center mb-3">
-                                🎉 تم قبولك! قدم عملك الآن.
+                            <div className="space-y-2.5">
+                              <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold text-center">
+                                🎉 تم قبولك! المبلغ محفوظ في الضمان. أرسل رابط العمل الآن:
                               </div>
                               <input 
                                 type="url" 
-                                placeholder="رابط العمل (Google Drive, Tiktok, etc)"
-                                className="input-field w-full text-sm"
+                                placeholder="رابط العمل (Google Drive, Instagram Reel, Tiktok...)"
+                                className="input-field w-full text-xs font-mono"
                                 value={deliverableUrls[app.id] || ''}
                                 onChange={e => setDeliverableUrls({ ...deliverableUrls, [app.id]: e.target.value })}
                               />
                               <button 
                                 onClick={() => handleSubmitDeliverable(app.id)}
-                                className="btn-primary w-full py-2.5 text-sm"
+                                className="btn-primary w-full py-2.5 text-xs font-bold"
                               >
-                                إرسال العمل
+                                تسليم رابط العمل
                               </button>
                             </div>
                           );
                         } else if (app.status === 'completed') {
                           return (
-                            <div className="p-3 rounded-xl border border-purple-200 bg-purple-50 text-center text-sm text-purple-600 font-bold flex items-center justify-center gap-2">
-                              <CheckCircle2 className="w-5 h-5" />
-                              <span>مكتمل</span>
+                            <div className="p-3 rounded-xl border border-purple-200 bg-purple-50 text-center text-xs text-purple-700 font-bold flex items-center justify-center gap-2">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>الصفقة مكتملة وتم تحرير الأرباح لمحفظتك ✅</span>
+                            </div>
+                          );
+                        } else if (app.status === 'rejected') {
+                          return (
+                            <div className="p-3 rounded-xl border border-gray-200 bg-gray-50 text-center text-xs text-gray-500 font-bold">
+                              لم يتم اختيار طلبك لهذه الحملة
                             </div>
                           );
                         }
                       }
                       return (
                         <button 
-                          onClick={() => handleApply(campaign.id)}
-                          className="btn-primary w-full py-3 flex items-center justify-center gap-2"
+                          onClick={() => setSelectedCampaignToApply(campaign)}
+                          className="btn-primary w-full py-3 flex items-center justify-center gap-2 text-xs font-bold shadow-sm"
                         >
                           <Send className="w-4 h-4" />
                           <span>{t('applyNow')}</span>
@@ -761,6 +811,26 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             </div>
           );
         })()}
+
+        {/* Campaign Application Pitch Modal */}
+        <CampaignApplyModal
+          isOpen={!!selectedCampaignToApply}
+          onClose={() => setSelectedCampaignToApply(null)}
+          campaign={selectedCampaignToApply}
+          onSuccess={async () => {
+            if (!user?.id) return;
+            try {
+              const { getCreatorApplications } = await import('../services/dbService');
+              const freshApps = await getCreatorApplications(user.id);
+              if (freshApps) {
+                setApplications(freshApps);
+                setAppliedCampaigns(freshApps.map(app => app.campaign_id));
+              }
+            } catch (err) {
+              console.error('Error refreshing applications:', err);
+            }
+          }}
+        />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import { Globe, MessageCircle, Camera, Mail, MapPin, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-const Footer = ({ onLinkClick }) => {
+const Footer = ({ onLinkClick, onOpenContact }) => {
   const { t } = useLanguage();
   return (
     <footer className="border-t border-brand-border bg-white mt-auto">
@@ -46,11 +46,28 @@ const Footer = ({ onLinkClick }) => {
           {/* Column 3 - Contact */}
           <div>
             <h4 className="text-brand-brown font-semibold mb-4">{t('footerContact')}</h4>
-            <ul className="space-y-4">
-
-              <li className="flex items-center gap-3 text-brand-brownLight">
-                <MapPin className="w-5 h-5 text-brand-orange" />
+            <ul className="space-y-3">
+              <li>
+                <a 
+                  href="mailto:madjedalirachedi291@gmail.com"
+                  className="flex items-center gap-2.5 text-brand-brownLight hover:text-brand-orange transition-colors text-sm font-medium"
+                >
+                  <Mail className="w-4 h-4 text-brand-orange shrink-0" />
+                  <span className="font-mono text-xs" dir="ltr">madjedalirachedi291@gmail.com</span>
+                </a>
+              </li>
+              <li className="flex items-center gap-2.5 text-brand-brownLight text-sm font-medium">
+                <MapPin className="w-4 h-4 text-brand-orange shrink-0" />
                 <span>{t('footerCity')}</span>
+              </li>
+              <li className="pt-2">
+                <button
+                  onClick={onOpenContact}
+                  className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 shadow-sm"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>تواصل معنا مباشرة</span>
+                </button>
               </li>
             </ul>
           </div>

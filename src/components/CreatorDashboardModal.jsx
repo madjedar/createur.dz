@@ -112,7 +112,23 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
           (newMsg.sender_id === user.id && newMsg.receiver_id === selectedContactId) ||
           (newMsg.sender_id === selectedContactId && newMsg.receiver_id === user.id)
         ) {
-          if (isMounted) setMessages(prev => [...prev, newMsg]);
+          if (isMounted) {
+            setMessages(prev => {
+              const isDuplicate = prev.some(m => m.id === newMsg.id);
+              if (isDuplicate) return prev;
+              // Replace optimistic message with real one from DB
+              const hasOptimistic = prev.some(
+                m => m.id?.startsWith('optimistic_') && m.sender_id === newMsg.sender_id && m.text === newMsg.text
+              );
+              if (hasOptimistic) {
+                return prev.map(m =>
+                  m.id?.startsWith('optimistic_') && m.sender_id === newMsg.sender_id && m.text === newMsg.text
+                    ? newMsg : m
+                );
+              }
+              return [...prev, newMsg];
+            });
+          }
         }
       });
     });
@@ -127,14 +143,31 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
     e.preventDefault();
     if (!chatMessage.trim() || !selectedContactId || !user?.id) return;
     
-    const msgText = chatMessage;
+    const msgText = chatMessage.trim();
     setChatMessage('');
+
+    // Optimistic update — show message immediately in UI
+    const optimisticMsg = {
+      id: `optimistic_${Date.now()}`,
+      sender_id: user.id,
+      receiver_id: selectedContactId,
+      text: msgText,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
     
     try {
       const { sendMessage } = await import('../services/dbService');
-      await sendMessage(user.id, selectedContactId, msgText);
+      const saved = await sendMessage(user.id, selectedContactId, msgText);
+      // Replace optimistic message with real one from DB
+      if (saved?.[0]) {
+        setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? saved[0] : m));
+      }
     } catch (err) {
       console.error("Error sending message:", err);
+      // Remove optimistic message and restore text so user can retry
+      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
+      setChatMessage(msgText);
     }
   };
 

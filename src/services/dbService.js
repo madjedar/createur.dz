@@ -244,8 +244,10 @@ export const sendMessage = async (senderId, receiverId, text) => {
 };
 
 export const subscribeToMessages = (userId, callback) => {
+  // Use a unique channel name per user to avoid subscription collisions
+  const channelName = `messages_user_${userId}_${Date.now()}`;
   const subscription = supabase
-    .channel('messages_channel')
+    .channel(channelName)
     .on(
       'postgres_changes',
       {

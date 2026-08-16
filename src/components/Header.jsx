@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, User, LogOut, LayoutDashboard, PlusCircle, Sparkles, Building2, Globe, ShieldAlert, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, PlusCircle, Sparkles, Building2, Globe, ShieldAlert, Settings, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import NotificationDropdown from './NotificationDropdown';
 
-const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
+const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenContact }) => {
   const { user: realUser, logout } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -68,6 +68,16 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
                 </div>
               )}
             </div>
+
+            {/* Contact Button */}
+            <button
+              onClick={onOpenContact}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-full text-brand-brownLight hover:text-brand-orange hover:bg-white/60 transition-colors font-bold text-xs"
+              title="تواصل معنا"
+            >
+              <Mail className="w-4 h-4 text-brand-orange" />
+              <span>تواصل معنا</span>
+            </button>
 
             {user ? (
               <>
@@ -262,6 +272,14 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings }) => {
               </button>
             </div>
           )}
+          {/* Mobile Contact Link */}
+          <button
+            onClick={() => { setIsMobileMenuOpen(false); onOpenContact?.(); }}
+            className="w-full py-2.5 rounded-full bg-brand-cream border border-brand-border text-brand-brown flex items-center justify-center gap-2 text-xs font-bold"
+          >
+            <Mail className="w-4 h-4 text-brand-orange" />
+            <span>تواصل معنا (madjedalirachedi291@gmail.com)</span>
+          </button>
         </div>
       )}
     </header>

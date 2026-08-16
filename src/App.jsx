@@ -17,6 +17,7 @@ import CheckoutModal from './components/CheckoutModal'
 import ReviewModal from './components/ReviewModal'
 import ProfileSettingsModal from './components/ProfileSettingsModal'
 import CampaignApplyModal from './components/CampaignApplyModal'
+import ContactModal from './components/ContactModal'
 import {
   Search,
   Filter,
@@ -69,6 +70,7 @@ function AppContent() {
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
   const [isProfileMandatory, setIsProfileMandatory] = useState(false)
   const [selectedCampaignToApply, setSelectedCampaignToApply] = useState(null)
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
 
   // Showcase Tab & Advanced Filters
   const [showcaseTab, setShowcaseTab] = useState('creators') // 'creators' | 'stores'
@@ -335,6 +337,7 @@ function AppContent() {
         onOpenDashboard={handleOpenDashboard} 
         onOpenCreateCampaign={() => handleOpenDashboard('create')}
         onOpenProfileSettings={() => setIsProfileSettingsOpen(true)}
+        onOpenContact={() => setIsContactModalOpen(true)}
       />
 
       {/* ─── Hero & How It Works — hidden when logged in ─── */}
@@ -761,7 +764,8 @@ function AppContent() {
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }, 100);
           }
-        }} 
+        }}
+        onOpenContact={() => setIsContactModalOpen(true)}
       />
 
       {/* ─── Modals ─── */}
@@ -841,6 +845,10 @@ function AppContent() {
         isOpen={isProfileSettingsOpen} 
         onClose={() => setIsProfileSettingsOpen(false)}
         isMandatory={isProfileMandatory}
+      />
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
       />
     </div>
   )

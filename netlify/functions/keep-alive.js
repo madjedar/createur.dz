@@ -1,4 +1,4 @@
-exports.handler = async function () {
+export const handler = async function (event, context) {
   try {
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;

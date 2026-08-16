@@ -72,15 +72,18 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay" onClick={onClose}>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay overflow-y-auto" 
+      onClick={onClose}
+    >
       <div 
-        className="relative w-full max-w-lg p-6 overflow-hidden modal-content rounded-[32px] bg-white shadow-2xl animate-scale-in"
+        className="relative w-full max-w-lg my-auto p-6 sm:p-8 max-h-[90vh] overflow-y-auto modal-content rounded-[32px] bg-white shadow-2xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
         dir="rtl"
       >
         <button 
           onClick={onClose}
-          className="absolute text-brand-brownLight top-4 left-4 hover:text-brand-brown hover:bg-brand-cream p-2 rounded-full transition-colors"
+          className="absolute z-10 text-brand-brownLight top-4 left-4 hover:text-brand-brown hover:bg-brand-cream p-2 rounded-full transition-colors bg-white/80 backdrop-blur-sm shadow-sm"
         >
           <X className="w-5 h-5" />
         </button>

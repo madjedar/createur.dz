@@ -863,7 +863,7 @@ export default function BrandDashboardModal({
                     <span className="font-bold text-brand-brown font-mono">{formatDZD(Number(campaignForm.budget), language)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span>رسوم خدمة الضمان (10%):</span>
+                    <span>رسوم خدمة الضمان (5%):</span>
                     <span className="font-bold text-emerald-600 font-mono">{formatDZD(calculateFees(Number(campaignForm.budget)).platformFee, language)}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-brand-border text-sm font-bold text-brand-brown">

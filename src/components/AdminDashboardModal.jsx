@@ -52,7 +52,7 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
   const brandCount = users.filter(u => u.role === 'brand').length;
   const activeCampaignCount = campaigns.length;
   const totalBudget = campaigns.reduce((sum, c) => sum + (Number(c.budget) || 0), 0);
-  const platformRevenue = Math.round(totalBudget * 0.10); // 10% platform fee
+  const platformRevenue = Math.round(totalBudget * 0.05); // 5% platform fee
 
   // Admin actions (persist to Supabase)
   const handleVerifyUser = async (id) => {

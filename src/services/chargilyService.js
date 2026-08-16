@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 
-const PLATFORM_FEE_RATE = 0.10 // 10% platform fee
+const PLATFORM_FEE_RATE = 0.05 // 5% platform fee
 
 /**
  * Calculate fee breakdown for a campaign deal

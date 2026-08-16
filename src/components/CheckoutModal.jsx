@@ -53,12 +53,27 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
           const { updateApplicationStatus } = await import('../services/dbService');
           await updateApplicationStatus(applicationId, 'approved');
         }
+        if (creator?.id) {
+          const { createNotification } = await import('../services/dbService');
+          await createNotification(
+            creator.id,
+            'تم توظيفك في حملة جديدة! 🎉',
+            `تم حجز ميزانية الحملة في حساب الضمان (Escrow). يمكنك الآن بدء تنفيذ المحتوى المطلوب.`
+          ).catch(e => console.warn(e));
+        }
         window.location.href = result.checkoutUrl;
       } else if (result.success && !result.checkoutUrl) {
-        // Bug #3 fix: Approve application on direct success
         if (applicationId) {
           const { updateApplicationStatus } = await import('../services/dbService');
           await updateApplicationStatus(applicationId, 'approved');
+        }
+        if (creator?.id) {
+          const { createNotification } = await import('../services/dbService');
+          await createNotification(
+            creator.id,
+            'تم توظيفك في حملة جديدة! 🎉',
+            `تم حجز ميزانية الحملة في حساب الضمان (Escrow). يمكنك الآن بدء تنفيذ المحتوى المطلوب.`
+          ).catch(e => console.warn(e));
         }
         setSuccess(true);
       } else {

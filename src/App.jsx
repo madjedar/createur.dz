@@ -652,34 +652,7 @@ function AppContent() {
               </div>
             )}
             
-            {/* Category Chips Bar */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pt-1 pb-1">
-              {CATEGORIES.map((cat) => {
-                const categoryLabels = {
-                  'الكل': t('catAll'),
-                  'تكنولوجيا': t('catTech'),
-                  'موضة وأزياء': t('catFashion'),
-                  'تجميل وعناية': t('catBeauty'),
-                  'طبخ وأكل': t('catFood'),
-                  'سفر وسياحة': t('catTravel'),
-                  'رياضة ولياقة': t('catFitness')
-                };
-                const isSelected = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border shadow-sm ${
-                      isSelected
-                        ? 'bg-brand-brown text-white border-brand-brown'
-                        : 'bg-white text-brand-brownLight hover:bg-brand-cream hover:text-brand-brown border-brand-border'
-                    }`}
-                  >
-                    {categoryLabels[cat] || cat}
-                  </button>
-                );
-              })}
-            </div>
+
           </div>
 
           {/* Tab 1: Creators Grid */}

@@ -556,7 +556,7 @@ function AppContent() {
 
             {/* Category Chips Bar */}
             <div role="tablist" aria-label="تصنيفات المحتوى" className="flex gap-2 overflow-x-auto no-scrollbar pt-1 pb-1">
-              {categories.map((cat) => {
+              {CATEGORIES.map((cat) => {
                 const categoryLabels = {
                   'الكل': t('catAll'),
                   'تكنولوجيا': t('catTech'),

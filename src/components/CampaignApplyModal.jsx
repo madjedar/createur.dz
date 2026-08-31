@@ -5,8 +5,10 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { canApplyToCampaign } from '../utils/authGuards';
 import { formatDZD } from '../services/chargilyService';
-import { getLocalizedItem } from '../data/mockData';
+import { getLocalizedItem } from '../utils/localized';
+import { validateApplicationForm, sanitizeText } from '../utils/validators';
 
 export default function CampaignApplyModal({ 
   isOpen, 
@@ -54,9 +56,19 @@ export default function CampaignApplyModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user?.id) return;
-    if (!pitch.trim()) {
-      setErrorMessage(t('pitchRequired') || 'يرجى كتابة رسالة التقديم (Pitch)');
+    if (!user?.id) {
+      setErrorMessage('يرجى تسجيل الدخول أولاً للمتابعة.');
+      return;
+    }
+    if (!canApplyToCampaign(user)) {
+      setErrorMessage(t('onlyCreatorsCanApply') || 'عذراً، فقط حسابات صناع المحتوى يمكنها التقديم على الحملات.');
+      return;
+    }
+
+    const validation = validateApplicationForm({ pitch, sampleUrl, deliveryDays });
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      setErrorMessage(firstError);
       return;
     }
 
@@ -67,7 +79,7 @@ export default function CampaignApplyModal({
       const { applyToCampaign, createNotification } = await import('../services/dbService');
       
       const pitchPayload = {
-        pitch_text: pitch.trim(),
+        pitch_text: sanitizeText(pitch, 1000),
         portfolio_url: sampleUrl.trim() || null,
         delivery_days: Number(deliveryDays) || 5
       };
@@ -104,6 +116,9 @@ export default function CampaignApplyModal({
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto" 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="campaign-apply-modal-title"
       dir="rtl"
       onClick={onClose}
     >
@@ -113,22 +128,24 @@ export default function CampaignApplyModal({
       >
         {/* Close Button */}
         <button 
+          type="button"
           onClick={onClose}
+          aria-label="إغلاق نافذة التقديم على الحملة"
           className="absolute top-5 left-5 p-2 text-brand-brownLight hover:text-brand-brown rounded-full hover:bg-brand-cream transition-colors"
           title={t('close')}
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-5 pb-4 border-b border-brand-border">
           <div className="w-12 h-12 rounded-[16px] bg-brand-orange/10 text-brand-orange flex items-center justify-center font-bold shadow-inner">
-            <Sparkles className="w-6 h-6" />
+            <Sparkles className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-brand-brown">
+            <h2 id="campaign-apply-modal-title" className="text-xl font-black text-brand-brown">
               {t('applyModalTitle') || 'التقديم على الحملة الإعلانية'}
-            </h3>
+            </h2>
             <p className="text-xs font-medium text-brand-brownLight mt-0.5">
               {brandName} • {campaignCategory}
             </p>
@@ -161,9 +178,9 @@ export default function CampaignApplyModal({
 
         {/* Success State */}
         {success ? (
-          <div className="p-8 text-center bg-emerald-50 rounded-[24px] border border-emerald-200 animate-scale-in">
-            <CheckCircle2 className="w-14 h-14 text-emerald-600 mx-auto mb-3 animate-bounce" />
-            <h4 className="font-black text-emerald-800 text-lg mb-1">تم إرسال طلبك بنجاح! 🎉</h4>
+          <div role="status" aria-live="polite" className="p-8 text-center bg-emerald-50 rounded-[24px] border border-emerald-200 animate-scale-in">
+            <CheckCircle2 className="w-14 h-14 text-emerald-600 mx-auto mb-3 animate-bounce" aria-hidden="true" />
+            <h3 className="font-black text-emerald-800 text-lg mb-1">تم إرسال طلبك بنجاح! 🎉</h3>
             <p className="text-emerald-700 text-xs">
               سيقوم صاحب المتجر بمراجعة عرضك والتواصل معك عبر المحادثات المباشرة.
             </p>
@@ -173,32 +190,36 @@ export default function CampaignApplyModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Pitch Textarea */}
             <div>
-              <label className="block text-xs font-bold text-brand-brown mb-1.5">
+              <label htmlFor="apply-pitch-input" className="block text-xs font-bold text-brand-brown mb-1.5">
                 {t('pitchLabel') || 'رسالة التقديم (Pitch) *'}
               </label>
               <textarea
+                id="apply-pitch-input"
                 rows={3}
                 placeholder={t('pitchPlaceholder') || 'اشرح فكرتك للمحتوى، أسلوب التصوير، ولماذا منتجهم يناسب جمهورك...'}
                 className="input-field w-full text-xs leading-relaxed"
                 value={pitch}
                 onChange={(e) => setPitch(e.target.value)}
+                disabled={submitting}
                 required
               />
             </div>
 
             {/* Sample Link */}
             <div>
-              <label className="block text-xs font-bold text-brand-brown mb-1.5">
+              <label htmlFor="apply-sample-url-input" className="block text-xs font-bold text-brand-brown mb-1.5">
                 {t('sampleLink') || 'رابط عمل سابق / ريلز مشابه (اختياري)'}
               </label>
               <div className="relative">
-                <LinkIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-brownLight" />
+                <LinkIcon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-brownLight" aria-hidden="true" />
                 <input
+                  id="apply-sample-url-input"
                   type="url"
                   placeholder="https://instagram.com/reel/example"
                   className="input-field w-full pr-10 text-xs font-mono text-left dir-ltr"
                   value={sampleUrl}
                   onChange={(e) => setSampleUrl(e.target.value)}
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -219,11 +240,12 @@ export default function CampaignApplyModal({
                     key={option.value}
                     type="button"
                     onClick={() => setDeliveryDays(option.value)}
+                    disabled={submitting}
                     className={`py-2 rounded-xl text-xs font-bold border transition-all ${
                       deliveryDays === option.value
                         ? 'bg-brand-orange text-white border-brand-orange shadow-sm'
                         : 'bg-brand-cream/60 text-brand-brownLight border-brand-border hover:border-brand-orange/40'
-                    }`}
+                    } ${submitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {option.label}
                   </button>
@@ -233,14 +255,14 @@ export default function CampaignApplyModal({
 
             {/* Escrow Guarantee Pill */}
             <div className="p-3 rounded-xl bg-amber-50/60 border border-amber-200/60 text-[11px] text-amber-800 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" aria-hidden="true" />
               <span>ميزانية هذه الحملة مضمونة وتودع في حساب الضمان قبل بدء العمل.</span>
             </div>
 
             {/* Error message */}
             {errorMessage && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
                 <span>{errorMessage}</span>
               </div>
             )}

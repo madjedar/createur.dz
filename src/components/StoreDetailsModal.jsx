@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { X, MapPin, Star, Building2, BadgeCheck, Briefcase, Send, CheckCircle2, ShieldCheck, ExternalLink, Globe } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { formatDZD } from '../services/chargilyService';
-import { getLocalizedItem } from '../data/mockData';
+import { getLocalizedItem } from '../utils/localized';
+import OptimizedImage from './OptimizedImage';
 
 export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampaign }) {
   const { t, language } = useLanguage();
@@ -56,6 +57,9 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="store-modal-title"
       onClick={onClose}
     >
       <div 
@@ -64,44 +68,50 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
       >
         {/* Close button */}
         <button 
+          type="button"
           onClick={onClose}
+          aria-label="إغلاق تفاصيل المتجر"
           className="absolute z-10 p-2 text-brand-brownLight top-4 left-4 bg-white/80 rounded-full hover:bg-brand-cream hover:text-brand-brown transition-all backdrop-blur-md shadow-sm"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         <div className="overflow-y-auto p-6 sm:p-8 scrollbar-thin scrollbar-thumb-brand-border space-y-8">
           {/* Header & Logo */}
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-right border-b border-brand-border pb-6">
             <div className="relative">
-              <img 
-                src={store.logo || 'https://via.placeholder.com/150'} 
+              <OptimizedImage 
+                src={store.logo} 
+                fallbackType="brand"
+                seed={store.name}
                 alt={storeName} 
+                width="112"
+                height="112"
                 className="w-24 h-24 md:w-28 md:h-28 rounded-2xl object-cover bg-brand-cream p-2 border border-brand-border shadow-lg"
               />
               {store.verified && (
                 <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1 border-2 border-white shadow-sm text-white">
-                  <BadgeCheck className="w-5 h-5" />
+                  <BadgeCheck className="w-5 h-5" aria-hidden="true" />
                 </div>
               )}
             </div>
 
             <div className="flex-1 space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-black text-brand-brown flex items-center justify-center md:justify-start gap-2">
+              <h2 id="store-modal-title" className="text-2xl sm:text-3xl font-black text-brand-brown flex items-center justify-center md:justify-start gap-2">
                 {storeName}
-              </h1>
+              </h2>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm text-brand-brownLight">
                 <span className="flex items-center gap-1">
-                  <Building2 className="w-4 h-4 text-brand-orange" />
+                  <Building2 className="w-4 h-4 text-brand-orange" aria-hidden="true" />
                   {storeSector}
                 </span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4 text-brand-orange" />
+                  <MapPin className="w-4 h-4 text-brand-orange" aria-hidden="true" />
                   {storeLocation}
                 </span>
                 <span className="flex items-center gap-1 text-amber-500">
-                  <Star className="w-4 h-4 fill-amber-500" />
+                  <Star className="w-4 h-4 fill-amber-500" aria-hidden="true" />
                   <span className="font-bold text-brand-brown">{store.rating || 4.9}</span>
                   <span className="text-brand-brownLight">({store.reviewCount || 42})</span>
                 </span>

@@ -1,0 +1,11 @@
+# Robots.txt for Créateur DZ (https://createur.dz)
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /*?payment=*
+Disallow: /*?error=*
+Disallow: /*?error_description=*
+Disallow: /*?code=*
+Disallow: /*#*
+
+Sitemap: https://createur.dz/sitemap.xml

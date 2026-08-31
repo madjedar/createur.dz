@@ -34,29 +34,53 @@ export function formatDZD(amount, lang = 'ar') {
  */
 export async function createCheckoutSession({ amount, dealId, creatorId, brandId, description }) {
   try {
+    if (!supabase) {
+      return { success: true, isTestMode: true };
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    let token = session?.access_token;
+
+    // Proactively refresh JWT token if within 60s of expiration
+    const expiresAt = session?.expires_at ? session.expires_at * 1000 : 0;
+    if (expiresAt && Date.now() > expiresAt - 60000) {
+      const { data: refreshData } = await supabase.auth.refreshSession();
+      if (refreshData?.session?.access_token) {
+        token = refreshData.session.access_token;
+      }
+    }
+
+    const headers = token ? {
+      Authorization: `Bearer ${token}`
+    } : {};
+
     const { data, error } = await supabase.functions.invoke('create-checkout', {
+      headers,
       body: {
         amount,
         currency: 'dzd',
         deal_id: dealId,
         creator_id: creatorId,
-        brand_id: brandId,
+        brand_id: brandId || session?.user?.id,
         description: description || 'Créateur DZ — صفقة رعاية',
-        success_url: `${window.location.origin}?payment=success&deal_id=${dealId}`,
-        failure_url: `${window.location.origin}?payment=failed&deal_id=${dealId}`,
+        success_url: `${window.location.origin}?payment=success&deal_id=${dealId || ''}`,
+        failure_url: `${window.location.origin}?payment=failed&deal_id=${dealId || ''}`,
       },
-    })
+    });
 
     if (!error && data?.checkout_url) {
-      return { success: true, checkoutUrl: data.checkout_url, checkoutId: data.checkout_id }
+      return { success: true, checkoutUrl: data.checkout_url, checkoutId: data.checkout_id };
     }
 
-    // If edge function returned an error (e.g. missing Chargily secret key or function not deployed yet)
-    console.warn('Chargily Edge Function not active, falling back to simulated Escrow mode:', error || data)
-    return { success: true, isTestMode: true }
+    if (error) {
+      console.warn('Chargily Edge Function notice:', error);
+    }
+
+    // Fallback to simulated Escrow mode for local demo if secrets are not set in dev
+    return { success: true, isTestMode: true };
   } catch (err) {
-    console.warn('Checkout creation fallback to simulated Escrow mode:', err)
-    return { success: true, isTestMode: true }
+    console.warn('Checkout creation fallback to simulated Escrow mode:', err);
+    return { success: true, isTestMode: true };
   }
 }
 
@@ -65,11 +89,11 @@ export async function createCheckoutSession({ amount, dealId, creatorId, brandId
  */
 export function getPaymentStatusConfig(status) {
   const configs = {
-    pending: { label: 'قيد الانتظار', color: 'amber', bg: 'bg-amber-400/10', text: 'text-amber-400', border: 'border-amber-400/30' },
-    escrow_funded: { label: 'في الضمان', color: 'blue', bg: 'bg-blue-400/10', text: 'text-blue-400', border: 'border-blue-400/30' },
-    released: { label: 'تم التحرير', color: 'emerald', bg: 'bg-emerald-400/10', text: 'text-emerald-400', border: 'border-emerald-400/30' },
-    refunded: { label: 'مسترجع', color: 'red', bg: 'bg-red-400/10', text: 'text-red-400', border: 'border-red-400/30' },
-    failed: { label: 'فشل', color: 'red', bg: 'bg-red-400/10', text: 'text-red-400', border: 'border-red-400/30' },
+    pending: { label: 'قيد الانتظار', color: 'amber', bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300' },
+    escrow_funded: { label: 'في الضمان', color: 'blue', bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-300' },
+    released: { label: 'تم التحرير', color: 'emerald', bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300' },
+    refunded: { label: 'مسترجع', color: 'red', bg: 'bg-red-50', text: 'text-red-800', border: 'border-red-300' },
+    failed: { label: 'فشل', color: 'red', bg: 'bg-red-50', text: 'text-red-800', border: 'border-red-300' },
   }
   return configs[status] || configs.pending
 }

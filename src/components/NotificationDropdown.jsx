@@ -31,15 +31,24 @@ export default function NotificationDropdown() {
     };
   }, [user?.id]);
 
-  // Handle outside click to close
+  // Handle outside click and Escape key to close
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleMarkAsRead = async (id) => {
@@ -69,28 +78,48 @@ export default function NotificationDropdown() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const formatNotificationDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '';
+      return `${d.toLocaleDateString('ar-DZ')} ${d.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}`;
+    } catch {
+      return '';
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button 
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-slate-400 hover:text-white transition-colors focus:outline-none"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        aria-label={`الإشعارات${unreadCount > 0 ? ` (${unreadCount} غير مقروءة)` : ''}`}
+        className="relative p-2 text-brand-brownLight hover:text-brand-brown rounded-full hover:bg-white/60 transition-colors"
+        title="الإشعارات"
       >
-        <Bell className="w-6 h-6" />
+        <Bell className="w-5 h-5" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-            {unreadCount}
-          </span>
+          <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-brand-orange rounded-full ring-2 ring-brand-cream animate-pulse"></span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 sm:right-0 sm:left-auto mt-2 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50 animate-fade-in" dir="rtl">
+        <div 
+          role="region" 
+          aria-label="لوحة الإشعارات"
+          className="absolute top-full left-0 sm:right-0 sm:left-auto mt-2 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50 animate-fade-in" 
+          dir="rtl"
+        >
           <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
             <h3 className="font-bold text-white flex items-center gap-2">
               <span>الإشعارات</span>
             </h3>
             {unreadCount > 0 && (
               <button 
+                type="button"
                 onClick={handleMarkAllAsRead}
                 className="text-xs text-slate-400 hover:text-white transition-colors"
               >
@@ -129,7 +158,7 @@ export default function NotificationDropdown() {
                     </h4>
                     <p className="text-xs text-slate-400 leading-relaxed mb-2">{notif.message}</p>
                     <span className="text-[10px] text-slate-500 block">
-                      {new Date(notif.created_at).toLocaleDateString('ar-DZ')} {new Date(notif.created_at).toLocaleTimeString('ar-DZ', {hour: '2-digit', minute:'2-digit'})}
+                      {formatNotificationDate(notif.created_at)}
                     </span>
                   </div>
                   {!notif.read && (

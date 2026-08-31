@@ -5,9 +5,19 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { mockWallet, mockTransactions, mockPayoutRequests, getLocalizedItem } from '../data/mockData';
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
 import CampaignApplyModal from './CampaignApplyModal';
+import OptimizedImage from './OptimizedImage';
+import { 
+  validatePayoutForm, 
+  validateAlgerianRIP, 
+  validateUrl, 
+  validateChatMessage, 
+  sanitizeText, 
+  validateAmount, 
+  validateAlgerianPhone,
+  validateSocialUrl
+} from '../utils/validators';
 
 export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'overview', initialContactId = null }) {
   const { user, updateProfileData } = useAuth();
@@ -38,6 +48,8 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   // Payout Form State
   const [payoutForm, setPayoutForm] = useState({ amount: '', ripNumber: '', method: 'baridimob' });
   const [payoutSuccess, setPayoutSuccess] = useState(false);
+  const [payoutError, setPayoutError] = useState('');
+  const [payoutLoading, setPayoutLoading] = useState(false);
   const [withdrawnAmount, setWithdrawnAmount] = useState(0);
   const [localTransactions, setLocalTransactions] = useState(mockTransactions);
 
@@ -51,8 +63,18 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   useEffect(() => {
     if (initialContactId) {
       setSelectedContactId(initialContactId);
+      setActiveTab('messages');
     }
   }, [initialContactId]);
+
+  // Handle Escape key to close dashboard
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,8 +83,17 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const [deliverableUrls, setDeliverableUrls] = useState({});
 
   const handleSubmitDeliverable = async (applicationId) => {
-    const url = deliverableUrls[applicationId];
-    if (!url) return;
+    const rawUrl = deliverableUrls[applicationId];
+    if (!rawUrl || !rawUrl.trim()) {
+      alert('يرجى إدخال رابط العمل المسلّم');
+      return;
+    }
+    const urlCheck = validateUrl(rawUrl);
+    if (!urlCheck.isValid) {
+      alert(urlCheck.error || 'يرجى إدخال رابط صالح (مثل: رابط Google Drive أو Instagram Reel)');
+      return;
+    }
+    const url = urlCheck.normalized;
     try {
       const { updateApplicationStatus, createNotification } = await import('../services/dbService');
       await updateApplicationStatus(applicationId, 'approved', url); // status is still approved, but URL added
@@ -83,6 +114,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (err) {
       console.error("Error submitting deliverable:", err);
+      alert('حدث خطأ أثناء تسليم العمل. يرجى المحاولة مرة أخرى.');
     }
   };
 
@@ -142,9 +174,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!chatMessage.trim() || !selectedContactId || !user?.id) return;
+    if (!selectedContactId || !user?.id) return;
     
-    const msgText = chatMessage.trim();
+    const msgCheck = validateChatMessage(chatMessage);
+    if (!msgCheck.isValid) {
+      setChatError(msgCheck.error || 'الرسالة غير صالحة');
+      return;
+    }
+    
+    const msgText = msgCheck.sanitized;
     setChatMessage('');
     setChatError('');
 
@@ -211,54 +249,112 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+
+    let sanitizedPhone = profileData.phone?.trim() || '';
+    if (sanitizedPhone) {
+      const phoneCheck = validateAlgerianPhone(sanitizedPhone);
+      if (!phoneCheck.isValid) {
+        alert(phoneCheck.error);
+        return;
+      }
+      sanitizedPhone = phoneCheck.formatted;
+    }
+
+    let sanitizedRate = profileData.ratePerPost;
+    if (sanitizedRate) {
+      const rateCheck = validateAmount(sanitizedRate, { min: 500, max: 2000000, fieldName: 'سعر المنشور' });
+      if (!rateCheck.isValid) {
+        alert(rateCheck.error);
+        return;
+      }
+      sanitizedRate = rateCheck.value;
+    }
+
+    const instagramCheck = validateSocialUrl('instagram', profileData.instagramUrl);
+    const tiktokCheck = validateSocialUrl('tiktok', profileData.tiktokUrl);
+    const youtubeCheck = validateSocialUrl('youtube', profileData.youtubeUrl);
+    const facebookCheck = validateSocialUrl('facebook', profileData.facebookUrl);
+
     if (updateProfileData) {
       await updateProfileData({
-        full_name: profileData.fullName,
+        full_name: sanitizeText(profileData.fullName, 70),
         category: profileData.category,
-        bio: profileData.bio,
-        rate_per_post: profileData.ratePerPost,
+        bio: sanitizeText(profileData.bio, 500),
+        rate_per_post: sanitizedRate,
         wilaya: profileData.wilaya,
-        phone: profileData.phone,
-        instagram_url: profileData.instagramUrl,
-        tiktok_url: profileData.tiktokUrl,
-        youtube_url: profileData.youtubeUrl,
-        facebook_url: profileData.facebookUrl,
-        rip_number: profileData.ripNumber
+        phone: sanitizedPhone,
+        instagram_url: instagramCheck.normalized,
+        tiktok_url: tiktokCheck.normalized,
+        youtube_url: youtubeCheck.normalized,
+        facebook_url: facebookCheck.normalized,
+        rip_number: profileData.ripNumber?.trim() || null
       });
     }
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const handlePayoutSubmit = (e) => {
+  const handlePayoutSubmit = async (e) => {
     e.preventDefault();
-    const amount = Number(payoutForm.amount);
-    if (!amount || !payoutForm.ripNumber) return;
-    
-    // Validate against available balance (which is calculated in render, but we need it here)
+    setPayoutError('');
+
+    // Calculate current real available balance
     const currentAvailable = applications
       .filter(app => app.status === 'completed')
       .reduce((sum, app) => sum + (app.campaign?.budget || 0), 0) - withdrawnAmount;
 
-    if (amount > currentAvailable) {
-      alert("الرصيد غير كافٍ");
+    // Validate using central validator
+    const validation = validatePayoutForm(payoutForm, currentAvailable);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      setPayoutError(firstError);
       return;
     }
 
-    setWithdrawnAmount(prev => prev + amount);
-    setLocalTransactions(prev => [{
-      id: `TX-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      description: 'طلب سحب أرباح',
-      amount: amount,
-      status: 'pending'
-    }, ...prev]);
+    const amount = Number(payoutForm.amount);
+    const cleanedRip = payoutForm.ripNumber.trim().replace(/\D/g, '');
 
-    setPayoutSuccess(true);
-    setTimeout(() => {
-      setPayoutSuccess(false);
+    setPayoutLoading(true);
+
+    try {
+      const { createPayoutRequest, createNotification } = await import('../services/dbService');
+      
+      if (user?.id) {
+        await createPayoutRequest({
+          creatorId: user.id,
+          amountDzd: amount,
+          ripNumber: cleanedRip,
+          payoutMethod: payoutForm.method || 'baridimob'
+        });
+
+        // Notify creator
+        await createNotification(
+          user.id,
+          'تم استلام طلب السحب بنجاح 💸',
+          `طلب سحب مبلغ ${amount.toLocaleString('ar-DZ')} د.ج إلى الحساب (${cleanedRip.slice(-4)}) قيد المعالجة.`
+        );
+      }
+
+      setWithdrawnAmount(prev => prev + amount);
+      setLocalTransactions(prev => [{
+        id: `TX-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        description: `طلب سحب أرباح (${payoutForm.method === 'baridimob' ? 'BaridiMob' : 'CCP'})`,
+        amount: amount,
+        status: 'pending'
+      }, ...prev]);
+
+      setPayoutSuccess(true);
       setPayoutForm({ amount: '', ripNumber: '', method: 'baridimob' });
-    }, 3000);
+      setTimeout(() => {
+        setPayoutSuccess(false);
+      }, 4000);
+    } catch (err) {
+      console.error('Error submitting payout request:', err);
+      setPayoutError('حدث خطأ أثناء معالجة طلب السحب. يرجى المحاولة لاحقاً.');
+    } finally {
+      setPayoutLoading(false);
+    }
   };
 
   const handleApply = async (campaignId) => {
@@ -291,34 +387,42 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
 
   return (
-    <div className="fixed inset-0 z-50 bg-white/95 backdrop-blur-md overflow-y-auto" dir="rtl">
+    <div 
+      className="fixed inset-0 z-50 bg-white/95 backdrop-blur-md overflow-y-auto" 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="creator-dashboard-title"
+      dir="rtl"
+    >
       {/* Header Bar */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-brand-border px-4 sm:px-8 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-[16px] bg-brand-orange/10 text-brand-orange flex items-center justify-center font-bold">
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="w-5 h-5" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-brand-brown flex items-center gap-2">
+            <h2 id="creator-dashboard-title" className="text-xl font-black text-brand-brown flex items-center gap-2">
               {t('creatorDashboard')}
               <span className="px-3 py-1 rounded-full bg-brand-orange/10 text-brand-orange text-xs font-bold">{t('roleCreator')}</span>
-            </h1>
+            </h2>
             <p className="text-xs font-medium text-brand-brownLight">{t('welcomeUser')}، {user?.user_metadata?.full_name || t('roleCreator')}</p>
           </div>
         </div>
 
         <button 
+          type="button"
           onClick={onClose}
+          aria-label="إغلاق لوحة تحكم صانع المحتوى"
           className="p-2 text-brand-brownLight hover:text-brand-brown rounded-full hover:bg-brand-cream transition-colors"
         >
-          <X className="w-6 h-6" />
+          <X className="w-6 h-6" aria-hidden="true" />
         </button>
       </div>
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
         {/* Navigation Tabs */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-8 border-b border-brand-border">
+        <div role="tablist" aria-label="أقسام لوحة التحكم" className="flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-8 border-b border-brand-border">
           {[
             { id: 'overview', label: t('dashOverview'), icon: LayoutDashboard },
             { id: 'opportunities', label: t('dashOpportunities'), icon: Briefcase },
@@ -331,6 +435,9 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             return (
               <button
                 key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-5 py-3 rounded-full font-bold text-sm flex items-center gap-2.5 transition-all whitespace-nowrap ${
                   isActive
@@ -338,7 +445,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                     : 'bg-white border border-brand-border text-brand-brownLight hover:bg-brand-cream hover:text-brand-brown'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4" aria-hidden="true" />
                 <span>{tab.label}</span>
               </button>
             );
@@ -397,7 +504,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                   applications.slice(0, 3).map((app) => (
                     <div key={app.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-[16px] bg-brand-cream border border-brand-border gap-4">
                       <div className="flex items-center gap-3">
-                        <img src={app.campaign?.brand?.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=b'} alt="Brand Avatar" className="w-12 h-12 rounded-[16px] border border-brand-border bg-white" />
+                        <OptimizedImage 
+                          src={app.campaign?.brand?.avatar_url} 
+                          fallbackType="brand"
+                          seed={app.campaign?.title}
+                          alt="Brand Avatar" 
+                          width="48"
+                          height="48"
+                          className="w-12 h-12 rounded-[16px] border border-brand-border bg-white" 
+                        />
                         <div>
                           <h4 className="font-bold text-brand-brown">{app.campaign?.title}</h4>
                           <p className="text-xs font-medium text-brand-brownLight mt-0.5">الميزانية: <span className="text-brand-orange font-bold">{formatDZD(app.campaign?.budget)}</span></p>
@@ -476,7 +591,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                     <div>
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <img src={campaign.brand?.avatar_url || campaign.brandLogo || 'https://api.dicebear.com/7.x/shapes/svg?seed=brand'} alt="Brand" className="w-12 h-12 rounded-[16px] bg-brand-cream border border-brand-border object-cover" />
+                          <OptimizedImage 
+                            src={campaign.brand?.avatar_url || campaign.brandLogo} 
+                            fallbackType="brand"
+                            seed={campaignTitle}
+                            alt="Brand" 
+                            width="48"
+                            height="48"
+                            className="w-12 h-12 rounded-[16px] bg-brand-cream border border-brand-border object-cover" 
+                          />
                           <div>
                             <h4 className="font-bold text-brand-brown text-base">{campaignTitle}</h4>
                             <span className="text-xs font-medium text-brand-brownLight">{campaignCategory}</span>
@@ -590,7 +713,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                       onClick={() => setSelectedContactId(contact.id)}
                       className={`p-4 cursor-pointer flex items-center gap-3 transition-colors ${selectedContactId === contact.id ? 'bg-brand-cream border-r-4 border-r-brand-orange' : 'hover:bg-brand-cream'}`}
                     >
-                      <img src={contact.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=b'} alt="Brand Avatar" className="w-10 h-10 rounded-[12px] border border-brand-border bg-white" />
+                      <OptimizedImage 
+                        src={contact.avatar_url} 
+                        fallbackType="brand"
+                        seed={contact.brand_name || 'Brand'}
+                        alt="Brand Avatar" 
+                        width="40"
+                        height="40"
+                        className="w-10 h-10 rounded-[12px] border border-brand-border bg-white object-cover" 
+                      />
                       <div>
                         <h4 className="font-bold text-brand-brown text-sm">{contact.brand_name || 'Brand'}</h4>
                       </div>
@@ -605,7 +736,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
               {selectedContactId ? (
                 <>
                   <div className="p-4 border-b border-brand-border flex items-center gap-3 bg-white z-10">
-                    <img src={contacts.find(c => c.id === selectedContactId)?.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=b'} alt="Brand Avatar" className="w-10 h-10 rounded-[12px] border border-brand-border bg-brand-cream" />
+                    <OptimizedImage 
+                      src={contacts.find(c => c.id === selectedContactId)?.avatar_url} 
+                      fallbackType="brand"
+                      seed={contacts.find(c => c.id === selectedContactId)?.brand_name || 'Brand'}
+                      alt="Brand Avatar" 
+                      width="40"
+                      height="40"
+                      className="w-10 h-10 rounded-[12px] border border-brand-border bg-brand-cream object-cover" 
+                    />
                     <div>
                       <h3 className="font-bold text-brand-brown">{contacts.find(c => c.id === selectedContactId)?.brand_name || 'Brand'}</h3>
                       <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
@@ -672,7 +811,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
               <div className="flex items-center gap-6 mb-8">
                 <div className="relative">
-                  <img src={user?.user_metadata?.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=creator'} alt="Profile" className="w-24 h-24 rounded-full border-4 border-brand-cream object-cover bg-white" />
+                  <OptimizedImage 
+                    src={user?.user_metadata?.avatar_url} 
+                    fallbackType="creator"
+                    seed={user?.user_metadata?.full_name || 'Creator'}
+                    alt="Profile" 
+                    width="96"
+                    height="96"
+                    className="w-24 h-24 rounded-full border-4 border-brand-cream object-cover bg-white" 
+                  />
                   <button className="absolute bottom-0 right-0 bg-white border border-brand-border p-2 rounded-full text-brand-brown hover:bg-brand-cream transition-colors shadow-sm">
                     <Upload className="w-4 h-4" />
                   </button>
@@ -772,35 +919,61 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
               <div className="bg-white border border-brand-border rounded-[24px] p-6 sm:p-8 shadow-sm mb-6">
                 <h3 className="font-black text-brand-brown mb-4">طلب سحب الأرباح إلى حسابك (BaridiMob / CCP)</h3>
+                
+                {payoutError && (
+                  <div className="mb-4 p-3.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2">
+                    <span>⚠️</span>
+                    <span>{payoutError}</span>
+                  </div>
+                )}
+
                 <form onSubmit={handlePayoutSubmit} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-brand-brown mb-2">المبلغ (د.ج)</label>
                     <input
                       type="number"
                       placeholder="20000"
+                      min="1000"
                       max={availableBalance}
                       className="input-field w-full"
                       value={payoutForm.amount}
-                      onChange={(e) => setPayoutForm({ ...payoutForm, amount: e.target.value })}
+                      onChange={(e) => {
+                        setPayoutError('');
+                        setPayoutForm({ ...payoutForm, amount: e.target.value });
+                      }}
                       required
                     />
+                    <span className="text-[11px] text-brand-brownLight mt-1 block">الحد الأدنى للسحب: 1,000 د.ج</span>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-brand-brown mb-2">رقم الـ RIP (20 رقم)</label>
+                    <label className="block text-sm font-bold text-brand-brown mb-2">رقم الـ RIP (20 رقماً)</label>
                     <input
                       type="text"
                       placeholder="00799999000000000000"
-                      className="input-field w-full"
+                      maxLength={24}
+                      className="input-field w-full font-mono text-sm tracking-wider"
                       value={payoutForm.ripNumber}
-                      onChange={(e) => setPayoutForm({ ...payoutForm, ripNumber: e.target.value })}
+                      onChange={(e) => {
+                        setPayoutError('');
+                        // Only allow digits
+                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 20);
+                        setPayoutForm({ ...payoutForm, ripNumber: cleaned });
+                      }}
                       required
                     />
+                    <span className="text-[11px] text-brand-brownLight mt-1 block">
+                      {payoutForm.ripNumber ? `${payoutForm.ripNumber.length} / 20 رقم` : 'رقم الحساب البريدي المكون من 20 رقم'}
+                    </span>
                   </div>
 
                   <div className="flex items-end">
-                    <button type="submit" className="btn-primary w-full py-2.5 font-bold">
-                      إرسال طلب السحب
+                    <button 
+                      type="submit" 
+                      disabled={payoutLoading || availableBalance < 1000} 
+                      className="btn-primary w-full py-2.5 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {payoutLoading ? 'جاري الإرسال...' : 'إرسال طلب السحب'}
                     </button>
                   </div>
                 </form>
@@ -808,7 +981,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                 {payoutSuccess && (
                   <div className="mt-4 p-3 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl text-sm font-bold text-center flex items-center justify-center gap-2">
                     <CheckCircle2 className="w-5 h-5" />
-                    <span>تم إرسال طلب السحب بنجاح. سيتم تحويل المبلغ خلال 24 ساعة.</span>
+                    <span>تم إرسال طلب السحب بنجاح. سيتم تحويل المبلغ إلى حسابك خلال 24 ساعة.</span>
                   </div>
                 )}
               </div>
@@ -838,7 +1011,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                               <span className="px-2.5 py-1 rounded-md bg-brand-cream border border-brand-border text-brand-brownLight text-xs font-bold">الذهبية</span>
                             </td>
                             <td className="px-4 py-4">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${statusCfg.badge}`}>
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border} border`}>
                                 {statusCfg.label}
                               </span>
                             </td>

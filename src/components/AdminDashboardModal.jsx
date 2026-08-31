@@ -4,10 +4,13 @@ import {
   CheckCircle, XCircle, MoreVertical, Search, Globe
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { canAccessAdmin } from '../utils/authGuards';
 import { formatDZD } from '../services/chargilyService';
 import { supabase } from '../lib/supabase';
 
 export default function AdminDashboardModal({ isOpen, onClose }) {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState([]);
@@ -23,9 +26,15 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // Fetch real data from Supabase
+  // Authorization Check: Only Admin can fetch or view
   useEffect(() => {
     if (!isOpen) return;
+    if (!canAccessAdmin(user)) {
+      console.warn('Unauthorized access attempt to Admin Dashboard.');
+      onClose();
+      return;
+    }
+
     const fetchData = async () => {
       setLoading(true);
       try {

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "strict": false,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["**/*.ts", "deno.d.ts"]
+}

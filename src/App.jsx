@@ -1,23 +1,47 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useAuth, AuthProvider } from './context/AuthContext'
 import { LanguageProvider, useLanguage } from './context/LanguageContext'
 import { supabase } from './lib/supabase'
-import { categories, getLocalizedItem } from './data/mockData'
+import { getLocalizedItem } from './utils/localized'
 import { formatDZD } from './services/chargilyService'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import Footer from './components/Footer'
-import AuthModal from './components/AuthModal'
-import CreatorDashboardModal from './components/CreatorDashboardModal'
-import BrandDashboardModal from './components/BrandDashboardModal'
-import AdminDashboardModal from './components/AdminDashboardModal'
-import CreatorDetailsModal from './components/CreatorDetailsModal'
-import StoreDetailsModal from './components/StoreDetailsModal'
-import CheckoutModal from './components/CheckoutModal'
-import ReviewModal from './components/ReviewModal'
-import ProfileSettingsModal from './components/ProfileSettingsModal'
-import CampaignApplyModal from './components/CampaignApplyModal'
-import ContactModal from './components/ContactModal'
+import OptimizedImage from './components/OptimizedImage'
+import ModalLoadingFallback from './components/ModalLoadingFallback'
+import {
+  preloadCreatorDetailsModal,
+  preloadStoreDetailsModal,
+  preloadCheckoutModal,
+  preloadReviewModal,
+  preloadCampaignApplyModal,
+  preloadDashboardForRole
+} from './utils/preloadChunks'
+
+// Lazy-load modal dialogs to keep initial bundle ultra-lightweight and performant
+const AuthModal = lazy(() => import('./components/AuthModal'))
+const CreatorDashboardModal = lazy(() => import('./components/CreatorDashboardModal'))
+const BrandDashboardModal = lazy(() => import('./components/BrandDashboardModal'))
+const AdminDashboardModal = lazy(() => import('./components/AdminDashboardModal'))
+const CreatorDetailsModal = lazy(() => import('./components/CreatorDetailsModal'))
+const StoreDetailsModal = lazy(() => import('./components/StoreDetailsModal'))
+const CheckoutModal = lazy(() => import('./components/CheckoutModal'))
+const ReviewModal = lazy(() => import('./components/ReviewModal'))
+const ProfileSettingsModal = lazy(() => import('./components/ProfileSettingsModal'))
+const CampaignApplyModal = lazy(() => import('./components/CampaignApplyModal'))
+const ContactModal = lazy(() => import('./components/ContactModal'))
+
+export const CATEGORIES = [
+  'الكل',
+  'تكنولوجيا',
+  'موضة وأزياء',
+  'تجميل وعناية',
+  'طبخ وأكل',
+  'سفر وسياحة',
+  'رياضة ولياقة'
+]
+
+import { isAdmin, isBrand, isCreator, canApplyToCampaign, canHireCreator, canAccessAdmin } from './utils/authGuards'
 import {
   Search,
   Filter,
@@ -138,6 +162,13 @@ function AppContent() {
 
   // Auto redirect on login and Mandatory Onboarding
   useEffect(() => {
+    // Check for password reset flow from URL
+    if (window.location.hash === '#reset-password') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      handleOpenAuth('update_password');
+      return;
+    }
+
     const isOAuthLogin = sessionStorage.getItem('oauth_login') === 'true';
     
     // If user has no role, they must select one
@@ -185,7 +216,11 @@ function AppContent() {
   const handleOpenAuth = (mode = 'login', role = 'creator') => setAuthModal({ open: true, mode, role })
   const handleCloseAuth = () => setAuthModal({ open: false, mode: 'login', role: 'creator' })
   const handleOpenDashboard = (tab = 'overview', type = 'creator', contactId = null) => {
-    setDashboardState({ open: true, tab, type, contactId })
+    if (tab === 'admin' && !canAccessAdmin(user)) {
+      setToast({ type: 'error', message: 'عذراً، لوحة الأدمن مخصصة للإدارة فقط.' });
+      return;
+    }
+    setDashboardState({ open: true, tab, type, contactId });
   }
   const handleCloseDashboard = () => setDashboardState({ open: false, tab: 'overview', type: 'creator', contactId: null })
   const handleSelectCreator = (creator) => setSelectedCreator(creator)
@@ -202,16 +237,24 @@ function AppContent() {
   };
 
   const handleHireCreator = (creator, applicationId = null) => {
-    setSelectedCreator(null)
+    setSelectedCreator(null);
+    if (!isLoggedIn) {
+      handleOpenAuth('signup', 'brand');
+      return;
+    }
+    if (!canHireCreator(user)) {
+      setToast({ type: 'error', message: 'فقط أصحاب المتاجر والعلامات التجارية يمكنهم توظيف صناع المحتوى.' });
+      return;
+    }
     setCheckoutData({
       creator,
       applicationId,
       campaign: {
-        title: `صفقة رعاية مع ${creator.name}`,
-        budget: creator.ratePerPost,
+        title: `صفقة رعاية مع ${creator.name || creator.full_name}`,
+        budget: creator.ratePerPost || creator.rate_per_post || 25000,
         deliverables: ['منشور على منصات التواصل', 'ستوري ترويجية', 'ذكر العلامة التجارية'],
       },
-    })
+    });
   }
   const handleCloseCheckout = () => setCheckoutData(null)
   const handleReview = (creator) => {
@@ -310,9 +353,19 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-brand-cream">
+      {/* ─── Accessible Skip to Main Content Link ─── */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:right-4 focus:z-[200] focus:px-4 focus:py-2 focus:bg-brand-orange focus:text-white focus:rounded-xl focus:font-bold focus:shadow-xl focus:outline-none"
+      >
+        {t('skipToContent') || 'تخطي إلى المحتوى الرئيسي'}
+      </a>
+
       {/* ─── Toast Notification ─── */}
       {toast && (
         <div
+          role="status"
+          aria-live="polite"
           className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-xl font-semibold animate-fade-in-down shadow-2xl ${
             toast.type === 'success'
               ? 'bg-emerald-500/90 text-white'
@@ -326,7 +379,7 @@ function AppContent() {
       {/* ─── Header ─── */}
       {/* Missing Env Variables Warning Banner */}
       {!supabase && (
-        <div className="bg-red-500 text-white p-4 text-center font-bold text-lg z-50 relative shadow-lg">
+        <div role="alert" className="bg-red-500 text-white p-4 text-center font-bold text-lg z-50 relative shadow-lg">
           ⚠️ ERROR: ENVIRONMENT VARIABLES MISSING ⚠️<br />
           You must add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to your Render/Vercel Dashboard settings and redeploy.
         </div>
@@ -340,118 +393,137 @@ function AppContent() {
         onOpenContact={() => setIsContactModalOpen(true)}
       />
 
-      {/* ─── Hero & How It Works — hidden when logged in ─── */}
-      {!isLoggedIn && (
-        <>
-          <Hero 
-            onOpenAuth={handleOpenAuth} 
-            onOpenDashboard={handleOpenDashboard} 
-          />
+      {/* ─── Main Content Landmark ─── */}
+      <main id="main-content">
+        {/* ─── Hero & How It Works — hidden when logged in ─── */}
+        {!isLoggedIn && (
+          <>
+            <Hero 
+              onOpenAuth={handleOpenAuth} 
+              onOpenDashboard={handleOpenDashboard} 
+            />
 
-          {/* ─── Section 2: Direct 3-Step Process ─── */}
-          <section className="py-20 px-4 border-b border-brand-border relative bg-brand-cream">
-            <div className="max-w-5xl mx-auto text-center">
-              <h2 className="text-3xl sm:text-5xl font-black text-brand-brown mb-4 leading-relaxed">
-                {t('howItWorks')} <span className="text-brand-orange">{t('howItWorksHighlight')}</span>
+            {/* ─── Section 2: Direct 3-Step Process ─── */}
+            <section aria-labelledby="how-it-works-heading" className="py-20 px-4 border-b border-brand-border relative bg-brand-cream">
+              <div className="max-w-5xl mx-auto text-center">
+                <h2 id="how-it-works-heading" className="text-3xl sm:text-5xl font-black text-brand-brown mb-4 leading-relaxed">
+                  {t('howItWorks')} <span className="text-brand-orange">{t('howItWorksHighlight')}</span>
+                </h2>
+                <p className="text-brand-brownLight max-w-xl mx-auto text-sm sm:text-base mb-16 leading-relaxed">
+                  {t('howItWorksSub')}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                      1
+                    </div>
+                    <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step1Title')}</h3>
+                    <p className="text-brand-brownLight text-sm leading-relaxed">{t('step1Desc')}</p>
+                  </div>
+
+                  <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                      2
+                    </div>
+                    <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step2Title')}</h3>
+                    <p className="text-brand-brownLight text-sm leading-relaxed">{t('step2Desc')}</p>
+                  </div>
+
+                  <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                      3
+                    </div>
+                    <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step3Title')}</h3>
+                    <p className="text-brand-brownLight text-sm leading-relaxed">{t('step3Desc')}</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </>
+        )}
+
+        {/* ─── Section 3: Clean Creators & Stores Showcase Grid ─── */}
+        {isLoggedIn && (
+          <section id="creators" aria-labelledby="showcase-heading" className="py-20 px-4 bg-brand-cream">
+          <div className="max-w-7xl mx-auto">
+            {/* Main Showcase Toggle Tabs (Creators vs Stores) */}
+            <div className="flex justify-center mb-10">
+              <div role="tablist" aria-label="أقسام المعرض" className="p-1.5 bg-white border border-brand-border rounded-full flex gap-2 shadow-sm">
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-creators"
+                  aria-selected={showcaseTab === 'creators'}
+                  aria-controls="panel-showcase"
+                  onClick={() => setShowcaseTab('creators')}
+                  className={`px-6 py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition-all ${
+                    showcaseTab === 'creators'
+                      ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20 scale-105'
+                      : 'text-brand-brownLight hover:text-brand-brown'
+                  }`}
+                >
+                  <Sparkles className="w-5 h-5" aria-hidden="true" />
+                  <span>{t('tabCreators')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-stores"
+                  aria-selected={showcaseTab === 'stores'}
+                  aria-controls="panel-showcase"
+                  onClick={() => setShowcaseTab('stores')}
+                  className={`px-6 py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition-all ${
+                    showcaseTab === 'stores'
+                      ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20 scale-105'
+                      : 'text-brand-brownLight hover:text-brand-brown'
+                  }`}
+                >
+                  <Building2 className="w-5 h-5" aria-hidden="true" />
+                  <span>{t('tabStores')}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-10 text-center sm:text-right">
+              <h2 id="showcase-heading" className="text-3xl sm:text-4xl font-black text-brand-brown mb-3 tracking-wide">
+                {showcaseTab === 'creators' ? t('featuredCreators') : t('featuredStores')}
               </h2>
-              <p className="text-brand-brownLight max-w-xl mx-auto text-sm sm:text-base mb-16 leading-relaxed">
-                {t('howItWorksSub')}
+              <p className="text-brand-brownLight text-sm sm:text-base leading-relaxed">
+                {showcaseTab === 'creators' ? t('featuredCreatorsSub') : t('featuredStoresSub')}
               </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    1
-                  </div>
-                  <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step1Title')}</h3>
-                  <p className="text-brand-brownLight text-sm leading-relaxed">{t('step1Desc')}</p>
-                </div>
-
-                <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    2
-                  </div>
-                  <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step2Title')}</h3>
-                  <p className="text-brand-brownLight text-sm leading-relaxed">{t('step2Desc')}</p>
-                </div>
-
-                <div className="bg-white border border-brand-border p-8 text-center relative group rounded-[40px] shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-14 h-14 rounded-full bg-brand-cream text-brand-orange text-2xl font-black flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                    3
-                  </div>
-                  <h3 className="text-xl font-bold text-brand-brown mb-3 tracking-wide">{t('step3Title')}</h3>
-                  <p className="text-brand-brownLight text-sm leading-relaxed">{t('step3Desc')}</p>
-                </div>
-              </div>
             </div>
-          </section>
-        </>
-      )}
 
-      {/* ─── Section 3: Clean Creators & Stores Showcase Grid ─── */}
-      {isLoggedIn && (
-        <section id="creators" className="py-20 px-4 bg-brand-cream">
-        <div className="max-w-7xl mx-auto">
-          {/* Main Showcase Toggle Tabs (Creators vs Stores) */}
-          <div className="flex justify-center mb-10">
-            <div className="p-1.5 bg-white border border-brand-border rounded-full flex gap-2 shadow-sm">
-              <button
-                onClick={() => setShowcaseTab('creators')}
-                className={`px-6 py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition-all ${
-                  showcaseTab === 'creators'
-                    ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20 scale-105'
-                    : 'text-brand-brownLight hover:text-brand-brown'
-                }`}
-              >
-                <Sparkles className="w-5 h-5" />
-                <span>{t('tabCreators')}</span>
-              </button>
-
-              <button
-                onClick={() => setShowcaseTab('stores')}
-                className={`px-6 py-3 rounded-full font-bold text-sm sm:text-base flex items-center gap-2 transition-all ${
-                  showcaseTab === 'stores'
-                    ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20 scale-105'
-                    : 'text-brand-brownLight hover:text-brand-brown'
-                }`}
-              >
-                <Building2 className="w-5 h-5" />
-                <span>{t('tabStores')}</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="mb-10 text-center sm:text-right">
-            <h2 className="text-3xl sm:text-4xl font-black text-brand-brown mb-3 tracking-wide">
-              {showcaseTab === 'creators' ? t('featuredCreators') : t('featuredStores')}
-            </h2>
-            <p className="text-brand-brownLight text-sm sm:text-base leading-relaxed">
-              {showcaseTab === 'creators' ? t('featuredCreatorsSub') : t('featuredStoresSub')}
-            </p>
-          </div>
-
-          {/* ─── Search & Category Bar ─── */}
-          <div className="bg-white border border-brand-border rounded-[28px] p-5 sm:p-6 mb-8 shadow-sm space-y-4">
-            <div className="flex flex-col md:flex-row gap-3">
-              {/* Search Box with Clear Button */}
-              <div className="relative flex-1">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" />
-                <input
-                  type="text"
-                  placeholder={t('searchPlaceholder')}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input-field pr-12 pl-10 w-full text-sm"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-brand-brownLight hover:text-brand-brown rounded-full"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+            {/* ─── Search & Category Bar ─── */}
+            <div className="bg-white border border-brand-border rounded-[28px] p-5 sm:p-6 mb-8 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row gap-3">
+                {/* Search Box with Clear Button */}
+                <div className="relative flex-1">
+                  <label htmlFor="creator-search-input" className="sr-only">
+                    {t('searchPlaceholder') || 'البحث عن المبدعين والمتاجر'}
+                  </label>
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-brownLight" aria-hidden="true" />
+                  <input
+                    id="creator-search-input"
+                    type="text"
+                    placeholder={t('searchPlaceholder')}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    aria-label={t('searchPlaceholder')}
+                    className="input-field pr-12 pl-10 w-full text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      aria-label="مسح نص البحث"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-brand-brownLight hover:text-brand-brown rounded-full"
+                    >
+                      <X className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
 
               {/* Advanced Filter Drawer Toggle */}
               <button
@@ -483,7 +555,7 @@ function AppContent() {
             </div>
 
             {/* Category Chips Bar */}
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pt-1 pb-1">
+            <div role="tablist" aria-label="تصنيفات المحتوى" className="flex gap-2 overflow-x-auto no-scrollbar pt-1 pb-1">
               {categories.map((cat) => {
                 const categoryLabels = {
                   'الكل': t('catAll'),
@@ -498,6 +570,9 @@ function AppContent() {
                 return (
                   <button
                     key={cat}
+                    type="button"
+                    role="tab"
+                    aria-selected={isSelected}
                     onClick={() => setSelectedCategory(cat)}
                     className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border shadow-sm ${
                       isSelected
@@ -576,55 +651,88 @@ function AppContent() {
                 </div>
               </div>
             )}
-
-            {/* Results Count Bar */}
-            <div className="pt-2 flex justify-between items-center text-xs font-bold text-brand-brownLight border-t border-brand-border/40">
-              <span>
-                {showcaseTab === 'creators' 
-                  ? `${filteredCreators.length} ${t('showingResults')}` 
-                  : `${filteredStores.length} متجر متاح`}
-              </span>
-              {hasActiveFilters && (
-                <span className="text-[11px] text-brand-orange">
-                  فلاتر نشطة مفعّلة
-                </span>
-              )}
+            
+            {/* Category Chips Bar */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pt-1 pb-1">
+              {CATEGORIES.map((cat) => {
+                const categoryLabels = {
+                  'الكل': t('catAll'),
+                  'تكنولوجيا': t('catTech'),
+                  'موضة وأزياء': t('catFashion'),
+                  'تجميل وعناية': t('catBeauty'),
+                  'طبخ وأكل': t('catFood'),
+                  'سفر وسياحة': t('catTravel'),
+                  'رياضة ولياقة': t('catFitness')
+                };
+                const isSelected = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border shadow-sm ${
+                      isSelected
+                        ? 'bg-brand-brown text-white border-brand-brown'
+                        : 'bg-white text-brand-brownLight hover:bg-brand-cream hover:text-brand-brown border-brand-border'
+                    }`}
+                  >
+                    {categoryLabels[cat] || cat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Tab 1: Creators Grid */}
           {showcaseTab === 'creators' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredCreators.map((creator) => {
+              {filteredCreators.map((creator, index) => {
                 const creatorName = getLocalizedItem(creator, 'name', language) || creator.full_name || 'صانع محتوى'
                 const creatorAvatar = creator.avatar || creator.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator'
                 const creatorWilaya = creator.wilaya || creator.location || 'الجزائر'
                 const rate = creator.rate_per_post || creator.ratePerPost || 20000
+                const isAboveFold = index < 4;
 
                 return (
                   <div
                     key={creator.id}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`عرض تفاصيل ${creatorName}`}
                     onClick={() => handleSelectCreator(creator)}
-                    className="bg-brand-orange text-white hover:-translate-y-1.5 rounded-[36px] p-6 sm:p-7 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-md hover:shadow-2xl relative overflow-hidden"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectCreator(creator);
+                      }
+                    }}
+                    onMouseEnter={preloadCreatorDetailsModal}
+                    onFocus={preloadCreatorDetailsModal}
+                    className="bg-brand-orange text-white hover:-translate-y-1.5 focus-visible:ring-4 focus-visible:ring-brand-orange/40 focus-visible:outline-none rounded-[36px] p-6 sm:p-7 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-md hover:shadow-2xl relative overflow-hidden"
                   >
                     <div>
                       {/* Top Bar: Avatar + Name + Badges */}
                       <div className="flex items-center gap-3.5 mb-4">
-                        <img
+                        <OptimizedImage
                           src={creatorAvatar}
+                          fallbackType="creator"
+                          seed={creatorName}
                           alt={creatorName}
+                          width="56"
+                          height="56"
+                          loading={isAboveFold ? 'eager' : 'lazy'}
+                          fetchPriority={isAboveFold ? 'high' : 'auto'}
                           className="w-14 h-14 rounded-full bg-white/20 object-cover border-2 border-white/40 group-hover:scale-105 transition-transform"
                         />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-white text-base truncate flex items-center gap-1">
                             <span>{creatorName}</span>
-                            {creator.verified && <BadgeCheck className="w-4 h-4 text-white" />}
+                            {creator.verified && <BadgeCheck className="w-4 h-4 text-white" aria-hidden="true" />}
                           </h3>
                           <div className="flex items-center gap-2 text-xs text-white/80 mt-0.5">
                             <span className="truncate">{getLocalizedItem(creator, 'category', language) || 'مبدع'}</span>
                             <span>•</span>
                             <span className="flex items-center gap-0.5 shrink-0">
-                              <MapPin className="w-3 h-3" />
+                              <MapPin className="w-3 h-3" aria-hidden="true" />
                               <span>{creatorWilaya}</span>
                             </span>
                           </div>
@@ -666,10 +774,14 @@ function AppContent() {
                       </div>
                       
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleHireCreator(creator);
                         }}
+                        onMouseEnter={preloadCheckoutModal}
+                        onFocus={preloadCheckoutModal}
+                        aria-label={`توظيف ${creatorName}`}
                         className="px-3.5 py-1.5 rounded-full bg-white text-brand-orange hover:bg-brand-cream text-xs font-bold shadow-sm transition-all"
                       >
                         {t('creatorHire')}
@@ -684,39 +796,59 @@ function AppContent() {
           {/* Tab 2: Stores & Small Businesses Grid */}
           {showcaseTab === 'stores' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredStores.map((store) => (
-                <div
-                  key={store.id}
-                  onClick={() => setSelectedStore(store)}
-                  className="bg-white border border-brand-border hover:-translate-y-1 rounded-[36px] p-6 sm:p-8 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-lg"
-                >
-                  <div>
-                    <div className="flex items-center gap-3.5 mb-4">
-                      <img
-                        src={store.logo}
-                        alt={getLocalizedItem(store, 'name', language)}
-                        className="w-16 h-16 rounded-full bg-brand-cream object-cover border-2 border-brand-border group-hover:scale-105 transition-transform"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-brand-brown text-lg truncate flex items-center gap-1.5">
-                          {getLocalizedItem(store, 'name', language)}
-                          {store.verified && <BadgeCheck className="w-5 h-5 text-brand-orange" />}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs text-brand-brownLight mt-0.5">
-                          <span>{getLocalizedItem(store, 'sector', language)}</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-0.5">
-                            <MapPin className="w-3 h-3" />
-                            {getLocalizedItem(store, 'location', language)}
-                          </span>
+              {filteredStores.map((store, index) => {
+                const storeName = getLocalizedItem(store, 'name', language) || store.brand_name || 'متجر';
+                const isAboveFold = index < 4;
+                return (
+                  <div
+                    key={store.id}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`عرض تفاصيل ${storeName}`}
+                    onClick={() => setSelectedStore(store)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedStore(store);
+                      }
+                    }}
+                    onMouseEnter={preloadStoreDetailsModal}
+                    onFocus={preloadStoreDetailsModal}
+                    className="bg-white border border-brand-border hover:-translate-y-1 focus-visible:ring-4 focus-visible:ring-brand-orange/40 focus-visible:outline-none rounded-[36px] p-6 sm:p-8 cursor-pointer group flex flex-col justify-between transition-all duration-300 shadow-sm hover:shadow-lg"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3.5 mb-4">
+                        <OptimizedImage
+                          src={store.logo}
+                          fallbackType="brand"
+                          seed={store.name}
+                          alt={storeName}
+                          width="64"
+                          height="64"
+                          loading={isAboveFold ? 'eager' : 'lazy'}
+                          fetchPriority={isAboveFold ? 'high' : 'auto'}
+                          className="w-16 h-16 rounded-full bg-brand-cream object-cover border-2 border-brand-border group-hover:scale-105 transition-transform"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-brand-brown text-lg truncate flex items-center gap-1.5">
+                            <span>{storeName}</span>
+                            {store.verified && <BadgeCheck className="w-5 h-5 text-brand-orange" aria-hidden="true" />}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs text-brand-brownLight mt-0.5">
+                            <span>{getLocalizedItem(store, 'sector', language)}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-0.5">
+                              <MapPin className="w-3 h-3" aria-hidden="true" />
+                              <span>{getLocalizedItem(store, 'location', language)}</span>
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <p className="text-sm text-brand-brownLight line-clamp-2 leading-relaxed mb-6">
-                      {getLocalizedItem(store, 'bio', language)}
-                    </p>
-                  </div>
+                      <p className="text-sm text-brand-brownLight line-clamp-2 leading-relaxed mb-6">
+                        {getLocalizedItem(store, 'bio', language)}
+                      </p>
+                    </div>
 
                   <div className="pt-4 border-t border-brand-border flex items-center justify-between">
                     <div>
@@ -729,9 +861,10 @@ function AppContent() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
+        )}
 
           {((showcaseTab === 'creators' && filteredCreators.length === 0) ||
             (showcaseTab === 'stores' && filteredStores.length === 0)) && (
@@ -751,6 +884,7 @@ function AppContent() {
         </div>
       </section>
       )}
+      </main>
 
       {/* ─── Footer ─── */}
       <Footer 
@@ -768,88 +902,91 @@ function AppContent() {
         onOpenContact={() => setIsContactModalOpen(true)}
       />
 
-      {/* ─── Modals ─── */}
-      <AuthModal
-        isOpen={authModal.open}
-        onClose={handleCloseAuth}
-        initialMode={authModal.mode}
-        initialRole={authModal.role}
-      />
+      {/* ─── Lazy Loaded Modals with Seamless Feedback ─── */}
+      <Suspense fallback={<ModalLoadingFallback />}>
+        <AuthModal
+          isOpen={authModal.open}
+          onClose={handleCloseAuth}
+          initialMode={authModal.mode}
+          initialRole={authModal.role}
+        />
 
-      {dashboardState.tab === 'admin' || user?.role === 'admin' ? (
-        <AdminDashboardModal
-          isOpen={dashboardState.open}
-          onClose={handleCloseDashboard}
+        {/* ─── Dashboard Modals with strict RBAC ─── */}
+        {user?.role === 'admin' ? (
+          <AdminDashboardModal
+            isOpen={dashboardState.open}
+            onClose={handleCloseDashboard}
+          />
+        ) : user?.role === 'brand' ? (
+          <BrandDashboardModal
+            isOpen={dashboardState.open}
+            onClose={handleCloseDashboard}
+            initialTab={dashboardState.tab}
+            initialContactId={dashboardState.contactId}
+            onHireCreator={handleHireCreator}
+          />
+        ) : user?.role === 'creator' ? (
+          <CreatorDashboardModal
+            isOpen={dashboardState.open}
+            onClose={handleCloseDashboard}
+            initialTab={dashboardState.tab}
+            initialContactId={dashboardState.contactId}
+          />
+        ) : null}
+        <CreatorDetailsModal
+          isOpen={!!selectedCreator}
+          onClose={handleCloseCreator}
+          creator={selectedCreator}
+          onHire={handleHireCreator}
+          onContact={handleContactCreator}
         />
-      ) : user?.role === 'brand' ? (
-        <BrandDashboardModal
-          isOpen={dashboardState.open}
-          onClose={handleCloseDashboard}
-          initialTab={dashboardState.tab}
-          initialContactId={dashboardState.contactId}
-          onHireCreator={handleHireCreator}
+        <StoreDetailsModal
+          isOpen={!!selectedStore}
+          onClose={() => setSelectedStore(null)}
+          store={selectedStore}
+          onApplyCampaign={(campaign) => {
+            if (!isLoggedIn) {
+              setSelectedStore(null);
+              handleOpenAuth('signup', 'creator');
+            } else if (user?.role !== 'creator') {
+              setToast({ type: 'error', message: t('onlyCreatorsCanApply') || 'فقط صناع المحتوى يمكنهم التقديم على الحملات' });
+            } else {
+              setSelectedStore(null);
+              setSelectedCampaignToApply(campaign);
+            }
+          }}
         />
-      ) : (
-        <CreatorDashboardModal
-          isOpen={dashboardState.open}
-          onClose={handleCloseDashboard}
-          initialTab={dashboardState.tab}
-          initialContactId={dashboardState.contactId}
+        <CampaignApplyModal
+          isOpen={!!selectedCampaignToApply}
+          onClose={() => setSelectedCampaignToApply(null)}
+          campaign={selectedCampaignToApply}
+          onSuccess={() => {
+            setToast({ type: 'success', message: t('applicationSuccess') || 'تم إرسال طلب التقديم بنجاح! 🎉' });
+            handleOpenDashboard('opportunities');
+          }}
         />
-      )}
-      <CreatorDetailsModal
-        isOpen={!!selectedCreator}
-        onClose={handleCloseCreator}
-        creator={selectedCreator}
-        onHire={handleHireCreator}
-        onContact={handleContactCreator}
-      />
-      <StoreDetailsModal
-        isOpen={!!selectedStore}
-        onClose={() => setSelectedStore(null)}
-        store={selectedStore}
-        onApplyCampaign={(campaign) => {
-          if (!isLoggedIn) {
-            setSelectedStore(null);
-            handleOpenAuth('signup', 'creator');
-          } else if (user?.role !== 'creator') {
-            setToast({ type: 'error', message: t('onlyCreatorsCanApply') || 'فقط صناع المحتوى يمكنهم التقديم على الحملات' });
-          } else {
-            setSelectedStore(null);
-            setSelectedCampaignToApply(campaign);
-          }
-        }}
-      />
-      <CampaignApplyModal
-        isOpen={!!selectedCampaignToApply}
-        onClose={() => setSelectedCampaignToApply(null)}
-        campaign={selectedCampaignToApply}
-        onSuccess={() => {
-          setToast({ type: 'success', message: t('applicationSuccess') || 'تم إرسال طلب التقديم بنجاح! 🎉' });
-          handleOpenDashboard('opportunities');
-        }}
-      />
-      <CheckoutModal
-        isOpen={!!checkoutData}
-        onClose={handleCloseCheckout}
-        creator={checkoutData?.creator}
-        campaign={checkoutData?.campaign}
-        applicationId={checkoutData?.applicationId}
-      />
-      <ReviewModal
-        isOpen={!!reviewCreator}
-        onClose={handleCloseReview}
-        creator={reviewCreator}
-      />
-      <ProfileSettingsModal 
-        isOpen={isProfileSettingsOpen} 
-        onClose={() => setIsProfileSettingsOpen(false)}
-        isMandatory={isProfileMandatory}
-      />
-      <ContactModal
-        isOpen={isContactModalOpen}
-        onClose={() => setIsContactModalOpen(false)}
-      />
+        <CheckoutModal
+          isOpen={!!checkoutData}
+          onClose={handleCloseCheckout}
+          creator={checkoutData?.creator}
+          campaign={checkoutData?.campaign}
+          applicationId={checkoutData?.applicationId}
+        />
+        <ReviewModal
+          isOpen={!!reviewCreator}
+          onClose={handleCloseReview}
+          creator={reviewCreator}
+        />
+        <ProfileSettingsModal 
+          isOpen={isProfileSettingsOpen} 
+          onClose={() => setIsProfileSettingsOpen(false)}
+          isMandatory={isProfileMandatory}
+        />
+        <ContactModal
+          isOpen={isContactModalOpen}
+          onClose={() => setIsContactModalOpen(false)}
+        />
+      </Suspense>
     </div>
   )
 }

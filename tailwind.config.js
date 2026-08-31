@@ -10,10 +10,10 @@ export default {
         sans: ['Cairo', 'Inter', 'sans-serif'],
       },
       colors: {
-        // Furnicom brand colors
+        // Furnicom brand colors (WCAG AA Compliant)
         brand: {
-          orange: '#E47E32',
-          orangeLight: '#F29D52',
+          orange: '#C05216',
+          orangeLight: '#D96522',
           cream: '#FDF8F3',
           creamDark: '#F3ECE1',
           brown: '#2C1E16',

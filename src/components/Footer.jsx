@@ -1,6 +1,7 @@
 import React from 'react';
 import { Globe, MessageCircle, Camera, Mail, MapPin, Heart } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { preloadContactModal } from '../utils/preloadChunks';
 
 const Footer = ({ onLinkClick, onOpenContact }) => {
   const { t } = useLanguage();
@@ -11,7 +12,17 @@ const Footer = ({ onLinkClick, onOpenContact }) => {
           {/* Column 1 - Brand */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <img src="/logo.png" alt="Créateur DZ Logo" className="h-10 w-auto object-contain rounded-xl bg-brand-cream border border-brand-border p-1" />
+              <picture className="flex-shrink-0">
+                <img 
+                  src="/logo.jpg" 
+                  alt="Créateur DZ Logo" 
+                  width="40" 
+                  height="40" 
+                  loading="lazy" 
+                  decoding="async" 
+                  className="h-10 w-auto object-contain rounded-xl bg-brand-cream border border-brand-border p-1" 
+                />
+              </picture>
               <span className="text-brand-brown text-xl font-bold font-inter" dir="ltr">Créateur DZ</span>
             </div>
             <p className="text-brand-brownLight text-sm mb-6 leading-relaxed">
@@ -63,6 +74,8 @@ const Footer = ({ onLinkClick, onOpenContact }) => {
               <li className="pt-2">
                 <button
                   onClick={onOpenContact}
+                  onMouseEnter={preloadContactModal}
+                  onFocus={preloadContactModal}
                   className="btn-primary text-xs py-2 px-4 flex items-center gap-1.5 shadow-sm"
                 >
                   <Mail className="w-3.5 h-3.5" />

@@ -23,7 +23,6 @@ export function AuthProvider({ children }) {
         .single()
 
       if (!error && data) {
-        console.log('Current User Profile:', data)
         setProfile(data)
       } else {
         setProfile({ id: userId, role: null })
@@ -40,27 +39,46 @@ export function AuthProvider({ children }) {
       return
     }
 
-    // Bug #5 fix: await fetchProfile before setLoading(false)
+    // Initialize session and clean up any auth tokens from URL
     const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      if (currentUser) {
-        await fetchProfile(currentUser.id)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        if (currentUser) {
+          await fetchProfile(currentUser.id)
+        }
+        
+        // Security: Clean URL hash if it contains OAuth / Magic Link access tokens
+        if (typeof window !== 'undefined' && window.location.hash && (
+          window.location.hash.includes('access_token=') || 
+          window.location.hash.includes('type=recovery') ||
+          window.location.hash.includes('error_description=')
+        )) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search)
+        }
+      } catch (err) {
+        console.error('Session init error:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     initSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
           const currentUser = session?.user ?? null
           setUser(currentUser)
           if (currentUser) {
             await fetchProfile(currentUser.id)
           } else {
             setProfile(null)
+          }
+
+          // Clean URL on sign-in
+          if (typeof window !== 'undefined' && window.location.hash && window.location.hash.includes('access_token=')) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search)
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
@@ -76,6 +94,30 @@ export function AuthProvider({ children }) {
       }
     }
   }, [])
+
+  /**
+   * Returns a valid JWT access token, automatically refreshing if close to expiry (< 60s)
+   */
+  const getFreshToken = async () => {
+    if (!supabase) return null;
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) return null;
+
+      // If token expires in less than 60 seconds, proactively refresh it
+      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+      if (expiresAt && Date.now() > expiresAt - 60000) {
+        const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+        if (!refreshErr && refreshData?.session?.access_token) {
+          return refreshData.session.access_token;
+        }
+      }
+      return session.access_token;
+    } catch (err) {
+      console.warn('Error fetching fresh JWT token:', err);
+      return null;
+    }
+  };
 
   const logout = async () => {
     if (!supabase) return
@@ -138,7 +180,7 @@ export function AuthProvider({ children }) {
   } : null
 
   return (
-    <AuthContext.Provider value={{ user: userWithRole, profile, loading, logout, updateRole, updateProfileData, fetchProfile }}>
+    <AuthContext.Provider value={{ user: userWithRole, profile, loading, logout, updateRole, updateProfileData, fetchProfile, getFreshToken }}>
       {children}
     </AuthContext.Provider>
   )

@@ -8,8 +8,10 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { getLocalizedItem } from '../data/mockData';
+import { getLocalizedItem } from '../utils/localized';
 import { formatDZD, calculateFees } from '../services/chargilyService';
+import { validateCampaignForm, validateChatMessage, validateAlgerianPhone, validateUrl, sanitizeText, safeHref } from '../utils/validators';
+import OptimizedImage from './OptimizedImage';
 
 export default function BrandDashboardModal({ 
   isOpen, 
@@ -208,37 +210,43 @@ export default function BrandDashboardModal({
     setCampaignErrorMsg('');
     setCampaignSuccessMsg('');
 
-    if (!campaignForm.title || !campaignForm.budget) {
-      setCampaignErrorMsg('يرجى ملء جميع الحقول المطلوبة');
+    const validation = validateCampaignForm(campaignForm);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      setCampaignErrorMsg(firstError);
       return;
     }
 
     try {
       const { createCampaign, updateCampaign } = await import('../services/dbService');
       
+      const sanitizedTitle = sanitizeText(campaignForm.title, 100);
+      const sanitizedDesc = sanitizeText(campaignForm.description, 2000);
+      const budgetNum = Number(campaignForm.budget);
+
       if (editingCampaignId) {
         // Update Existing Campaign
         await updateCampaign(editingCampaignId, {
-          title: campaignForm.title,
+          title: sanitizedTitle,
           category: campaignForm.category,
-          budget: Number(campaignForm.budget),
-          description: campaignForm.description,
+          budget: budgetNum,
+          description: sanitizedDesc,
           deliverables: campaignForm.deliverables,
           deadline: campaignForm.deadline || null
         });
 
         setCampaigns(prev => prev.map(c => 
-          c.id === editingCampaignId ? { ...c, ...campaignForm, budget: Number(campaignForm.budget) } : c
+          c.id === editingCampaignId ? { ...c, ...campaignForm, title: sanitizedTitle, description: sanitizedDesc, budget: budgetNum } : c
         ));
         setCampaignSuccessMsg(t('updateCampaignSuccess') || 'تم تحديث بيانات الحملة بنجاح!');
       } else {
         // Create New Campaign
         const res = await createCampaign({
           brand_id: user.id,
-          title: campaignForm.title,
+          title: sanitizedTitle,
           category: campaignForm.category,
-          budget: Number(campaignForm.budget),
-          description: campaignForm.description,
+          budget: budgetNum,
+          description: sanitizedDesc,
           deliverables: campaignForm.deliverables,
           deadline: campaignForm.deadline || null,
           status: 'open'
@@ -375,16 +383,37 @@ export default function BrandDashboardModal({
   // ─── Profile Update Handler ───
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+
+    let sanitizedPhone = profileData.phone?.trim() || '';
+    if (sanitizedPhone) {
+      const phoneCheck = validateAlgerianPhone(sanitizedPhone);
+      if (!phoneCheck.isValid) {
+        alert(phoneCheck.error);
+        return;
+      }
+      sanitizedPhone = phoneCheck.formatted;
+    }
+
+    let sanitizedWebsite = profileData.websiteUrl?.trim() || '';
+    if (sanitizedWebsite) {
+      const webCheck = validateUrl(sanitizedWebsite);
+      if (!webCheck.isValid) {
+        alert(webCheck.error);
+        return;
+      }
+      sanitizedWebsite = webCheck.normalized;
+    }
+
     if (updateProfileData) {
       await updateProfileData({
-        full_name: profileData.brandName,
-        brand_name: profileData.brandName,
+        full_name: sanitizeText(profileData.brandName, 70),
+        brand_name: sanitizeText(profileData.brandName, 70),
         sector: profileData.sector,
-        bio: profileData.bio,
-        website_url: profileData.websiteUrl,
-        phone: profileData.phone,
+        bio: sanitizeText(profileData.bio, 500),
+        website_url: sanitizedWebsite,
+        phone: sanitizedPhone,
         wilaya: profileData.wilaya,
-        rc_number: profileData.rcNumber
+        rc_number: sanitizeText(profileData.rcNumber, 30)
       });
     }
     setSavedSuccess(true);
@@ -394,8 +423,15 @@ export default function BrandDashboardModal({
   // ─── Chat Send Handler ───
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!chatMessage.trim() || !selectedContactId || !user?.id) return;
-    const msgText = chatMessage.trim();
+    if (!selectedContactId || !user?.id) return;
+
+    const msgCheck = validateChatMessage(chatMessage);
+    if (!msgCheck.isValid) {
+      setChatError(msgCheck.error || 'الرسالة غير صالحة');
+      return;
+    }
+
+    const msgText = msgCheck.sanitized;
     setChatMessage('');
     setChatError('');
 
@@ -446,16 +482,22 @@ export default function BrandDashboardModal({
     : applications.filter(app => app.campaign_id === activeCampaignFilter);
 
   return (
-    <div className="fixed inset-0 z-50 bg-brand-cream/95 backdrop-blur-md overflow-y-auto" dir="rtl">
+    <div 
+      className="fixed inset-0 z-50 bg-brand-cream/95 backdrop-blur-md overflow-y-auto" 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="brand-dashboard-title"
+      dir="rtl"
+    >
       {/* ─── Top Header Bar ─── */}
       <div className="sticky top-0 z-20 bg-white border-b border-brand-border px-4 sm:px-8 py-4 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-[18px] bg-brand-orange/10 text-brand-orange flex items-center justify-center font-bold shadow-inner">
-            <Building2 className="w-6 h-6" />
+            <Building2 className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-brand-brown tracking-wide">
+              <h2 id="brand-dashboard-title" className="text-xl font-black text-brand-brown tracking-wide">
                 {profileData.brandName || t('brandDashboard')}
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-orange/10 text-brand-orange border border-brand-orange/20">
@@ -470,11 +512,13 @@ export default function BrandDashboardModal({
 
         <div className="flex items-center gap-3">
           <button 
+            type="button"
             onClick={onClose}
             className="p-2.5 text-brand-brownLight hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all"
+            aria-label="إغلاق لوحة تحكم المتجر"
             title={t('close')}
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -995,9 +1039,13 @@ export default function BrandDashboardModal({
                         {/* Header with Creator Info */}
                         <div className="flex items-start justify-between gap-3 mb-4">
                           <div className="flex items-center gap-3">
-                            <img 
+                            <OptimizedImage 
                               src={creatorAvatar} 
+                              fallbackType="creator"
+                              seed={creatorName}
                               alt={creatorName} 
+                              width="48"
+                              height="48"
                               className="w-12 h-12 rounded-full border border-brand-border bg-brand-cream object-cover" 
                             />
                             <div>
@@ -1149,9 +1197,13 @@ export default function BrandDashboardModal({
                   >
                     <div>
                       <div className="flex items-center gap-3 mb-4">
-                        <img 
+                        <OptimizedImage 
                           src={creatorAvatar} 
+                          fallbackType="creator"
+                          seed={creatorName}
                           alt={creatorName} 
+                          width="56"
+                          height="56"
                           className="w-14 h-14 rounded-full border border-brand-border bg-brand-cream object-cover" 
                         />
                         <div>
@@ -1241,9 +1293,13 @@ export default function BrandDashboardModal({
                           : 'hover:bg-brand-cream/40 border-r-transparent'
                       }`}
                     >
-                      <img 
-                        src={contact.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator'} 
+                      <OptimizedImage 
+                        src={contact.avatar_url} 
+                        fallbackType="creator"
+                        seed={contact.full_name || 'Creator'}
                         alt="Creator Avatar" 
+                        width="40"
+                        height="40"
                         className="w-10 h-10 rounded-full border border-brand-border object-cover" 
                       />
                       <div className="overflow-hidden">
@@ -1261,9 +1317,13 @@ export default function BrandDashboardModal({
               {selectedContactId ? (
                 <>
                   <div className="p-4 border-b border-brand-border flex items-center gap-3 bg-brand-cream/40">
-                    <img 
-                      src={chatContacts.find(c => c.id === selectedContactId)?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator'} 
+                    <OptimizedImage 
+                      src={chatContacts.find(c => c.id === selectedContactId)?.avatar_url} 
+                      fallbackType="creator"
+                      seed={chatContacts.find(c => c.id === selectedContactId)?.full_name || 'Creator'}
                       alt="Creator Avatar" 
+                      width="40"
+                      height="40"
                       className="w-10 h-10 rounded-full border border-brand-border object-cover" 
                     />
                     <div>
@@ -1394,9 +1454,9 @@ export default function BrandDashboardModal({
                         {app.deliverable_url && (
                           <div className="pt-2">
                             <a 
-                              href={app.deliverable_url} 
+                              href={safeHref(app.deliverable_url)} 
                               target="_blank" 
-                              rel="noreferrer" 
+                              rel="noopener noreferrer" 
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-bold transition-colors"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />

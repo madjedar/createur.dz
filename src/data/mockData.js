@@ -1,8 +1,4 @@
-export const getLocalizedItem = (item, field, lang = 'ar') => {
-  if (!item || !item[field]) return '';
-  if (typeof item[field] === 'string') return item[field];
-  return item[field][lang] || item[field]['ar'] || item[field]['fr'] || item[field]['en'] || '';
-};
+export { getLocalizedItem } from '../utils/localized';
 
 export const mockCreators = [
   {

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, Lock, CreditCard, CheckCircle, Loader2, Landmark, Smartphone } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { canHireCreator } from '../utils/authGuards';
 import { calculateFees, formatDZD, createCheckoutSession } from '../services/chargilyService';
 
 export default function CheckoutModal({ isOpen, onClose, creator, campaign, applicationId }) {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -36,6 +39,16 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
 
   const handlePay = async () => {
     if (!agreed) return;
+
+    if (!user) {
+      setError('يرجى تسجيل الدخول كصاحب متجر لمتابعة الدفع.');
+      return;
+    }
+
+    if (!canHireCreator(user)) {
+      setError('فقط أصحاب المتاجر والعلامات التجارية يمكنهم إجراء عمليات الدفع وتأمين المبالغ.');
+      return;
+    }
     
     setLoading(true);
     setError(null);
@@ -89,6 +102,9 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay overflow-y-auto" 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="checkout-modal-title"
       onClick={onClose}
     >
       <div 
@@ -97,18 +113,21 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
         dir="rtl"
       >
         <button 
+          type="button"
           onClick={onClose}
+          aria-label="إغلاق نافذة الدفع"
           className="absolute z-10 text-brand-brownLight top-4 left-4 hover:text-brand-brown hover:bg-brand-cream p-2 rounded-full transition-colors bg-white/80 backdrop-blur-sm shadow-sm"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         {success ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center animate-fade-in-up">
-            <CheckCircle className="w-16 h-16 text-brand-orange mb-4" />
-            <h2 className="text-2xl font-bold text-brand-brown mb-2">{t('checkoutSuccessTitle') || 'تم الدفع بنجاح!'}</h2>
+          <div role="status" aria-live="polite" className="flex flex-col items-center justify-center py-10 text-center animate-fade-in-up">
+            <CheckCircle className="w-16 h-16 text-brand-orange mb-4" aria-hidden="true" />
+            <h2 id="checkout-modal-title" className="text-2xl font-bold text-brand-brown mb-2">{t('checkoutSuccessTitle') || 'تم الدفع بنجاح!'}</h2>
             <p className="text-brand-brownLight mb-6">{t('checkoutSuccessDesc') || 'تم حجز المبلغ في حساب الضمان (Escrow). يمكنك الآن متابعة العمل مع صانع المحتوى.'}</p>
             <button
+              type="button"
               onClick={onClose}
               className="btn-primary px-8 py-3 rounded-full font-bold"
             >
@@ -117,7 +136,7 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
           </div>
         ) : (
           <>
-            <h2 className="mb-6 text-2xl font-bold text-brand-brown">{t('checkoutTitle')}</h2>
+            <h2 id="checkout-modal-title" className="mb-6 text-2xl font-bold text-brand-brown">{t('checkoutTitle')}</h2>
 
             {/* Deal Summary */}
             <div className="p-4 mb-6 bg-brand-cream border border-brand-border rounded-2xl">
@@ -151,27 +170,33 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
             {/* Payment Method Selection */}
             <div className="mb-6">
               <h3 className="mb-3 text-sm font-medium text-brand-brownLight">اختر طريقة الدفع:</h3>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 <button
+                  type="button"
                   onClick={() => setPaymentMethod('edahabia')}
-                  className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'edahabia' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
+                  disabled={loading}
+                  className={`flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'edahabia' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <CreditCard className={`w-8 h-8 mb-2 ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
-                  <span className={`font-semibold text-sm ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>البطاقة الذهبية</span>
+                  <CreditCard className={`w-7 h-7 sm:w-8 sm:h-8 mb-1.5 sm:mb-2 ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`} aria-hidden="true" />
+                  <span className={`font-bold text-xs sm:text-sm ${paymentMethod === 'edahabia' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>البطاقة الذهبية</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPaymentMethod('baridimob')}
-                  className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'baridimob' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
+                  disabled={loading}
+                  className={`flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'baridimob' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <Smartphone className={`w-8 h-8 mb-2 ${paymentMethod === 'baridimob' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
-                  <span className={`font-semibold text-sm ${paymentMethod === 'baridimob' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بريدي موب</span>
+                  <Smartphone className={`w-7 h-7 sm:w-8 sm:h-8 mb-1.5 sm:mb-2 ${paymentMethod === 'baridimob' ? 'text-brand-orange' : 'text-brand-brownLight'}`} aria-hidden="true" />
+                  <span className={`font-bold text-xs sm:text-sm ${paymentMethod === 'baridimob' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بريدي موب</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPaymentMethod('cib')}
-                  className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'cib' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'}`}
+                  disabled={loading}
+                  className={`flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl border transition-all shadow-sm ${paymentMethod === 'cib' ? 'border-brand-orange bg-brand-orange/10 ring-2 ring-brand-orange/20 scale-[1.02]' : 'border-brand-border hover:border-brand-orange/50 bg-white hover:bg-brand-cream'} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <Landmark className={`w-8 h-8 mb-2 ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`} />
-                  <span className={`font-semibold text-sm ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بطاقة CIB</span>
+                  <Landmark className={`w-7 h-7 sm:w-8 sm:h-8 mb-1.5 sm:mb-2 ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`} aria-hidden="true" />
+                  <span className={`font-bold text-xs sm:text-sm ${paymentMethod === 'cib' ? 'text-brand-orange' : 'text-brand-brownLight'}`}>بطاقة CIB</span>
                 </button>
               </div>
             </div>
@@ -196,7 +221,7 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
             </div>
 
             {error && (
-              <div className="p-3 mb-4 text-sm text-red-200 bg-red-500/20 border border-red-500/30 rounded-lg">
+              <div role="alert" className="p-3 mb-4 text-sm text-red-200 bg-red-500/20 border border-red-500/30 rounded-lg">
                 {error}
               </div>
             )}
@@ -206,9 +231,10 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
               <div className="relative flex items-center pt-1">
                 <input 
                   type="checkbox" 
-                  className="w-5 h-5 transition-all border-2 rounded bg-white border-brand-border checked:bg-brand-orange checked:border-brand-orange focus:ring-brand-orange/50 cursor-pointer appearance-none"
+                  className={`w-5 h-5 transition-all border-2 rounded bg-white border-brand-border checked:bg-brand-orange checked:border-brand-orange focus:ring-brand-orange/50 appearance-none ${loading ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                   checked={agreed}
                   onChange={(e) => setAgreed(e.target.checked)}
+                  disabled={loading}
                 />
                 <CheckCircle className={`absolute inset-0 w-5 h-5 text-white pointer-events-none transition-opacity ${agreed ? 'opacity-100' : 'opacity-0'}`} />
               </div>

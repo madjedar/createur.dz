@@ -3,6 +3,8 @@ import { X, Save, User, Phone, MapPin, AtSign, PlayCircle, Share2, Globe, Dollar
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { supabase } from '../lib/supabase';
+import { validateAlgerianPhone, validateImageFile, validateSocialUrl, validateAmount, sanitizeText } from '../utils/validators';
+import OptimizedImage from './OptimizedImage';
 
 const wilayas = [
   "Adrar", "Chlef", "Laghouat", "Oum El Bouaghi", "Batna", "Béjaïa", "Biskra", "Béchar", "Blida", "Bouira",
@@ -152,11 +154,19 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
     try {
       if (!e.target.files || e.target.files.length === 0) return;
       const file = e.target.files[0];
+      
+      const fileCheck = validateImageFile(file, 5);
+      if (!fileCheck.isValid) {
+        setErrorMsg(fileCheck.error);
+        return;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
       
       setUploading(true);
+      setErrorMsg(null);
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
@@ -169,8 +179,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
         
       setFormData(prev => ({ ...prev, avatar_url: data.publicUrl }));
     } catch (error) {
-      console.error(error);
-      alert('Error uploading avatar!');
+      console.error('Error uploading avatar:', error);
+      setErrorMsg('فشل رفع الصورة الشخصية. يرجى المحاولة لاحقاً.');
     } finally {
       setUploading(false);
     }
@@ -181,26 +191,71 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg(null);
     
     if (isMandatory) {
-      if (!formData.full_name || !formData.phone || !formData.wilaya) {
-        alert(isRTL ? "يرجى ملء جميع الحقول المطلوبة (الاسم، الهاتف، الولاية)" : "Please fill all required fields (Name, Phone, Wilaya)");
+      if (!formData.full_name?.trim() || !formData.phone?.trim() || !formData.wilaya?.trim()) {
+        setErrorMsg(isRTL ? "يرجى ملء جميع الحقول المطلوبة (الاسم، الهاتف، الولاية)" : "Please fill all required fields (Name, Phone, Wilaya)");
         return;
       }
     }
 
+    // Phone validation
+    let sanitizedPhone = formData.phone?.trim() || '';
+    if (sanitizedPhone) {
+      const phoneCheck = validateAlgerianPhone(sanitizedPhone);
+      if (!phoneCheck.isValid) {
+        setErrorMsg(phoneCheck.error);
+        return;
+      }
+      sanitizedPhone = phoneCheck.formatted;
+    }
+
+    // Rate validation for creators
+    let sanitizedRate = formData.rate_per_post;
+    if (sanitizedRate !== '' && sanitizedRate !== null && sanitizedRate !== undefined) {
+      const rateCheck = validateAmount(sanitizedRate, { min: 500, max: 2000000, fieldName: 'سعر المنشور' });
+      if (!rateCheck.isValid) {
+        setErrorMsg(rateCheck.error);
+        return;
+      }
+      sanitizedRate = rateCheck.value;
+    } else {
+      sanitizedRate = null;
+    }
+
+    // Normalize social URLs
+    const instagramCheck = validateSocialUrl('instagram', formData.instagram_url);
+    const tiktokCheck = validateSocialUrl('tiktok', formData.tiktok_url);
+    const youtubeCheck = validateSocialUrl('youtube', formData.youtube_url);
+    const facebookCheck = validateSocialUrl('facebook', formData.facebook_url);
+    const websiteCheck = validateSocialUrl('website', formData.website_url);
+
+    if (!instagramCheck.isValid) { setErrorMsg('رابط إنستغرام غير صالح'); return; }
+    if (!tiktokCheck.isValid) { setErrorMsg('رابط تيك توك غير صالح'); return; }
+    if (!youtubeCheck.isValid) { setErrorMsg('رابط يوتيوب غير صالح'); return; }
+    if (!facebookCheck.isValid) { setErrorMsg('رابط فيسبوك غير صالح'); return; }
+    if (!websiteCheck.isValid) { setErrorMsg('رابط الموقع الإلكتروني غير صالح'); return; }
+
     setIsSaving(true);
-    setErrorMsg(null);
     
     try {
       if (updateProfileData) {
-        const cleanedData = { ...formData };
-        if (cleanedData.rate_per_post === '') {
-          cleanedData.rate_per_post = null;
-        }
+        const cleanedData = {
+          ...formData,
+          full_name: sanitizeText(formData.full_name, 70),
+          brand_name: sanitizeText(formData.brand_name, 70),
+          bio: sanitizeText(formData.bio, 500),
+          phone: sanitizedPhone,
+          rate_per_post: sanitizedRate,
+          instagram_url: instagramCheck.normalized,
+          tiktok_url: tiktokCheck.normalized,
+          youtube_url: youtubeCheck.normalized,
+          facebook_url: facebookCheck.normalized,
+          website_url: websiteCheck.normalized,
+        };
         await updateProfileData(cleanedData);
       }
       if (isMounted.current) {
@@ -229,7 +284,12 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
   const isRTL = language === 'ar';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-settings-modal-title"
+    >
       <div 
         className={`relative w-full max-w-2xl my-auto overflow-hidden bg-brand-cream border border-brand-border rounded-[24px] animate-scale-in flex flex-col max-h-[90vh] shadow-xl ${isRTL ? 'text-right' : 'text-left'}`}
         dir={isRTL ? 'rtl' : 'ltr'}
@@ -237,7 +297,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-brand-border bg-white">
           <div>
-            <h2 className="text-xl font-black text-brand-brown tracking-wide">
+            <h2 id="profile-settings-modal-title" className="text-xl font-black text-brand-brown tracking-wide">
               {tLocal.profileSettings}
             </h2>
             {isMandatory && (
@@ -247,10 +307,12 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
             )}
           </div>
             <button 
+              type="button"
               onClick={onClose}
+              aria-label="إغلاق إعدادات الملف الشخصي"
               className="p-2 text-brand-brownLight hover:text-brand-brown hover:bg-brand-brown/5 rounded-full transition-colors"
             >
-              <X size={20} />
+              <X size={20} aria-hidden="true" />
             </button>
         </div>
 
@@ -258,7 +320,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-brand-border p-6 bg-brand-cream/30">
           <form id="profile-settings-form" onSubmit={handleSubmit} className="space-y-8">
             {errorMsg && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-medium">
+              <div role="alert" className="p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 text-sm font-medium">
                 {errorMsg}
               </div>
             )}
@@ -279,7 +341,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     type="text"
                     name="full_name"
                     value={formData.full_name}
-                    onChange={handleChange}
+                    onChange={handleChange} disabled={isSaving}
                     className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder={`${tLocal.enterYour} ${tLocal.fullName}`}
                   />
@@ -295,7 +357,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                       type="text"
                       name="brand_name"
                       value={formData.brand_name}
-                      onChange={handleChange}
+                      onChange={handleChange} disabled={isSaving}
                       className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                       placeholder={`${tLocal.enterYour} ${tLocal.brandName}`}
                     />
@@ -309,7 +371,15 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                   </label>
                   <div className="flex items-center gap-3">
                     {formData.avatar_url && (
-                      <img src={formData.avatar_url} alt="Avatar" className="w-12 h-12 rounded-full object-cover border border-brand-border shadow-sm" />
+                      <OptimizedImage 
+                        src={formData.avatar_url} 
+                        fallbackType="user"
+                        seed={formData.full_name || 'User'}
+                        alt="Avatar" 
+                        width="48"
+                        height="48"
+                        className="w-12 h-12 rounded-full object-cover border border-brand-border shadow-sm" 
+                      />
                     )}
                     <label className="cursor-pointer bg-white hover:bg-[#FAFAFA] border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown transition-all text-sm flex-1 text-center font-bold shadow-sm">
                       {uploading ? 'جاري الرفع...' : 'اختر صورة من جهازك'}
@@ -333,7 +403,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     type="tel"
                     name="phone"
                     value={formData.phone}
-                    onChange={handleChange}
+                    onChange={handleChange} disabled={isSaving}
                     className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="05..."
                     dir="ltr"
@@ -348,7 +418,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                   <select
                     name="wilaya"
                     value={formData.wilaya}
-                    onChange={handleChange}
+                    onChange={handleChange} disabled={isSaving}
                     className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm appearance-none shadow-sm"
                   >
                     <option value="">--</option>
@@ -368,7 +438,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                       type="number"
                       name="rate_per_post"
                       value={formData.rate_per_post}
-                      onChange={handleChange}
+                      onChange={handleChange} disabled={isSaving}
                       className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm font-mono"
                       placeholder="DZD"
                       dir="ltr"
@@ -385,7 +455,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                 <textarea
                   name="bio"
                   value={formData.bio}
-                  onChange={handleChange}
+                  onChange={handleChange} disabled={isSaving}
                   rows={4}
                   className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm resize-none shadow-sm"
                   placeholder={`${tLocal.enterYour} ${tLocal.bio}`}
@@ -409,7 +479,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     type="url"
                     name="instagram_url"
                     value={formData.instagram_url}
-                    onChange={handleChange}
+                    onChange={handleChange} disabled={isSaving}
                     className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://instagram.com/..."
                     dir="ltr"
@@ -425,7 +495,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     type="url"
                     name="tiktok_url"
                     value={formData.tiktok_url}
-                    onChange={handleChange}
+                    onChange={handleChange} disabled={isSaving}
                     className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://tiktok.com/@..."
                     dir="ltr"
@@ -441,7 +511,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     type="url"
                     name="youtube_url"
                     value={formData.youtube_url}
-                    onChange={handleChange}
+                    onChange={handleChange} disabled={isSaving}
                     className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://youtube.com/..."
                     dir="ltr"
@@ -457,7 +527,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                     type="url"
                     name="facebook_url"
                     value={formData.facebook_url}
-                    onChange={handleChange}
+                    onChange={handleChange} disabled={isSaving}
                     className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                     placeholder="https://facebook.com/..."
                     dir="ltr"
@@ -474,7 +544,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, isMandatory = false }) => {
                       type="url"
                       name="website_url"
                       value={formData.website_url}
-                      onChange={handleChange}
+                      onChange={handleChange} disabled={isSaving}
                       className="w-full bg-white border border-brand-border rounded-[16px] px-4 py-3 text-brand-brown font-medium placeholder-brand-brownLight/50 focus:border-brand-orange focus:ring-1 focus:ring-brand-orange outline-none transition-all text-sm shadow-sm"
                       placeholder="https://..."
                       dir="ltr"

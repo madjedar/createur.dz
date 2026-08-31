@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { sanitizeForPayload, sanitizeText } from '../utils/validators';
 
 export default function ContactModal({ isOpen, onClose }) {
   const { t, language } = useLanguage();
@@ -46,19 +47,51 @@ export default function ContactModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText(CONTACT_EMAIL);
+    try {
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(CONTACT_EMAIL).catch(() => {
+          fallbackCopy(CONTACT_EMAIL);
+        });
+      } else {
+        fallbackCopy(CONTACT_EMAIL);
+      }
+    } catch {
+      fallbackCopy(CONTACT_EMAIL);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+  };
+
+  const fallbackCopy = (text) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    } catch (e) {
+      console.warn('Fallback copy failed:', e);
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitting(true);
 
-    // Format mailto body
-    const mailtoSubject = encodeURIComponent(`[Créateur DZ] ${formData.subject} - ${formData.name}`);
+    const safeName = sanitizeForPayload(formData.name, 70);
+    const safeEmail = sanitizeForPayload(formData.email, 100);
+    const safeSubject = sanitizeForPayload(formData.subject, 100);
+    const safeMessage = sanitizeText(formData.message, 2000);
+
+    // Format mailto body safely
+    const mailtoSubject = encodeURIComponent(`[Créateur DZ] ${safeSubject} - ${safeName}`);
     const mailtoBody = encodeURIComponent(
-      `الاسم: ${formData.name}\nالبريد: ${formData.email}\n\nالرسالة:\n${formData.message}`
+      `الاسم: ${safeName}\nالبريد: ${safeEmail}\n\nالرسالة:\n${safeMessage}`
     );
 
     // Open user's default email client
@@ -75,6 +108,9 @@ export default function ContactModal({ isOpen, onClose }) {
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="contact-modal-title"
       onClick={onClose}
       dir="rtl"
     >
@@ -84,21 +120,23 @@ export default function ContactModal({ isOpen, onClose }) {
       >
         {/* Close button */}
         <button 
+          type="button"
           onClick={onClose}
+          aria-label="إغلاق نافذة التواصل"
           className="absolute z-10 text-brand-brownLight top-5 left-5 hover:text-brand-brown hover:bg-brand-cream p-2 rounded-full transition-colors bg-white/80 backdrop-blur-sm shadow-sm"
         >
-          <X className="w-5 h-5" />
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-brand-border">
           <div className="w-12 h-12 rounded-[16px] bg-brand-orange/10 text-brand-orange flex items-center justify-center font-bold">
-            <Mail className="w-6 h-6" />
+            <Mail className="w-6 h-6" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="text-xl font-black text-brand-brown">
+            <h2 id="contact-modal-title" className="text-xl font-black text-brand-brown">
               {t('contactUsTitle') || 'تواصل معنا مباشرة'}
-            </h3>
+            </h2>
             <p className="text-xs font-medium text-brand-brownLight mt-0.5">
               {t('contactUsSub') || 'فريق Créateur DZ جاهز لمساعدتك والرد على كافة استفساراتك'}
             </p>
@@ -112,7 +150,7 @@ export default function ContactModal({ isOpen, onClose }) {
           </span>
           <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-brand-border shadow-sm">
             <div className="flex items-center gap-2 overflow-hidden">
-              <Mail className="w-4 h-4 text-brand-orange shrink-0" />
+              <Mail className="w-4 h-4 text-brand-orange shrink-0" aria-hidden="true" />
               <span className="text-xs font-bold text-brand-brown font-mono truncate select-all" dir="ltr">
                 {CONTACT_EMAIL}
               </span>
@@ -123,16 +161,18 @@ export default function ContactModal({ isOpen, onClose }) {
                 onClick={handleCopyEmail}
                 className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-brand-cream hover:bg-brand-orange/10 text-brand-brown hover:text-brand-orange border border-brand-border transition-all flex items-center gap-1"
                 title="نسخ البريد"
+                aria-label="نسخ عنوان البريد الإلكتروني"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
                 <span>{copied ? 'تم النسخ!' : 'نسخ'}</span>
               </button>
               <a
                 href={`mailto:${CONTACT_EMAIL}`}
+                aria-label="إرسال بريد إلكتروني مباشر"
                 className="p-1.5 rounded-lg text-xs font-bold bg-brand-orange text-white hover:bg-brand-orange/90 transition-all flex items-center justify-center"
                 title="فتح تطبيق البريد"
               >
-                <ArrowUpRight className="w-4 h-4" />
+                <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
               </a>
             </div>
           </div>
@@ -160,6 +200,7 @@ export default function ContactModal({ isOpen, onClose }) {
                   className="input-field w-full text-xs"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  disabled={submitting}
                   required
                 />
               </div>
@@ -173,6 +214,7 @@ export default function ContactModal({ isOpen, onClose }) {
                   className="input-field w-full text-xs text-left dir-ltr"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  disabled={submitting}
                   required
                 />
               </div>
@@ -186,6 +228,7 @@ export default function ContactModal({ isOpen, onClose }) {
                 className="input-field w-full text-xs"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                disabled={submitting}
               >
                 <option value="استفسار عام">استفسار عام عن المنصة</option>
                 <option value="شراكة تجارية أو رعاية">شراكة تجارية أو رعاية</option>
@@ -205,6 +248,7 @@ export default function ContactModal({ isOpen, onClose }) {
                 className="input-field w-full text-xs leading-relaxed"
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                disabled={submitting}
                 required
               />
             </div>

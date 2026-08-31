@@ -1,10 +1,52 @@
 import { supabase } from '../lib/supabase';
+import { isValidUUID, safeHref, sanitizeText, sanitizeForPayload, validateReviewForm } from '../utils/validators';
+
+// ------------------------------------------------------------------
+// IN-MEMORY QUERY CACHE (TTL)
+// ------------------------------------------------------------------
+const queryCache = new Map();
+const DEFAULT_TTL_MS = 60 * 1000; // 60 seconds
+
+export const getCachedData = (key) => {
+  const cached = queryCache.get(key);
+  if (!cached) return null;
+  if (Date.now() > cached.expiresAt) {
+    queryCache.delete(key);
+    return null;
+  }
+  return cached.data;
+};
+
+export const setCachedData = (key, data, ttlMs = DEFAULT_TTL_MS) => {
+  queryCache.set(key, {
+    data,
+    expiresAt: Date.now() + ttlMs
+  });
+};
+
+export const invalidateCache = (pattern = null) => {
+  if (!pattern) {
+    queryCache.clear();
+    return;
+  }
+  for (const key of queryCache.keys()) {
+    if (key.includes(pattern)) {
+      queryCache.delete(key);
+    }
+  }
+};
 
 // ------------------------------------------------------------------
 // PROFILES (CREATORS & BRANDS)
 // ------------------------------------------------------------------
 
-export const getStoreProfiles = async () => {
+export const getStoreProfiles = async (forceRefresh = false) => {
+  const cacheKey = 'stores_profiles';
+  if (!forceRefresh) {
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -12,7 +54,7 @@ export const getStoreProfiles = async () => {
     
   if (error) throw error;
   
-  return data.map(store => ({
+  const mapped = data.map(store => ({
     ...store,
     name: store.brand_name || store.full_name || 'Brand Name',
     logo: store.avatar_url || 'https://api.dicebear.com/7.x/shapes/svg?seed=brand',
@@ -22,9 +64,18 @@ export const getStoreProfiles = async () => {
     totalBudget: 0,
     verified: store.is_verified || false
   }));
+
+  setCachedData(cacheKey, mapped);
+  return mapped;
 };
 
-export const getCreatorProfiles = async () => {
+export const getCreatorProfiles = async (forceRefresh = false) => {
+  const cacheKey = 'creators_profiles';
+  if (!forceRefresh) {
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -32,7 +83,7 @@ export const getCreatorProfiles = async () => {
     
   if (error) throw error;
   
-  return data.map(creator => ({
+  const mapped = data.map(creator => ({
     ...creator,
     name: creator.full_name || 'Creator Name',
     avatar: creator.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed=creator',
@@ -48,6 +99,9 @@ export const getCreatorProfiles = async () => {
     reviewCount: 0,
     verified: creator.is_verified || false
   }));
+
+  setCachedData(cacheKey, mapped);
+  return mapped;
 };
 
 export const updateProfile = async (userId, profileData) => {
@@ -58,16 +112,24 @@ export const updateProfile = async (userId, profileData) => {
     .single();
     
   if (error) throw error;
+  invalidateCache('profiles');
   return data;
 };
 
-export const getCreators = async () => {
+export const getCreators = async (forceRefresh = false) => {
+  const cacheKey = 'creators_list';
+  if (!forceRefresh) {
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+  }
+
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('role', 'creator');
     
   if (error) throw error;
+  setCachedData(cacheKey, data);
   return data;
 };
 
@@ -75,7 +137,13 @@ export const getCreators = async () => {
 // CAMPAIGNS
 // ------------------------------------------------------------------
 
-export const getCampaigns = async () => {
+export const getCampaigns = async (forceRefresh = false) => {
+  const cacheKey = 'campaigns_list';
+  if (!forceRefresh) {
+    const cached = getCachedData(cacheKey);
+    if (cached) return cached;
+  }
+
   const { data, error } = await supabase
     .from('campaigns')
     .select(`
@@ -90,6 +158,7 @@ export const getCampaigns = async () => {
     .order('created_at', { ascending: false });
     
   if (error) throw error;
+  setCachedData(cacheKey, data);
   return data;
 };
 
@@ -100,6 +169,7 @@ export const createCampaign = async (campaignData) => {
     .select();
     
   if (error) throw error;
+  invalidateCache('campaigns');
   return data;
 };
 
@@ -111,6 +181,7 @@ export const updateCampaign = async (campaignId, updates) => {
     .select();
     
   if (error) throw error;
+  invalidateCache('campaigns');
   return data;
 };
 
@@ -128,6 +199,8 @@ export const deleteCampaign = async (campaignId) => {
     .select();
     
   if (error) throw error;
+  invalidateCache('campaigns');
+  invalidateCache('applications');
   return data;
 };
 
@@ -136,11 +209,17 @@ export const deleteCampaign = async (campaignId) => {
 // ------------------------------------------------------------------
 
 export const applyToCampaign = async (campaignId, creatorId, pitchData = {}) => {
+  if (!isValidUUID(campaignId) || !isValidUUID(creatorId)) {
+    throw new Error('Invalid campaign or creator UUID');
+  }
+
   const payload = {
     campaign_id: campaignId,
     creator_id: creatorId,
     status: 'pending',
-    ...pitchData
+    ...(pitchData.pitch_text ? { pitch_text: sanitizeText(pitchData.pitch_text, 1000) } : {}),
+    ...(pitchData.portfolio_url ? { portfolio_url: safeHref(pitchData.portfolio_url) } : {}),
+    ...(pitchData.delivery_days ? { delivery_days: Math.max(1, Math.min(60, Number(pitchData.delivery_days) || 5)) } : {})
   };
 
   let { data, error } = await supabase
@@ -164,7 +243,9 @@ export const applyToCampaign = async (campaignId, creatorId, pitchData = {}) => 
 
 export const updateApplicationStatus = async (applicationId, status, deliverableUrl = null) => {
   const updateData = { status };
-  if (deliverableUrl) updateData.deliverable_url = deliverableUrl;
+  if (deliverableUrl) {
+    updateData.deliverable_url = safeHref(deliverableUrl);
+  }
   
   const { data, error } = await supabase
     .from('applications')
@@ -223,6 +304,12 @@ export const getBrandApplications = async (brandId) => {
 // ------------------------------------------------------------------
 
 export const getMessages = async (userId1, userId2) => {
+  // Validate UUIDs to prevent PostgREST Filter Injection
+  if (!isValidUUID(userId1) || !isValidUUID(userId2)) {
+    console.warn('[getMessages] Blocked query due to invalid UUID:', { userId1, userId2 });
+    return [];
+  }
+
   const { data, error } = await supabase
     .from('messages')
     .select('*')
@@ -242,9 +329,18 @@ export const getMessages = async (userId1, userId2) => {
 };
 
 export const sendMessage = async (senderId, receiverId, text) => {
+  if (!isValidUUID(senderId) || !isValidUUID(receiverId)) {
+    throw new Error('Invalid sender or receiver UUID');
+  }
+
+  const sanitizedText = sanitizeText(text, 2000);
+  if (!sanitizedText) {
+    throw new Error('Message text cannot be empty');
+  }
+
   const { data, error } = await supabase
     .from('messages')
-    .insert([{ sender_id: senderId, receiver_id: receiverId, text }])
+    .insert([{ sender_id: senderId, receiver_id: receiverId, text: sanitizedText }])
     .select();
     
   if (error) {
@@ -299,6 +395,8 @@ export const subscribeToMessages = (userId, callback) => {
 // ------------------------------------------------------------------
 
 export const getNotifications = async (userId) => {
+  if (!isValidUUID(userId)) return [];
+
   const { data, error } = await supabase
     .from('notifications')
     .select('*')
@@ -337,26 +435,38 @@ export const markNotificationRead = async (notificationId) => {
 };
 
 export const createNotification = async (userId, title, message) => {
+  if (!isValidUUID(userId)) {
+    throw new Error('Invalid user UUID for notification');
+  }
+
+  const sanitizedTitle = sanitizeForPayload(title, 100);
+  const sanitizedMessage = sanitizeText(message, 500);
+
   const { data, error } = await supabase
     .from('notifications')
-    .insert([{ user_id: userId, title, message }])
+    .insert([{ user_id: userId, title: sanitizedTitle, message: sanitizedMessage }])
     .select();
     
   if (error) throw error;
   return data;
 };
+
 export const addReview = async (creatorId, rating, reviewText) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
+    if (!isValidUUID(creatorId)) throw new Error("Invalid creator UUID");
+
+    const validation = validateReviewForm(rating, reviewText);
+    if (!validation.isValid) throw new Error(validation.error);
 
     const { data, error } = await supabase
       .from('reviews')
       .insert({
         creator_id: creatorId,
         brand_id: user.id,
-        rating,
-        review_text: reviewText
+        rating: validation.rating,
+        review_text: validation.reviewText
       });
 
     if (error) throw error;
@@ -366,3 +476,42 @@ export const addReview = async (creatorId, rating, reviewText) => {
     throw error;
   }
 };
+
+// ------------------------------------------------------------------
+// PAYOUT REQUESTS
+// ------------------------------------------------------------------
+
+export const createPayoutRequest = async ({ creatorId, amountDzd, ripNumber, payoutMethod = 'baridimob' }) => {
+  const { data, error } = await supabase
+    .from('payout_requests')
+    .insert([
+      {
+        creator_id: creatorId,
+        amount_dzd: amountDzd,
+        rip_number: ripNumber,
+        payout_method: payoutMethod,
+        status: 'pending'
+      }
+    ])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getPayoutRequests = async (creatorId) => {
+  let query = supabase
+    .from('payout_requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (creatorId) {
+    query = query.eq('creator_id', creatorId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+};
+

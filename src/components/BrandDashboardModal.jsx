@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   X, LayoutDashboard, PlusCircle, Users, CreditCard, 
   Building2, TrendingUp, DollarSign, Lock, ShieldCheck, CheckCircle2, 
@@ -76,6 +76,8 @@ export default function BrandDashboardModal({
   // Chat State
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [activeContactProfile, setActiveContactProfile] = useState(null);
   const [selectedContactId, setSelectedContactId] = useState(initialContactId);
   const [chatError, setChatError] = useState('');
   const messagesEndRef = useRef(null);
@@ -85,17 +87,19 @@ export default function BrandDashboardModal({
     if (!user?.id) return;
     setLoadingData(true);
     try {
-      const { getBrandApplications, getCampaigns, getCreators } = await import('../services/dbService');
-      const [apps, allCamps, creators] = await Promise.all([
+      const { getBrandApplications, getCampaigns, getCreators, getUserConversations } = await import('../services/dbService');
+      const [apps, allCamps, creators, convos] = await Promise.all([
         getBrandApplications(user.id).catch(() => []),
         getCampaigns().catch(() => []),
-        getCreators().catch(() => [])
+        getCreators().catch(() => []),
+        getUserConversations(user.id).catch(() => [])
       ]);
       
       setApplications(apps || []);
       const myCampaigns = (allCamps || []).filter(c => c.brand_id === user.id);
       setCampaigns(myCampaigns);
       setAllCreators(creators || []);
+      setConversations(convos || []);
     } catch (err) {
       console.error('Error loading brand dashboard data:', err);
     } finally {
@@ -110,12 +114,21 @@ export default function BrandDashboardModal({
   }, [isOpen, user?.id]);
 
   useEffect(() => {
-    setActiveTab(initialTab);
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
   }, [initialTab]);
 
   useEffect(() => {
     if (initialContactId) {
       setSelectedContactId(initialContactId);
+      setActiveTab('messages');
+      // Fetch profile if not already available in creators or conversations
+      import('../services/dbService').then(({ getProfileById }) => {
+        getProfileById(initialContactId).then(prof => {
+          if (prof) setActiveContactProfile(prof);
+        }).catch(err => console.warn('Could not fetch active contact profile:', err));
+      });
     }
   }, [initialContactId]);
 
@@ -152,7 +165,7 @@ export default function BrandDashboardModal({
     let subscription;
     let isMounted = true;
     if (activeTab === 'messages' && selectedContactId && user?.id) {
-      import('../services/dbService').then(({ getMessages, subscribeToMessages }) => {
+      import('../services/dbService').then(({ getMessages, subscribeToMessages, getUserConversations }) => {
         if (!isMounted) return;
         getMessages(user.id, selectedContactId).then(fetchedMessages => {
           if (isMounted) setMessages(fetchedMessages || []);
@@ -181,6 +194,28 @@ export default function BrandDashboardModal({
               });
             }
           }
+
+          // Always update conversation preview or refresh conversations
+          const partnerId = newMsg.sender_id === user.id ? newMsg.receiver_id : newMsg.sender_id;
+          if (isMounted && partnerId) {
+            setConversations(prev => {
+              const existingIdx = prev.findIndex(c => c.id === partnerId);
+              if (existingIdx !== -1) {
+                const updated = [...prev];
+                updated[existingIdx] = {
+                  ...updated[existingIdx],
+                  lastMessage: newMsg.text,
+                  lastMessageAt: newMsg.created_at
+                };
+                return updated;
+              } else {
+                getUserConversations(user.id).then(fresh => {
+                  if (isMounted) setConversations(fresh || []);
+                });
+                return prev;
+              }
+            });
+          }
         });
       });
     }
@@ -189,8 +224,6 @@ export default function BrandDashboardModal({
       if (subscription) subscription.unsubscribe();
     };
   }, [activeTab, selectedContactId, user?.id]);
-
-  if (!isOpen) return null;
 
   // ─── Dynamic Metrics Calculations ───
   const activeCampaignsList = campaigns.filter(c => c.status !== 'completed' && c.status !== 'paused');
@@ -452,6 +485,27 @@ export default function BrandDashboardModal({
       if (saved?.[0]) {
         setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? saved[0] : m));
       }
+      // Immediately reflect in conversations list
+      setConversations(prev => {
+        const existingIdx = prev.findIndex(c => c.id === selectedContactId);
+        const contactData = chatContacts.find(c => c.id === selectedContactId);
+        if (existingIdx !== -1) {
+          const updated = [...prev];
+          updated[existingIdx] = {
+            ...updated[existingIdx],
+            lastMessage: msgText,
+            lastMessageAt: new Date().toISOString()
+          };
+          return updated;
+        } else if (contactData) {
+          return [{
+            ...contactData,
+            lastMessage: msgText,
+            lastMessageAt: new Date().toISOString()
+          }, ...prev];
+        }
+        return prev;
+      });
     } catch (err) {
       console.error("Error sending message:", err);
       // Remove optimistic message and show error in UI
@@ -462,9 +516,86 @@ export default function BrandDashboardModal({
   };
 
   // ─── Contacts for Chat ───
-  const chatContacts = Array.from(new Map(
-    applications.map(app => [app.creator_id, app.creator])
-  ).values()).filter(Boolean);
+  // Combines conversations from DB, applicants, directory creators, and active selected contact
+  const chatContacts = useMemo(() => {
+    const contactsMap = new Map();
+
+    // 1. Existing conversations from DB
+    for (const conv of conversations) {
+      if (conv?.id) {
+        contactsMap.set(conv.id, {
+          id: conv.id,
+          full_name: conv.full_name || 'صانع محتوى',
+          avatar_url: conv.avatar_url || '',
+          category: conv.category || '',
+          wilaya: conv.wilaya || '',
+          is_verified: Boolean(conv.is_verified),
+          lastMessage: conv.lastMessage || '',
+          lastMessageAt: conv.lastMessageAt || null
+        });
+      }
+    }
+
+    // 2. Applicants from campaigns
+    for (const app of applications) {
+      if (app?.creator_id && app.creator) {
+        if (!contactsMap.has(app.creator_id)) {
+          contactsMap.set(app.creator_id, {
+            id: app.creator_id,
+            full_name: app.creator.full_name || 'صانع محتوى',
+            avatar_url: app.creator.avatar_url || '',
+            category: app.creator.category || '',
+            wilaya: app.creator.wilaya || '',
+            is_verified: Boolean(app.creator.is_verified),
+            lastMessage: 'متقدم على حملة',
+            lastMessageAt: app.created_at
+          });
+        }
+      }
+    }
+
+    // 3. Ensure the actively selected contact is included immediately
+    const targetContactId = selectedContactId || initialContactId;
+    if (targetContactId && !contactsMap.has(targetContactId)) {
+      const foundInAll = allCreators.find(c => c.id === targetContactId);
+      if (foundInAll) {
+        contactsMap.set(targetContactId, {
+          id: targetContactId,
+          full_name: foundInAll.full_name || foundInAll.name || 'صانع محتوى',
+          avatar_url: foundInAll.avatar_url || foundInAll.avatar || '',
+          category: foundInAll.category || '',
+          wilaya: foundInAll.wilaya || '',
+          is_verified: Boolean(foundInAll.is_verified),
+          lastMessage: 'محادثة جديدة',
+          lastMessageAt: new Date().toISOString()
+        });
+      } else if (activeContactProfile && activeContactProfile.id === targetContactId) {
+        contactsMap.set(targetContactId, {
+          id: targetContactId,
+          full_name: activeContactProfile.full_name || activeContactProfile.name || 'صانع محتوى',
+          avatar_url: activeContactProfile.avatar_url || '',
+          category: activeContactProfile.category || '',
+          wilaya: activeContactProfile.wilaya || '',
+          is_verified: Boolean(activeContactProfile.is_verified),
+          lastMessage: 'محادثة جديدة',
+          lastMessageAt: new Date().toISOString()
+        });
+      }
+    }
+
+    return Array.from(contactsMap.values());
+  }, [conversations, applications, allCreators, selectedContactId, initialContactId, activeContactProfile]);
+
+  // Active selected contact details
+  const selectedContact = useMemo(() => {
+    if (!selectedContactId) return null;
+    return (
+      chatContacts.find(c => c.id === selectedContactId) ||
+      allCreators.find(c => c.id === selectedContactId) ||
+      (activeContactProfile?.id === selectedContactId ? activeContactProfile : null) ||
+      null
+    );
+  }, [selectedContactId, chatContacts, allCreators, activeContactProfile]);
 
   // ─── Filtered Creators for Directory ───
   const filteredCreators = allCreators.filter(c => {
@@ -480,6 +611,8 @@ export default function BrandDashboardModal({
   const filteredApplications = activeCampaignFilter === 'all'
     ? applications
     : applications.filter(app => app.campaign_id === activeCampaignFilter);
+
+  if (!isOpen) return null;
 
   return (
     <div 
@@ -1277,10 +1410,12 @@ export default function BrandDashboardModal({
               <div className="p-4 border-b border-brand-border font-black text-brand-brown flex items-center justify-between bg-brand-cream/50">
                 <span className="text-sm">المحادثات المباشرة</span>
               </div>
-              <div className="flex-1 overflow-y-auto bg-white">
+              <div className="flex-1 overflow-y-auto bg-white divide-y divide-brand-border/40">
                 {chatContacts.length === 0 ? (
-                  <div className="p-6 text-brand-brownLight font-medium text-xs text-center">
-                    لا توجد محادثات بعد. تواصل مع المبدعين من قائمة المتقدمين أو دليل المبدعين.
+                  <div className="p-6 text-brand-brownLight font-medium text-xs text-center space-y-2">
+                    <MessageSquare className="w-8 h-8 mx-auto text-brand-orange/40" />
+                    <p>لا توجد محادثات بعد.</p>
+                    <p className="text-[11px] text-brand-brownLight/70">تواصل مع صناع المحتوى من دليل المبدعين أو عبر زر "تواصل" على أي صانع محتوى.</p>
                   </div>
                 ) : (
                   chatContacts.map(contact => (
@@ -1289,7 +1424,7 @@ export default function BrandDashboardModal({
                       onClick={() => setSelectedContactId(contact.id)}
                       className={`p-3.5 cursor-pointer flex items-center gap-3 transition-colors border-r-4 ${
                         selectedContactId === contact.id 
-                          ? 'bg-brand-cream border-r-brand-orange' 
+                          ? 'bg-brand-cream border-r-brand-orange shadow-inner' 
                           : 'hover:bg-brand-cream/40 border-r-transparent'
                       }`}
                     >
@@ -1298,13 +1433,25 @@ export default function BrandDashboardModal({
                         fallbackType="creator"
                         seed={contact.full_name || 'Creator'}
                         alt="Creator Avatar" 
-                        width="40"
-                        height="40"
-                        className="w-10 h-10 rounded-full border border-brand-border object-cover" 
+                        width="44"
+                        height="44"
+                        className="w-11 h-11 rounded-full border border-brand-border object-cover bg-brand-cream shrink-0" 
                       />
-                      <div className="overflow-hidden">
-                        <h4 className="font-bold text-brand-brown text-xs truncate">{contact.full_name || 'صانع محتوى'}</h4>
-                        <p className="text-[11px] font-medium text-brand-brownLight truncate">{contact.category || 'صانع محتوى'}</p>
+                      <div className="overflow-hidden flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h4 className="font-bold text-brand-brown text-xs truncate flex items-center gap-1">
+                            <span>{contact.full_name || 'صانع محتوى'}</span>
+                            {contact.is_verified && <BadgeCheck className="w-3.5 h-3.5 text-brand-orange shrink-0" />}
+                          </h4>
+                          {contact.lastMessageAt && (
+                            <span className="text-[9px] text-brand-brownLight/70 shrink-0">
+                              {new Date(contact.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-medium text-brand-brownLight truncate mt-0.5">
+                          {contact.lastMessage || contact.category || 'صانع محتوى'}
+                        </p>
                       </div>
                     </div>
                   ))
@@ -1316,30 +1463,68 @@ export default function BrandDashboardModal({
             <div className="bg-white border border-brand-border rounded-[24px] flex flex-col h-full lg:col-span-2 overflow-hidden shadow-sm">
               {selectedContactId ? (
                 <>
-                  <div className="p-4 border-b border-brand-border flex items-center gap-3 bg-brand-cream/40">
-                    <OptimizedImage 
-                      src={chatContacts.find(c => c.id === selectedContactId)?.avatar_url} 
-                      fallbackType="creator"
-                      seed={chatContacts.find(c => c.id === selectedContactId)?.full_name || 'Creator'}
-                      alt="Creator Avatar" 
-                      width="40"
-                      height="40"
-                      className="w-10 h-10 rounded-full border border-brand-border object-cover" 
-                    />
-                    <div>
-                      <h3 className="font-bold text-brand-brown text-sm">
-                        {chatContacts.find(c => c.id === selectedContactId)?.full_name || 'صانع محتوى'}
-                      </h3>
-                      <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> متصل الآن
-                      </span>
+                  <div className="p-4 border-b border-brand-border flex items-center justify-between bg-brand-cream/40">
+                    <div className="flex items-center gap-3">
+                      <OptimizedImage 
+                        src={selectedContact?.avatar_url || selectedContact?.avatar} 
+                        fallbackType="creator"
+                        seed={selectedContact?.full_name || selectedContact?.name || 'Creator'}
+                        alt="Creator Avatar" 
+                        width="40"
+                        height="40"
+                        className="w-10 h-10 rounded-full border border-brand-border object-cover bg-brand-cream" 
+                      />
+                      <div>
+                        <h3 className="font-bold text-brand-brown text-sm flex items-center gap-1.5">
+                          <span>{selectedContact?.full_name || selectedContact?.name || 'صانع محتوى'}</span>
+                          {selectedContact?.is_verified && <BadgeCheck className="w-4 h-4 text-brand-orange" />}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> متصل الآن
+                          </span>
+                          {selectedContact?.category && (
+                            <>
+                              <span className="text-gray-300">•</span>
+                              <span className="text-[10px] text-brand-brownLight font-medium">{selectedContact.category}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
+
+                    {selectedContact && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onHireCreator({
+                            id: selectedContact.id,
+                            name: selectedContact.full_name || selectedContact.name,
+                            ratePerPost: selectedContact.rate_per_post || 20000,
+                            avatar: selectedContact.avatar_url || selectedContact.avatar
+                          });
+                        }}
+                        className="btn-primary py-1.5 px-3 text-xs flex items-center gap-1"
+                      >
+                        <CreditCard className="w-3.5 h-3.5" />
+                        <span>توظيف</span>
+                      </button>
+                    )}
                   </div>
                   
                   <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-[#FAFAFA]">
                     {messages.length === 0 ? (
-                      <div className="text-center font-medium text-brand-brownLight text-xs mt-10">
-                        ابدأ المحادثة وناقش تفاصيل الحملة الإعلانية...
+                      <div className="flex flex-col items-center justify-center h-full text-center p-6 space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-orange/10 text-brand-orange flex items-center justify-center">
+                          <MessageSquare className="w-6 h-6" />
+                        </div>
+                        <h4 className="font-bold text-brand-brown text-sm">
+                          ابدأ المحادثة مع {selectedContact?.full_name || selectedContact?.name || 'صانع المحتوى'}
+                        </h4>
+                        <p className="text-xs text-brand-brownLight max-w-xs leading-relaxed">
+                          أرسل استفسارك أو تفاصيل الحملة الإعلانية وسيقوم المبدع بالرد عليك مباشرة.
+                        </p>
                       </div>
                     ) : (
                       messages.map((msg) => (

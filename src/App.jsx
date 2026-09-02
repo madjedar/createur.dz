@@ -67,7 +67,8 @@ import {
   SlidersHorizontal,
   RotateCcw,
   X,
-  ExternalLink
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react'
 
 const ALGERIAN_WILAYAS = [
@@ -227,14 +228,45 @@ function AppContent() {
   const handleCloseCreator = () => setSelectedCreator(null)
   
   const handleContactCreator = (creator) => {
+    if (!creator?.id) return;
     setSelectedCreator(null);
     if (!isLoggedIn) {
-      handleOpenAuth('login');
+      try {
+        sessionStorage.setItem('pending_contact_creator', JSON.stringify(creator));
+      } catch (e) {
+        console.warn('Could not save pending contact:', e);
+      }
+      handleOpenAuth('login', 'brand');
+      setToast({ type: 'info', message: 'يرجى تسجيل الدخول أو إنشاء حساب متجر للتواصل مع صانع المحتوى.' });
+      return;
+    }
+    if (user?.role === 'creator') {
+      setToast({ type: 'error', message: 'حسابك مسجل كصانع محتوى. للتواصل وتوظيف صناع المحتوى، يرجى استخدام حساب متجر.' });
       return;
     }
     // Open dashboard in messages tab pre-selected with this creator
-    handleOpenDashboard('messages', user?.role || 'brand', creator.id);
+    handleOpenDashboard('messages', 'brand', creator.id);
   };
+
+  // Auto-resume pending contact after brand login
+  useEffect(() => {
+    if (isLoggedIn && user && (user.role === 'brand' || user.role === 'admin')) {
+      const saved = sessionStorage.getItem('pending_contact_creator');
+      if (saved) {
+        try {
+          const targetCreator = JSON.parse(saved);
+          sessionStorage.removeItem('pending_contact_creator');
+          handleOpenDashboard('messages', 'brand', targetCreator.id);
+          setToast({
+            type: 'success',
+            message: `تم فتح المحادثة مع ${targetCreator.name || targetCreator.full_name || 'صانع المحتوى'}`
+          });
+        } catch (e) {
+          sessionStorage.removeItem('pending_contact_creator');
+        }
+      }
+    }
+  }, [isLoggedIn, user]);
 
   const handleHireCreator = (creator, applicationId = null) => {
     setSelectedCreator(null);
@@ -746,19 +778,33 @@ function AppContent() {
                         </span>
                       </div>
                       
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleHireCreator(creator);
-                        }}
-                        onMouseEnter={preloadCheckoutModal}
-                        onFocus={preloadCheckoutModal}
-                        aria-label={`توظيف ${creatorName}`}
-                        className="px-3.5 py-1.5 rounded-full bg-white text-brand-orange hover:bg-brand-cream text-xs font-bold shadow-sm transition-all"
-                      >
-                        {t('creatorHire')}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleContactCreator(creator);
+                          }}
+                          aria-label={`تواصل مع ${creatorName}`}
+                          className="px-3 py-1.5 rounded-full bg-white/20 hover:bg-white hover:text-brand-orange text-white text-xs font-bold transition-all border border-white/30 flex items-center gap-1 shadow-sm"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>{t('creatorContact')}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleHireCreator(creator);
+                          }}
+                          onMouseEnter={preloadCheckoutModal}
+                          onFocus={preloadCheckoutModal}
+                          aria-label={`توظيف ${creatorName}`}
+                          className="px-3.5 py-1.5 rounded-full bg-white text-brand-orange hover:bg-brand-cream text-xs font-bold shadow-sm transition-all"
+                        >
+                          {t('creatorHire')}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -885,12 +931,12 @@ function AppContent() {
         />
 
         {/* ─── Dashboard Modals with strict RBAC ─── */}
-        {user?.role === 'admin' ? (
+        {user?.role === 'admin' && dashboardState.tab !== 'messages' ? (
           <AdminDashboardModal
             isOpen={dashboardState.open}
             onClose={handleCloseDashboard}
           />
-        ) : user?.role === 'brand' ? (
+        ) : (user?.role === 'brand' || (user?.role === 'admin' && dashboardState.tab === 'messages')) ? (
           <BrandDashboardModal
             isOpen={dashboardState.open}
             onClose={handleCloseDashboard}

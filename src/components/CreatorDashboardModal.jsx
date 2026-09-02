@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   X, LayoutDashboard, User, Briefcase, Wallet, 
-  TrendingUp, DollarSign, Lock, Send, Calendar, Star, Sparkles, CheckCircle2, Play, Camera, Globe, MessageSquare, SendHorizontal, Upload, Clock, CreditCard
+  TrendingUp, DollarSign, Lock, Send, Calendar, Star, Sparkles, CheckCircle2, Play, Camera, Globe, MessageSquare, SendHorizontal, Upload, Clock, CreditCard, BadgeCheck
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -51,19 +51,26 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const [payoutError, setPayoutError] = useState('');
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [withdrawnAmount, setWithdrawnAmount] = useState(0);
-  const [localTransactions, setLocalTransactions] = useState(mockTransactions);
+  const [localTransactions, setLocalTransactions] = useState([]);
 
   // Chat State
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [activeContactProfile, setActiveContactProfile] = useState(null);
   const [selectedContactId, setSelectedContactId] = useState(initialContactId);
   const [chatError, setChatError] = useState('');
-  const messagesEndRef = React.useRef(null);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (initialContactId) {
       setSelectedContactId(initialContactId);
       setActiveTab('messages');
+      import('../services/dbService').then(({ getProfileById }) => {
+        getProfileById(initialContactId).then(prof => {
+          if (prof) setActiveContactProfile(prof);
+        }).catch(err => console.warn('Could not fetch active contact profile:', err));
+      });
     }
   }, [initialContactId]);
 
@@ -121,19 +128,81 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const [appliedCampaigns, setAppliedCampaigns] = useState([]);
   const [applications, setApplications] = useState([]);
 
-  // Derive unique brand contacts from applications
-  const contacts = Array.from(new Map(
-    applications
-      .filter(app => app.campaign?.brand_id)
-      .map(app => [app.campaign.brand_id, { id: app.campaign.brand_id, ...app.campaign.brand }])
-  ).values()).filter(c => c.id);
+  // Derive unique contacts from DB conversations, applications, and any active selection
+  const contacts = useMemo(() => {
+    const contactsMap = new Map();
+
+    // 1. Existing conversations from DB
+    for (const conv of conversations) {
+      if (conv?.id) {
+        contactsMap.set(conv.id, {
+          id: conv.id,
+          brand_name: conv.brand_name || conv.full_name || 'متجر',
+          full_name: conv.full_name || conv.brand_name || 'متجر',
+          avatar_url: conv.avatar_url || '',
+          category: conv.category || '',
+          wilaya: conv.wilaya || '',
+          is_verified: Boolean(conv.is_verified),
+          lastMessage: conv.lastMessage || '',
+          lastMessageAt: conv.lastMessageAt || null
+        });
+      }
+    }
+
+    // 2. Brands from campaign applications
+    for (const app of applications) {
+      if (app?.campaign?.brand_id) {
+        const brandId = app.campaign.brand_id;
+        if (!contactsMap.has(brandId)) {
+          contactsMap.set(brandId, {
+            id: brandId,
+            brand_name: app.campaign.brand?.brand_name || app.campaign.brand?.full_name || 'متجر',
+            full_name: app.campaign.brand?.full_name || app.campaign.brand?.brand_name || 'متجر',
+            avatar_url: app.campaign.brand?.avatar_url || '',
+            category: app.campaign.brand?.category || '',
+            wilaya: app.campaign.brand?.wilaya || '',
+            is_verified: Boolean(app.campaign.brand?.is_verified),
+            lastMessage: `حملة: ${app.campaign.title || ''}`,
+            lastMessageAt: app.created_at
+          });
+        }
+      }
+    }
+
+    // 3. Active selected contact if not already in list
+    const targetContactId = selectedContactId || initialContactId;
+    if (targetContactId && !contactsMap.has(targetContactId)) {
+      if (activeContactProfile && activeContactProfile.id === targetContactId) {
+        contactsMap.set(targetContactId, {
+          id: targetContactId,
+          brand_name: activeContactProfile.brand_name || activeContactProfile.full_name || 'متجر',
+          full_name: activeContactProfile.full_name || activeContactProfile.brand_name || 'متجر',
+          avatar_url: activeContactProfile.avatar_url || '',
+          category: activeContactProfile.category || '',
+          wilaya: activeContactProfile.wilaya || '',
+          is_verified: Boolean(activeContactProfile.is_verified),
+          lastMessage: 'محادثة جديدة',
+          lastMessageAt: new Date().toISOString()
+        });
+      }
+    }
+
+    return Array.from(contactsMap.values());
+  }, [conversations, applications, selectedContactId, initialContactId, activeContactProfile]);
+
+  // Auto-select first contact if none selected
+  useEffect(() => {
+    if (!selectedContactId && contacts.length > 0 && activeTab === 'messages') {
+      setSelectedContactId(contacts[0].id);
+    }
+  }, [selectedContactId, contacts, activeTab]);
 
   useEffect(() => {
     if (!selectedContactId || !user?.id) return;
     
     let subscription = null;
     let isMounted = true;
-    import('../services/dbService').then(({ getMessages, subscribeToMessages }) => {
+    import('../services/dbService').then(({ getMessages, subscribeToMessages, getUserConversations }) => {
       if (!isMounted) return;
       getMessages(user.id, selectedContactId).then(fetchedMessages => {
         if (isMounted) setMessages(fetchedMessages || []);
@@ -162,6 +231,28 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
               return [...prev, newMsg];
             });
           }
+        }
+
+        // Always update conversation preview or refresh conversations
+        const partnerId = newMsg.sender_id === user.id ? newMsg.receiver_id : newMsg.sender_id;
+        if (isMounted && partnerId) {
+          setConversations(prev => {
+            const existingIdx = prev.findIndex(c => c.id === partnerId);
+            if (existingIdx !== -1) {
+              const updated = [...prev];
+              updated[existingIdx] = {
+                ...updated[existingIdx],
+                lastMessage: newMsg.text,
+                lastMessageAt: newMsg.created_at
+              };
+              return updated;
+            } else {
+              getUserConversations(user.id).then(fresh => {
+                if (isMounted) setConversations(fresh || []);
+              });
+              return prev;
+            }
+          });
         }
       });
     });
@@ -203,6 +294,27 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
       if (saved?.[0]) {
         setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? saved[0] : m));
       }
+      // Immediately reflect in conversations list
+      setConversations(prev => {
+        const existingIdx = prev.findIndex(c => c.id === selectedContactId);
+        const contactData = contacts.find(c => c.id === selectedContactId);
+        if (existingIdx !== -1) {
+          const updated = [...prev];
+          updated[existingIdx] = {
+            ...updated[existingIdx],
+            lastMessage: msgText,
+            lastMessageAt: new Date().toISOString()
+          };
+          return updated;
+        } else if (contactData) {
+          return [{
+            ...contactData,
+            lastMessage: msgText,
+            lastMessageAt: new Date().toISOString()
+          }, ...prev];
+        }
+        return prev;
+      });
     } catch (err) {
       console.error("Error sending message:", err);
       // Remove optimistic message and show error in UI
@@ -218,18 +330,21 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
     }
   }, [isOpen, initialTab]);
 
-
-
   useEffect(() => {
     if (!isOpen || !user?.id) return;
-    import('../services/dbService').then(({ getCampaigns, getCreatorApplications }) => {
-      Promise.all([getCampaigns(), getCreatorApplications(user.id)])
-        .then(([allCampaigns, apps]) => {
-          setCampaigns(allCampaigns);
+    import('../services/dbService').then(({ getCampaigns, getCreatorApplications, getUserConversations }) => {
+      Promise.all([
+        getCampaigns().catch(() => []),
+        getCreatorApplications(user.id).catch(() => []),
+        getUserConversations(user.id).catch(() => [])
+      ])
+        .then(([allCampaigns, apps, convos]) => {
+          setCampaigns(allCampaigns || []);
           if (apps && apps.length > 0) {
             setApplications(apps);
             setAppliedCampaigns(apps.map(app => app.campaign_id));
           }
+          setConversations(convos || []);
         })
         .catch(err => {
           console.error("Error fetching creator data:", err);
@@ -699,31 +814,52 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
         {activeTab === 'messages' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] animate-fade-in">
             {/* Sidebar - Contacts */}
-            <div className="bg-white border border-brand-border rounded-[24px] flex flex-col h-full lg:col-span-1 shadow-sm">
-              <div className="p-4 border-b border-brand-border font-black text-brand-brown flex items-center justify-between">
-                <span>المحادثات</span>
+            <div className="bg-white border border-brand-border rounded-[24px] flex flex-col h-full lg:col-span-1 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-brand-border font-black text-brand-brown flex items-center justify-between bg-brand-cream/50">
+                <span className="text-sm">المحادثات المباشرة</span>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto divide-y divide-brand-border/40">
                 {contacts.length === 0 ? (
-                  <p className="text-brand-brownLight font-medium p-4 text-sm text-center">لا توجد محادثات بعد</p>
+                  <div className="p-6 text-brand-brownLight font-medium text-xs text-center space-y-2">
+                    <MessageSquare className="w-8 h-8 mx-auto text-brand-orange/40" />
+                    <p>لا توجد محادثات بعد.</p>
+                    <p className="text-[11px] text-brand-brownLight/70">عندما يتواصل معك أحد المتاجر أو عند التقديم على الحملات، ستظهر الرسائل هنا.</p>
+                  </div>
                 ) : (
                   contacts.map(contact => (
                     <div 
-                      key={contact.id}
+                      key={contact.id} 
                       onClick={() => setSelectedContactId(contact.id)}
-                      className={`p-4 cursor-pointer flex items-center gap-3 transition-colors ${selectedContactId === contact.id ? 'bg-brand-cream border-r-4 border-r-brand-orange' : 'hover:bg-brand-cream'}`}
+                      className={`p-3.5 cursor-pointer flex items-center gap-3 transition-colors border-r-4 ${
+                        selectedContactId === contact.id 
+                          ? 'bg-brand-cream border-r-brand-orange shadow-inner' 
+                          : 'hover:bg-brand-cream/40 border-r-transparent'
+                      }`}
                     >
                       <OptimizedImage 
                         src={contact.avatar_url} 
                         fallbackType="brand"
                         seed={contact.brand_name || 'Brand'}
                         alt="Brand Avatar" 
-                        width="40"
-                        height="40"
-                        className="w-10 h-10 rounded-[12px] border border-brand-border bg-white object-cover" 
+                        width="44"
+                        height="44"
+                        className="w-11 h-11 rounded-[14px] border border-brand-border bg-white object-cover shrink-0" 
                       />
-                      <div>
-                        <h4 className="font-bold text-brand-brown text-sm">{contact.brand_name || 'Brand'}</h4>
+                      <div className="overflow-hidden flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <h4 className="font-bold text-brand-brown text-xs truncate flex items-center gap-1">
+                            <span>{contact.brand_name || contact.full_name || 'متجر'}</span>
+                            {contact.is_verified && <BadgeCheck className="w-3.5 h-3.5 text-brand-orange shrink-0" />}
+                          </h4>
+                          {contact.lastMessageAt && (
+                            <span className="text-[9px] text-brand-brownLight/70 shrink-0">
+                              {new Date(contact.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] font-medium text-brand-brownLight truncate mt-0.5">
+                          {contact.lastMessage || contact.category || 'متجر'}
+                        </p>
                       </div>
                     </div>
                   ))
@@ -735,7 +871,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             <div className="bg-white border border-brand-border rounded-[24px] flex flex-col h-full lg:col-span-2 shadow-sm overflow-hidden">
               {selectedContactId ? (
                 <>
-                  <div className="p-4 border-b border-brand-border flex items-center gap-3 bg-white z-10">
+                  <div className="p-4 border-b border-brand-border flex items-center gap-3 bg-brand-cream/40 z-10">
                     <OptimizedImage 
                       src={contacts.find(c => c.id === selectedContactId)?.avatar_url} 
                       fallbackType="brand"
@@ -746,10 +882,23 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                       className="w-10 h-10 rounded-[12px] border border-brand-border bg-brand-cream object-cover" 
                     />
                     <div>
-                      <h3 className="font-bold text-brand-brown">{contacts.find(c => c.id === selectedContactId)?.brand_name || 'Brand'}</h3>
-                      <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> متصل
-                      </span>
+                      <h3 className="font-bold text-brand-brown text-sm flex items-center gap-1.5">
+                        <span>{contacts.find(c => c.id === selectedContactId)?.brand_name || contacts.find(c => c.id === selectedContactId)?.full_name || 'متجر'}</span>
+                        {contacts.find(c => c.id === selectedContactId)?.is_verified && <BadgeCheck className="w-4 h-4 text-brand-orange" />}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> متصل
+                        </span>
+                        {contacts.find(c => c.id === selectedContactId)?.category && (
+                          <>
+                            <span className="text-gray-300">•</span>
+                            <span className="text-[10px] text-brand-brownLight font-medium">
+                              {contacts.find(c => c.id === selectedContactId)?.category}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                   

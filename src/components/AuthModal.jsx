@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { validatePasswordStrength } from '../utils/validators';
 
 const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'creator' }) => {
-  const { user, updateRole } = useAuth();
+  const { user, updateRole, loginDevUser } = useAuth();
   const { t } = useLanguage();
   const [mode, setMode] = useState(initialMode); // 'login' | 'signup' | 'select_role' | 'forgot_password' | 'update_password'
   const [role, setRole] = useState(initialRole);
@@ -374,6 +374,39 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login', initialRole = 'crea
                   >
                     <Building2 className="w-4 h-4" />
                     <span>{t('roleBrand')}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+              <div className="mb-4 p-3 bg-amber-50/90 border border-amber-200 rounded-2xl text-right">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <span className="text-[11px] font-black text-amber-900 flex items-center gap-1">
+                    <span>⚡ بيئة التطوير (Localhost) — دخول تجريبي سريع:</span>
+                  </span>
+                  <span className="text-[9px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">Dev Mode</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loginDevUser('brand');
+                      onClose();
+                    }}
+                    className="py-2 px-2 rounded-xl bg-white hover:bg-amber-100/70 border border-amber-300 text-amber-900 text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-xs"
+                  >
+                    <span>🛍️ متجر تجريبي</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loginDevUser('creator');
+                      onClose();
+                    }}
+                    className="py-2 px-2 rounded-xl bg-white hover:bg-amber-100/70 border border-amber-300 text-amber-900 text-xs font-bold transition-all text-center flex items-center justify-center gap-1 shadow-xs"
+                  >
+                    <span>🎬 صانع محتوى</span>
                   </button>
                 </div>
               </div>

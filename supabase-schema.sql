@@ -41,11 +41,18 @@ CREATE TABLE IF NOT EXISTS public.campaigns (
   wilaya TEXT,
   platform TEXT DEFAULT 'all',
   deliverables JSONB DEFAULT '[]'::jsonb,
+  deadline TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'open'
-    CHECK (status IN ('open', 'active', 'in_progress', 'completed', 'paused', 'cancelled')),
+    CHECK (status IN ('open', 'active', 'in_progress', 'completed', 'paused', 'cancelled', 'closed')),
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Ensure all required columns exist for existing tables
+ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS deadline TIMESTAMPTZ;
+ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS wilaya TEXT;
+ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS platform TEXT DEFAULT 'all';
+ALTER TABLE public.campaigns ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();
 
 -- ─── 3. APPLICATIONS TABLE ───
 CREATE TABLE IF NOT EXISTS public.applications (
@@ -133,25 +140,43 @@ BEGIN
       SELECT 1 FROM public.profiles 
       WHERE id = auth.uid() AND role = 'admin'
     ) OR
-    auth.jwt() ->> 'email' IN ('madjedalirachedi291@gmail.com', 'madjedar@gmail.com')
+    LOWER(COALESCE(auth.jwt() ->> 'email', '')) IN ('madjedalirachedi291@gmail.com', 'madjedar@gmail.com')
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- Auto-create profile on Auth Sign Up
+-- Auto-create profile on Auth Sign Up (Google OAuth & Email)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  v_role TEXT;
+  v_email TEXT;
 BEGIN
+  v_email := LOWER(COALESCE(NEW.email, NEW.raw_user_meta_data->>'email', ''));
+  
+  -- Auto-assign admin role if email matches official admin list
+  IF v_email IN ('madjedalirachedi291@gmail.com', 'madjedar@gmail.com') THEN
+    v_role := 'admin';
+  ELSE
+    v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'creator');
+  END IF;
+
   INSERT INTO public.profiles (id, full_name, avatar_url, role)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', ''),
     COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', ''),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'creator')
+    v_role
   )
   ON CONFLICT (id) DO UPDATE SET
-    full_name = EXCLUDED.full_name,
-    avatar_url = EXCLUDED.avatar_url;
+    full_name = COALESCE(NULLIF(EXCLUDED.full_name, ''), public.profiles.full_name),
+    avatar_url = COALESCE(NULLIF(EXCLUDED.avatar_url, ''), public.profiles.avatar_url),
+    role = CASE 
+      WHEN v_role = 'admin' THEN 'admin'
+      WHEN public.profiles.role IS NOT NULL THEN public.profiles.role
+      ELSE v_role
+    END,
+    updated_at = now();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -279,11 +304,11 @@ CREATE POLICY "Users can view own messages" ON public.messages FOR SELECT
 
 DROP POLICY IF EXISTS "Users can send messages" ON public.messages;
 CREATE POLICY "Users can send messages" ON public.messages FOR INSERT 
-  WITH CHECK (auth.uid() = sender_id);
+  WITH CHECK (auth.uid() = sender_id OR public.is_admin());
 
 DROP POLICY IF EXISTS "Receiver can mark message read" ON public.messages;
 CREATE POLICY "Receiver can mark message read" ON public.messages FOR UPDATE 
-  USING (auth.uid() = receiver_id);
+  USING (auth.uid() = receiver_id OR public.is_admin());
 
 -- 7. Notifications RLS
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
@@ -297,7 +322,7 @@ CREATE POLICY "System/Users can insert notifications" ON public.notifications FO
 
 DROP POLICY IF EXISTS "Users can update own notifications" ON public.notifications;
 CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE 
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id OR public.is_admin());
 
 -- 8. Reviews RLS
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
@@ -307,14 +332,14 @@ CREATE POLICY "Reviews viewable by all" ON public.reviews FOR SELECT
 
 DROP POLICY IF EXISTS "Brands can add reviews" ON public.reviews;
 CREATE POLICY "Brands can add reviews" ON public.reviews FOR INSERT 
-  WITH CHECK (auth.uid() = brand_id);
+  WITH CHECK (auth.uid() = brand_id OR public.is_admin());
 
 DROP POLICY IF EXISTS "Admin can delete reviews" ON public.reviews;
 CREATE POLICY "Admin can delete reviews" ON public.reviews FOR DELETE 
   USING (public.is_admin());
 
 -- ═══════════════════════════════════════════════════════
--- REALTIME SUBSCRIPTIONS
+-- REALTIME SUBSCRIPTIONS (IDEMPOTENT & SAFE)
 -- ═══════════════════════════════════════════════════════
 DO $$
 BEGIN
@@ -329,4 +354,31 @@ BEGIN
   EXCEPTION
     WHEN duplicate_object THEN NULL;
   END;
+
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.campaigns;
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+  END;
+
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.applications;
+  EXCEPTION
+    WHEN duplicate_object THEN NULL;
+  END;
 END $$;
+
+-- ═══════════════════════════════════════════════════════
+-- HIGH-PERFORMANCE B-TREE INDEXES
+-- ═══════════════════════════════════════════════════════
+CREATE INDEX IF NOT EXISTS idx_messages_chat ON public.messages(sender_id, receiver_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver_read ON public.messages(receiver_id, read);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON public.notifications(user_id, read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_campaigns_brand ON public.campaigns(brand_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_campaigns_status ON public.campaigns(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_campaigns_category ON public.campaigns(category);
+CREATE INDEX IF NOT EXISTS idx_applications_campaign_status ON public.applications(campaign_id, status);
+CREATE INDEX IF NOT EXISTS idx_applications_creator_status ON public.applications(creator_id, status);
+CREATE INDEX IF NOT EXISTS idx_transactions_brand ON public.transactions(brand_id, status);
+CREATE INDEX IF NOT EXISTS idx_transactions_creator ON public.transactions(creator_id, status);
+CREATE INDEX IF NOT EXISTS idx_transactions_chargily ON public.transactions(chargily_checkout_id);

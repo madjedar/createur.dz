@@ -69,10 +69,21 @@ export default function NotificationDropdown({ onOpenMessages, onOpenDashboard }
     setIsOpen(false);
 
     if (notif.title?.includes('رسالة') || notif.message?.includes('رسالة')) {
+      let targetContactId = null;
+      if (user?.id) {
+        try {
+          const { getUserConversations } = await import('../services/dbService');
+          const convos = await getUserConversations(user.id);
+          if (convos && convos.length > 0) {
+            targetContactId = convos[0].id;
+          }
+        } catch (e) {}
+      }
+
       if (onOpenMessages) {
-        onOpenMessages();
+        onOpenMessages(targetContactId);
       } else if (onOpenDashboard) {
-        onOpenDashboard('messages', user?.role || 'creator');
+        onOpenDashboard('messages', user?.role || 'creator', targetContactId);
       }
     } else if (notif.title?.includes('حملة') || notif.title?.includes('تقديم')) {
       if (onOpenDashboard) {

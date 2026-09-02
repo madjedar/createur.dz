@@ -111,8 +111,8 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
             {user ? (
               <>
                 <NotificationDropdown 
-                  onOpenMessages={() => onOpenDashboard('messages', isBrand ? 'brand' : 'creator')} 
-                  onOpenDashboard={(tab, role) => onOpenDashboard(tab, role || (isBrand ? 'brand' : 'creator'))} 
+                  onOpenMessages={(contactId) => onOpenDashboard('messages', isBrand ? 'brand' : 'creator', contactId)} 
+                  onOpenDashboard={(tab, role, contactId) => onOpenDashboard(tab, role || (isBrand ? 'brand' : 'creator'), contactId)} 
                 />
 
                 <button
@@ -127,19 +127,31 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
                 </button>
 
                 {isAdmin ? (
-                  <button
-                    onClick={() => onOpenDashboard('admin')}
-                    onMouseEnter={() => preloadDashboardForRole('admin')}
-                    onFocus={() => preloadDashboardForRole('admin')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-purple-600 hover:bg-white transition-colors font-bold text-sm"
-                  >
-                    <ShieldAlert className="w-4 h-4" aria-hidden="true" />
-                    <span>{t('adminDashboard')}</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => onOpenDashboard('create', 'brand')}
+                      onMouseEnter={() => preloadDashboardForRole('brand')}
+                      onFocus={() => preloadDashboardForRole('brand')}
+                      className="btn-primary text-xs flex items-center gap-1.5 shadow-sm"
+                      title="إضافة حملة جديدة"
+                    >
+                      <PlusCircle className="w-4 h-4" aria-hidden="true" />
+                      <span>{t('addCampaign')}</span>
+                    </button>
+                    <button
+                      onClick={() => onOpenDashboard('admin')}
+                      onMouseEnter={() => preloadDashboardForRole('admin')}
+                      onFocus={() => preloadDashboardForRole('admin')}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full text-purple-600 hover:bg-white transition-colors font-bold text-sm"
+                    >
+                      <ShieldAlert className="w-4 h-4" aria-hidden="true" />
+                      <span>{t('adminDashboard')}</span>
+                    </button>
+                  </>
                 ) : isBrand ? (
                   <>
                     <button
-                      onClick={() => onOpenDashboard('create')}
+                      onClick={() => onOpenDashboard('create', 'brand')}
                       onMouseEnter={() => preloadDashboardForRole('brand')}
                       onFocus={() => preloadDashboardForRole('brand')}
                       className="btn-primary text-xs flex items-center gap-1.5"
@@ -148,7 +160,7 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
                       <span>{t('addCampaign')}</span>
                     </button>
                     <button
-                      onClick={() => onOpenDashboard('overview')}
+                      onClick={() => onOpenDashboard('overview', 'brand')}
                       onMouseEnter={() => preloadDashboardForRole('brand')}
                       onFocus={() => preloadDashboardForRole('brand')}
                       className="flex items-center gap-2 px-4 py-2 rounded-full text-brand-brown hover:bg-white transition-colors font-bold text-sm"
@@ -268,17 +280,33 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
           {user ? (
             <>
               {isAdmin ? (
-                <button
-                  onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('admin'); }}
-                  className="w-full py-3 rounded-full bg-white text-purple-600 flex items-center justify-center gap-2 font-bold shadow-sm"
-                >
-                  <ShieldAlert className="w-5 h-5" />
-                  <span>{t('adminDashboard')}</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('create', 'brand'); }}
+                    className="btn-primary w-full flex items-center justify-center gap-2"
+                  >
+                    <PlusCircle className="w-5 h-5" />
+                    <span>{t('addCampaign')}</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('admin'); }}
+                    className="w-full py-3 rounded-full bg-white text-purple-600 flex items-center justify-center gap-2 font-bold shadow-sm"
+                  >
+                    <ShieldAlert className="w-5 h-5" />
+                    <span>{t('adminDashboard')}</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('messages', 'creator'); }}
+                    className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
+                  >
+                    <MessageSquare className="w-5 h-5 text-brand-orange" />
+                    <span>الرسائل والمحادثات</span>
+                  </button>
+                </>
               ) : isBrand ? (
                 <>
                   <button
-                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('create'); }}
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('create', 'brand'); }}
                     className="btn-primary w-full flex items-center justify-center gap-2"
                   >
                     <PlusCircle className="w-5 h-5" />
@@ -292,7 +320,7 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
                     <span>الرسائل والمحادثات</span>
                   </button>
                   <button
-                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('overview'); }}
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('overview', 'brand'); }}
                     className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
                   >
                     <Building2 className="w-5 h-5 text-brand-orange" />

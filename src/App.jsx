@@ -216,12 +216,13 @@ function AppContent() {
   // Handlers
   const handleOpenAuth = (mode = 'login', role = 'creator') => setAuthModal({ open: true, mode, role })
   const handleCloseAuth = () => setAuthModal({ open: false, mode: 'login', role: 'creator' })
-  const handleOpenDashboard = (tab = 'overview', type = 'creator', contactId = null) => {
+  const handleOpenDashboard = (tab = 'overview', type = null, contactId = null) => {
     if (tab === 'admin' && !canAccessAdmin(user)) {
       setToast({ type: 'error', message: 'عذراً، لوحة الأدمن مخصصة للإدارة فقط.' });
       return;
     }
-    setDashboardState({ open: true, tab, type, contactId });
+    const resolvedType = type || (tab === 'create' || user?.role === 'brand' ? 'brand' : 'creator');
+    setDashboardState({ open: true, tab, type: resolvedType, contactId });
   }
   const handleCloseDashboard = () => setDashboardState({ open: false, tab: 'overview', type: 'creator', contactId: null })
   const handleSelectCreator = (creator) => setSelectedCreator(creator)
@@ -240,12 +241,8 @@ function AppContent() {
       setToast({ type: 'info', message: 'يرجى تسجيل الدخول أو إنشاء حساب متجر للتواصل مع صانع المحتوى.' });
       return;
     }
-    if (user?.role === 'creator') {
-      setToast({ type: 'error', message: 'حسابك مسجل كصانع محتوى. للتواصل وتوظيف صناع المحتوى، يرجى استخدام حساب متجر.' });
-      return;
-    }
-    // Open dashboard in messages tab pre-selected with this creator
-    handleOpenDashboard('messages', 'brand', creator.id);
+    const dashboardType = (user?.role === 'brand' || user?.role === 'admin') ? 'brand' : 'creator';
+    handleOpenDashboard('messages', dashboardType, creator.id);
   };
 
   // Auto-resume pending contact after brand login
@@ -420,7 +417,7 @@ function AppContent() {
       <Header 
         onOpenAuth={handleOpenAuth} 
         onOpenDashboard={handleOpenDashboard} 
-        onOpenCreateCampaign={() => handleOpenDashboard('create')}
+        onOpenCreateCampaign={() => handleOpenDashboard('create', 'brand')}
         onOpenProfileSettings={() => setIsProfileSettingsOpen(true)}
         onOpenContact={() => setIsContactModalOpen(true)}
       />
@@ -930,28 +927,30 @@ function AppContent() {
           initialRole={authModal.role}
         />
 
-        {/* ─── Dashboard Modals with strict RBAC ─── */}
-        {user?.role === 'admin' && dashboardState.tab !== 'messages' ? (
-          <AdminDashboardModal
-            isOpen={dashboardState.open}
-            onClose={handleCloseDashboard}
-          />
-        ) : (user?.role === 'brand' || (user?.role === 'admin' && dashboardState.tab === 'messages' && dashboardState.type === 'brand')) ? (
-          <BrandDashboardModal
-            isOpen={dashboardState.open}
-            onClose={handleCloseDashboard}
-            initialTab={dashboardState.tab}
-            initialContactId={dashboardState.contactId}
-            onHireCreator={handleHireCreator}
-          />
-        ) : (user?.role === 'creator' || (!user?.role && dashboardState.type === 'creator') || (user && user.role !== 'brand' && user.role !== 'admin')) ? (
-          <CreatorDashboardModal
-            isOpen={dashboardState.open}
-            onClose={handleCloseDashboard}
-            initialTab={dashboardState.tab}
-            initialContactId={dashboardState.contactId}
-          />
-        ) : null}
+        {/* ─── Dashboard & Messages Modals ─── */}
+        {dashboardState.open && (
+          dashboardState.tab === 'admin' && canAccessAdmin(user) ? (
+            <AdminDashboardModal
+              isOpen={dashboardState.open}
+              onClose={handleCloseDashboard}
+            />
+          ) : (dashboardState.type === 'brand' || (user?.role === 'brand' && dashboardState.type !== 'creator')) ? (
+            <BrandDashboardModal
+              isOpen={dashboardState.open}
+              onClose={handleCloseDashboard}
+              initialTab={dashboardState.tab}
+              initialContactId={dashboardState.contactId}
+              onHireCreator={handleHireCreator}
+            />
+          ) : (
+            <CreatorDashboardModal
+              isOpen={dashboardState.open}
+              onClose={handleCloseDashboard}
+              initialTab={dashboardState.tab}
+              initialContactId={dashboardState.contactId}
+            />
+          )
+        )}
         <CreatorDetailsModal
           isOpen={!!selectedCreator}
           onClose={handleCloseCreator}

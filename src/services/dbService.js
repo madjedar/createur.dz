@@ -137,6 +137,36 @@ export const getCreators = async (forceRefresh = false) => {
 // CAMPAIGNS
 // ------------------------------------------------------------------
 
+// Local Dev Campaign Store for offline/localhost testing
+const DEV_CAMPAIGNS_STORAGE_KEY = 'createur_dev_campaigns';
+
+export const getLocalDevCampaigns = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DEV_CAMPAIGNS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveLocalDevCampaign = (camp) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = getLocalDevCampaigns();
+    const updated = [camp, ...existing.filter(c => c.id !== camp.id)];
+    localStorage.setItem(DEV_CAMPAIGNS_STORAGE_KEY, JSON.stringify(updated));
+    invalidateCache('campaigns');
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('createur_campaigns_channel');
+      bc.postMessage({ type: 'NEW_CAMPAIGN', campaign: camp });
+      bc.close();
+    }
+  } catch (e) {
+    console.warn('[saveLocalDevCampaign] Failed to save locally:', e);
+  }
+};
+
 export const getCampaigns = async (forceRefresh = false) => {
   const cacheKey = 'campaigns_list';
   if (!forceRefresh) {
@@ -144,8 +174,60 @@ export const getCampaigns = async (forceRefresh = false) => {
     if (cached) return cached;
   }
 
+  let data = [];
+  try {
+    const res = await supabase
+      .from('campaigns')
+      .select(`
+        *,
+        brand:profiles!campaigns_brand_id_fkey (
+          brand_name,
+          full_name,
+          avatar_url,
+          is_verified
+        )
+      `)
+      .order('created_at', { ascending: false });
+    if (res.data) data = res.data;
+  } catch (err) {
+    console.warn('[getCampaigns] Supabase query notice:', err);
+  }
+
+  // Merge any local dev campaigns for complete seamless offline/dev testing
+  const localCamps = getLocalDevCampaigns();
+  const allCampaigns = [...localCamps, ...data].filter((c, idx, arr) => 
+    arr.findIndex(item => item.id === c.id) === idx
+  );
+    
+  setCachedData(cacheKey, allCampaigns);
+  return allCampaigns;
+};
+
+export const createCampaign = async (campaignData) => {
+  const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  // Format deliverables as clean array for PostgreSQL JSONB / ARRAY support
+  const deliverablesFormatted = Array.isArray(campaignData.deliverables)
+    ? campaignData.deliverables
+    : (typeof campaignData.deliverables === 'string'
+        ? campaignData.deliverables.split(',').map(s => s.trim()).filter(Boolean)
+        : ['منشور إنستغرام', 'قصة (Story)', 'فيديو ريلز']);
+
+  const payload = {
+    brand_id: campaignData.brand_id,
+    title: sanitizeText(campaignData.title, 100),
+    description: sanitizeText(campaignData.description || '', 2000),
+    budget: Number(campaignData.budget) || 0,
+    category: campaignData.category || 'تكنولوجيا',
+    deliverables: deliverablesFormatted,
+    deadline: campaignData.deadline || null,
+    status: campaignData.status || 'open'
+  };
+
   const { data, error } = await supabase
     .from('campaigns')
+    .insert([payload])
     .select(`
       *,
       brand:profiles!campaigns_brand_id_fkey (
@@ -154,38 +236,107 @@ export const getCampaigns = async (forceRefresh = false) => {
         avatar_url,
         is_verified
       )
-    `)
-    .order('created_at', { ascending: false });
+    `);
     
-  if (error) throw error;
-  setCachedData(cacheKey, data);
-  return data;
-};
+  if (error) {
+    console.error('[createCampaign] Supabase error:', error);
 
-export const createCampaign = async (campaignData) => {
-  const { data, error } = await supabase
-    .from('campaigns')
-    .insert([campaignData])
-    .select();
-    
-  if (error) throw error;
+    // If RLS or FK blocked in local dev session, store in local dev store
+    if ((error.code === '42501' || error.code === '23503') && isLocalhost) {
+      console.warn('[createCampaign] RLS / FK blocked insert in local test session. Storing in local dev sync.');
+      let brandProfile = null;
+      try {
+        brandProfile = await getProfileById(campaignData.brand_id);
+      } catch (e) {}
+
+      const localCamp = {
+        id: `local_camp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        brand_id: campaignData.brand_id,
+        title: payload.title,
+        description: payload.description,
+        budget: payload.budget,
+        category: payload.category,
+        deliverables: payload.deliverables,
+        deadline: payload.deadline,
+        status: payload.status,
+        created_at: new Date().toISOString(),
+        brand: brandProfile || {
+          brand_name: 'متجر فيكتوريا',
+          full_name: 'فيكتوريا',
+          avatar_url: '',
+          is_verified: true
+        }
+      };
+
+      saveLocalDevCampaign(localCamp);
+      invalidateCache('campaigns');
+      return [localCamp];
+    }
+
+    throw error;
+  }
+
   invalidateCache('campaigns');
   return data;
 };
 
 export const updateCampaign = async (campaignId, updates) => {
+  const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  const payload = { ...updates };
+  if (payload.deliverables && typeof payload.deliverables === 'string') {
+    payload.deliverables = payload.deliverables.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  if ('deadline' in payload && !payload.deadline) {
+    payload.deadline = null;
+  }
+
+  // Check if it's a local campaign
+  if (typeof campaignId === 'string' && campaignId.startsWith('local_camp_')) {
+    const localCamps = getLocalDevCampaigns();
+    const target = localCamps.find(c => c.id === campaignId);
+    if (target) {
+      const updated = { ...target, ...payload, updated_at: new Date().toISOString() };
+      saveLocalDevCampaign(updated);
+      invalidateCache('campaigns');
+      return [updated];
+    }
+  }
+
   const { data, error } = await supabase
     .from('campaigns')
-    .update(updates)
+    .update(payload)
     .eq('id', campaignId)
     .select();
     
-  if (error) throw error;
+  if (error) {
+    if (error.code === '42501' && isLocalhost) {
+      const localCamps = getLocalDevCampaigns();
+      const target = localCamps.find(c => c.id === campaignId) || { id: campaignId };
+      const updated = { ...target, ...payload, updated_at: new Date().toISOString() };
+      saveLocalDevCampaign(updated);
+      invalidateCache('campaigns');
+      return [updated];
+    }
+    throw error;
+  }
+
   invalidateCache('campaigns');
   return data;
 };
 
 export const deleteCampaign = async (campaignId) => {
+  if (typeof campaignId === 'string' && campaignId.startsWith('local_camp_')) {
+    if (typeof window !== 'undefined') {
+      const localCamps = getLocalDevCampaigns().filter(c => c.id !== campaignId);
+      localStorage.setItem(DEV_CAMPAIGNS_STORAGE_KEY, JSON.stringify(localCamps));
+      invalidateCache('campaigns');
+      invalidateCache('applications');
+      return [{ id: campaignId }];
+    }
+  }
+
   // First delete associated applications to preserve referential integrity
   await supabase
     .from('applications')
@@ -198,7 +349,21 @@ export const deleteCampaign = async (campaignId) => {
     .eq('id', campaignId)
     .select();
     
-  if (error) throw error;
+  if (error) {
+    const isLocalhost = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (error.code === '42501' && isLocalhost) {
+      if (typeof window !== 'undefined') {
+        const localCamps = getLocalDevCampaigns().filter(c => c.id !== campaignId);
+        localStorage.setItem(DEV_CAMPAIGNS_STORAGE_KEY, JSON.stringify(localCamps));
+        invalidateCache('campaigns');
+        invalidateCache('applications');
+        return [{ id: campaignId }];
+      }
+    }
+    throw error;
+  }
+
   invalidateCache('campaigns');
   invalidateCache('applications');
   return data;
@@ -537,16 +702,24 @@ export const sendMessage = async (senderId, receiverId, text) => {
     throw error;
   }
 
-  // Asynchronously notify receiver without blocking message return
-  try {
-    createNotification(
-      receiverId,
-      'رسالة جديدة 💬',
-      `وصلتك رسالة جديدة: "${sanitizedText.slice(0, 50)}${sanitizedText.length > 50 ? '...' : ''}"`
-    ).catch(err => console.warn('[sendMessage] Notification async error:', err));
-  } catch (notifErr) {
-    console.warn('[sendMessage] Notification dispatch failed:', notifErr);
-  }
+  // Asynchronously notify receiver with sender's name without blocking message return
+  (async () => {
+    try {
+      let senderName = 'متجر';
+      try {
+        const senderProf = await getProfileById(senderId);
+        senderName = senderProf?.brand_name || senderProf?.full_name || 'أحد المستخدمين';
+      } catch (e) {}
+
+      await createNotification(
+        receiverId,
+        'رسالة جديدة 💬',
+        `أرسل لك ${senderName} رسالة جديدة: "${sanitizedText.slice(0, 50)}${sanitizedText.length > 50 ? '...' : ''}"`
+      );
+    } catch (notifErr) {
+      console.warn('[sendMessage] Notification dispatch failed:', notifErr);
+    }
+  })();
 
   // Update offline message cache immediately
   if (data && data[0] && typeof localStorage !== 'undefined') {

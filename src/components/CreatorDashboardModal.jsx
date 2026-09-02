@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { getLocalizedItem } from '../utils/localized';
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
 import CampaignApplyModal from './CampaignApplyModal';
 import OptimizedImage from './OptimizedImage';
@@ -57,10 +58,22 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
+  const [availableStores, setAvailableStores] = useState([]);
   const [activeContactProfile, setActiveContactProfile] = useState(null);
   const [selectedContactId, setSelectedContactId] = useState(initialContactId);
   const [chatError, setChatError] = useState('');
   const messagesEndRef = useRef(null);
+
+  // Load stores so the creator can always message partner stores even before any initial reply
+  useEffect(() => {
+    import('../services/dbService').then(({ getStoreProfiles }) => {
+      getStoreProfiles().then(stores => {
+        if (stores && Array.isArray(stores)) {
+          setAvailableStores(stores);
+        }
+      }).catch(err => console.warn('Could not load stores for creator chat:', err));
+    });
+  }, []);
 
   useEffect(() => {
     if (initialContactId) {
@@ -181,21 +194,38 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
           category: activeContactProfile.category || '',
           wilaya: activeContactProfile.wilaya || '',
           is_verified: Boolean(activeContactProfile.is_verified),
-          lastMessage: 'محادثة جديدة',
+          lastMessage: 'محادثة مباشرة مع المتجر',
           lastMessageAt: new Date().toISOString()
         });
       }
     }
 
-    return Array.from(contactsMap.values());
-  }, [conversations, applications, selectedContactId, initialContactId, activeContactProfile]);
+    // 4. Available partner stores on the platform (so creators can chat anytime)
+    for (const store of availableStores) {
+      if (store?.id && !contactsMap.has(store.id) && store.id !== user?.id) {
+        contactsMap.set(store.id, {
+          id: store.id,
+          brand_name: store.brand_name || store.name || store.full_name || 'متجر',
+          full_name: store.full_name || store.brand_name || store.name || 'متجر',
+          avatar_url: store.avatar_url || store.logo || '',
+          category: store.category || store.sector || 'متجر معتمد',
+          wilaya: store.wilaya || store.location || '',
+          is_verified: Boolean(store.is_verified ?? true),
+          lastMessage: 'متجر معتمد متاح للرعاية والتعاون 🛍️',
+          lastMessageAt: null
+        });
+      }
+    }
 
-  // Auto-select first contact if none selected
+    return Array.from(contactsMap.values());
+  }, [conversations, applications, selectedContactId, initialContactId, activeContactProfile, availableStores, user?.id]);
+
+  // Auto-select first contact if none selected when in messages tab or on data load
   useEffect(() => {
-    if (!selectedContactId && contacts.length > 0 && activeTab === 'messages') {
+    if (!selectedContactId && contacts.length > 0) {
       setSelectedContactId(contacts[0].id);
     }
-  }, [selectedContactId, contacts, activeTab]);
+  }, [selectedContactId, contacts]);
 
   useEffect(() => {
     if (!selectedContactId || !user?.id) return;
@@ -1014,8 +1044,23 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                   </div>
                 </>
               ) : (
-                <div className="flex items-center justify-center h-full text-brand-brownLight font-medium">
-                  اختر محادثة من القائمة
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-brand-cream/20 h-full">
+                  <div className="w-16 h-16 rounded-full bg-brand-orange/10 flex items-center justify-center mb-3">
+                    <MessageSquare className="w-8 h-8 text-brand-orange" />
+                  </div>
+                  <h4 className="font-bold text-brand-brown text-base mb-1">نافذة المحادثة والرسائل المباشرة</h4>
+                  <p className="text-xs text-brand-brownLight max-w-xs mb-4">
+                    اختر أي متجر من القائمة الجانبية لبدء المحادثة ومناقشة تفاصيل التعاون والرعاية.
+                  </p>
+                  {contacts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedContactId(contacts[0].id)}
+                      className="btn-primary text-xs !py-2 !px-5 flex items-center gap-1.5"
+                    >
+                      <span>بدء المحادثة مع {contacts[0].brand_name || contacts[0].full_name || 'المتجر'}</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>

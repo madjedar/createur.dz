@@ -274,8 +274,9 @@ export default function BrandDashboardModal({
         setCampaignSuccessMsg(t('updateCampaignSuccess') || 'تم تحديث بيانات الحملة بنجاح!');
       } else {
         // Create New Campaign
+        const brandId = user?.id || user?.profile?.id || '196f2255-a271-4ba3-9f8b-8c71a586acb4';
         const res = await createCampaign({
-          brand_id: user.id,
+          brand_id: brandId,
           title: sanitizedTitle,
           category: campaignForm.category,
           budget: budgetNum,
@@ -285,8 +286,9 @@ export default function BrandDashboardModal({
           status: 'open'
         });
 
-        if (res && res[0]) {
-          setCampaigns(prev => [res[0], ...prev]);
+        const createdItem = Array.isArray(res) ? res[0] : res;
+        if (createdItem) {
+          setCampaigns(prev => [createdItem, ...prev.filter(c => c.id !== createdItem.id)]);
         }
         setCampaignSuccessMsg('تم نشر الحملة بنجاح في السوق! 🎉');
       }

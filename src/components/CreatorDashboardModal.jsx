@@ -325,10 +325,15 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   };
 
   useEffect(() => {
-    if (isOpen && initialTab) {
-      setActiveTab(initialTab);
+    if (isOpen) {
+      if (initialTab) {
+        setActiveTab(initialTab);
+      }
+      if (initialContactId) {
+        setSelectedContactId(initialContactId);
+      }
     }
-  }, [isOpen, initialTab]);
+  }, [isOpen, initialTab, initialContactId]);
 
   useEffect(() => {
     if (!isOpen || !user?.id) return;
@@ -640,6 +645,71 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                       }`}>
                         {app.status === 'approved' ? 'مقبول' : app.status === 'completed' ? 'منتهي' : 'قيد المراجعة'}
                       </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Direct Messages & Conversations Widget */}
+            <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-black text-brand-brown flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-brand-orange" />
+                  <span>رسائل ومحادثات المتاجر</span>
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('messages')}
+                  className="text-xs font-bold text-brand-orange hover:underline flex items-center gap-1"
+                >
+                  عرض كافة المحادثات ({contacts.length}) ←
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {contacts.length === 0 ? (
+                  <div className="p-6 text-center text-brand-brownLight bg-brand-cream/40 rounded-2xl border border-brand-border/60">
+                    <p className="font-bold text-sm text-brand-brown mb-1">لا توجد رسائل جديدة حالياً</p>
+                    <p className="text-xs text-brand-brownLight">عندما يتواصل معك أي متجر لبدء حملة، ستظهر رسالته هنا مباشرة.</p>
+                  </div>
+                ) : (
+                  contacts.slice(0, 3).map((contact) => (
+                    <div 
+                      key={contact.id} 
+                      className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-[16px] bg-brand-cream border border-brand-border gap-4 hover:border-brand-orange/40 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <OptimizedImage 
+                          src={contact.avatar_url} 
+                          fallbackType="brand"
+                          seed={contact.brand_name || 'Brand'}
+                          alt="Brand Avatar" 
+                          width="48"
+                          height="48"
+                          className="w-12 h-12 rounded-[16px] border border-brand-border bg-white object-cover shrink-0" 
+                        />
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-brand-brown text-sm flex items-center gap-1.5 truncate">
+                            <span>{contact.brand_name || contact.full_name || 'متجر'}</span>
+                            {contact.is_verified && <BadgeCheck className="w-4 h-4 text-brand-orange shrink-0" />}
+                          </h4>
+                          <p className="text-xs font-medium text-brand-brownLight mt-0.5 truncate max-w-md">
+                            {contact.lastMessage || 'محادثة مباشرة مع المتجر'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedContactId(contact.id);
+                          setActiveTab('messages');
+                        }}
+                        className="btn-primary text-xs !py-2 !px-4 flex items-center gap-1.5 shrink-0"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>فتح المحادثة والرد</span>
+                      </button>
                     </div>
                   ))
                 )}

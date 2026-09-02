@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, BellOff, CheckCircle2, MessageSquare, Briefcase, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export default function NotificationDropdown() {
+export default function NotificationDropdown({ onOpenMessages, onOpenDashboard }) {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -31,7 +31,6 @@ export default function NotificationDropdown() {
     };
   }, [user?.id]);
 
-  // Handle outside click and Escape key to close
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -63,6 +62,27 @@ export default function NotificationDropdown() {
     }
   };
 
+  const handleNotificationClick = async (notif) => {
+    if (!notif.read) {
+      await handleMarkAsRead(notif.id);
+    }
+    setIsOpen(false);
+
+    if (notif.title?.includes('رسالة') || notif.message?.includes('رسالة')) {
+      if (onOpenMessages) {
+        onOpenMessages();
+      } else if (onOpenDashboard) {
+        onOpenDashboard('messages', user?.role || 'creator');
+      }
+    } else if (notif.title?.includes('حملة') || notif.title?.includes('تقديم')) {
+      if (onOpenDashboard) {
+        onOpenDashboard('opportunities', user?.role || 'creator');
+      }
+    } else if (onOpenDashboard) {
+      onOpenDashboard('overview', user?.role || 'creator');
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
@@ -83,7 +103,12 @@ export default function NotificationDropdown() {
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return '';
-      return `${d.toLocaleDateString('ar-DZ')} ${d.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' })}`;
+      return d.toLocaleDateString('ar-DZ', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     } catch {
       return '';
     }
@@ -96,7 +121,7 @@ export default function NotificationDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="true"
         aria-expanded={isOpen}
-        aria-label={`الإشعارات${unreadCount > 0 ? ` (${unreadCount} غير مقروءة)` : ''}`}
+        aria-label={`الإشعارات ${unreadCount > 0 ? `(${unreadCount} جديدة)` : ''}`}
         className="relative p-2 text-brand-brownLight hover:text-brand-brown rounded-full hover:bg-white/60 transition-colors"
         title="الإشعارات"
       >
@@ -110,12 +135,17 @@ export default function NotificationDropdown() {
         <div 
           role="region" 
           aria-label="لوحة الإشعارات"
-          className="absolute top-full left-0 sm:right-0 sm:left-auto mt-2 w-80 bg-slate-900 border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50 animate-fade-in" 
+          className="absolute top-full left-0 sm:right-0 sm:left-auto mt-2 w-80 sm:w-96 bg-[#1a1c23] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in" 
           dir="rtl"
         >
           <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
             <h3 className="font-bold text-white flex items-center gap-2">
               <span>الإشعارات</span>
+              {unreadCount > 0 && (
+                <span className="bg-red-500/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full">
+                  {unreadCount} جديد
+                </span>
+              )}
             </h3>
             {unreadCount > 0 && (
               <button 
@@ -138,10 +168,11 @@ export default function NotificationDropdown() {
               notifications.map((notif) => (
                 <div 
                   key={notif.id} 
-                  onClick={() => !notif.read && handleMarkAsRead(notif.id)}
+                  onClick={() => handleNotificationClick(notif)}
                   className={`p-4 border-b border-white/5 flex gap-3 cursor-pointer transition-colors ${
-                    notif.read ? 'opacity-70 hover:bg-white/5' : 'bg-blue-500/5 hover:bg-blue-500/10'
+                    notif.read ? 'opacity-70 hover:bg-white/5' : 'bg-blue-500/10 hover:bg-blue-500/20'
                   }`}
+                  title="انقر لفتح المحادثة أو التفاصيل"
                 >
                   <div className={`mt-1 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     notif.title?.includes('رسالة') ? 'bg-blue-500/20 text-blue-400' :
@@ -152,17 +183,24 @@ export default function NotificationDropdown() {
                      notif.title?.includes('قبول') ? <CheckCircle2 className="w-4 h-4" /> :
                      <Sparkles className="w-4 h-4" />}
                   </div>
-                  <div>
-                    <h4 className={`text-sm mb-1 ${notif.read ? 'text-slate-300' : 'text-white font-bold'}`}>
-                      {notif.title}
-                    </h4>
-                    <p className="text-xs text-slate-400 leading-relaxed mb-2">{notif.message}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <h4 className={`text-sm ${notif.read ? 'text-slate-300' : 'text-white font-bold'}`}>
+                        {notif.title}
+                      </h4>
+                      {notif.title?.includes('رسالة') && (
+                        <span className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full font-medium shrink-0">
+                          فتح المحادثة ←
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-2 line-clamp-2">{notif.message}</p>
                     <span className="text-[10px] text-slate-500 block">
                       {formatNotificationDate(notif.created_at)}
                     </span>
                   </div>
                   {!notif.read && (
-                    <div className="ml-auto flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                    <div className="mr-auto flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
                   )}
                 </div>
               ))

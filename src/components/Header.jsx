@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, User, LogOut, LayoutDashboard, PlusCircle, Sparkles, Building2, Globe, ShieldAlert, Settings, Mail } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, PlusCircle, Sparkles, Building2, Globe, ShieldAlert, Settings, Mail, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import NotificationDropdown from './NotificationDropdown';
@@ -110,7 +110,22 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
 
             {user ? (
               <>
-                <NotificationDropdown />
+                <NotificationDropdown 
+                  onOpenMessages={() => onOpenDashboard('messages', isBrand ? 'brand' : 'creator')} 
+                  onOpenDashboard={(tab, role) => onOpenDashboard(tab, role || (isBrand ? 'brand' : 'creator'))} 
+                />
+
+                <button
+                  onClick={() => onOpenDashboard('messages', isBrand ? 'brand' : 'creator')}
+                  onMouseEnter={() => preloadDashboardForRole(isBrand ? 'brand' : 'creator')}
+                  onFocus={() => preloadDashboardForRole(isBrand ? 'brand' : 'creator')}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-brand-brown hover:text-brand-orange hover:bg-white transition-colors font-bold text-xs border border-brand-border/40 shadow-sm"
+                  title="الرسائل والمحادثات"
+                >
+                  <MessageSquare className="w-4 h-4 text-brand-orange" aria-hidden="true" />
+                  <span>الرسائل</span>
+                </button>
+
                 {isAdmin ? (
                   <button
                     onClick={() => onOpenDashboard('admin')}
@@ -270,6 +285,13 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
                     <span>{t('addCampaign')}</span>
                   </button>
                   <button
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('messages', 'brand'); }}
+                    className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
+                  >
+                    <MessageSquare className="w-5 h-5 text-brand-orange" />
+                    <span>الرسائل والمحادثات</span>
+                  </button>
+                  <button
                     onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('overview'); }}
                     className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
                   >
@@ -278,13 +300,22 @@ const Header = ({ onOpenAuth, onOpenDashboard, onOpenProfileSettings, onOpenCont
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('overview'); }}
-                  className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
-                >
-                  <Sparkles className="w-5 h-5 text-brand-orange" />
-                  <span>{t('creatorDashboard')}</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('messages', 'creator'); }}
+                    className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
+                  >
+                    <MessageSquare className="w-5 h-5 text-brand-orange" />
+                    <span>الرسائل والمحادثات</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsMobileMenuOpen(false); onOpenDashboard('overview'); }}
+                    className="w-full py-3 rounded-full bg-white text-brand-brown flex items-center justify-center gap-2 font-bold shadow-sm"
+                  >
+                    <Sparkles className="w-5 h-5 text-brand-orange" />
+                    <span>{t('creatorDashboard')}</span>
+                  </button>
+                </>
               )}
 
               <button

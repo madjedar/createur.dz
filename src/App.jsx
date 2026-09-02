@@ -936,7 +936,7 @@ function AppContent() {
             isOpen={dashboardState.open}
             onClose={handleCloseDashboard}
           />
-        ) : (user?.role === 'brand' || (user?.role === 'admin' && dashboardState.tab === 'messages')) ? (
+        ) : (user?.role === 'brand' || (user?.role === 'admin' && dashboardState.tab === 'messages' && dashboardState.type === 'brand')) ? (
           <BrandDashboardModal
             isOpen={dashboardState.open}
             onClose={handleCloseDashboard}
@@ -944,7 +944,7 @@ function AppContent() {
             initialContactId={dashboardState.contactId}
             onHireCreator={handleHireCreator}
           />
-        ) : user?.role === 'creator' ? (
+        ) : (user?.role === 'creator' || (!user?.role && dashboardState.type === 'creator') || (user && user.role !== 'brand' && user.role !== 'admin')) ? (
           <CreatorDashboardModal
             isOpen={dashboardState.open}
             onClose={handleCloseDashboard}
@@ -1005,6 +1005,23 @@ function AppContent() {
           isOpen={isContactModalOpen}
           onClose={() => setIsContactModalOpen(false)}
         />
+
+        {/* Floating Messenger Quick-Access Button for Logged-In Users */}
+        {isLoggedIn && user && (
+          <button
+            type="button"
+            onClick={() => handleOpenDashboard('messages', user.role === 'brand' ? 'brand' : 'creator')}
+            aria-label="فتح الرسائل والمحادثات"
+            title="الرسائل والمحادثات المباشرة"
+            className="fixed bottom-6 rtl:left-6 ltr:right-6 z-40 bg-gradient-to-r from-brand-orange to-amber-600 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full shadow-2xl hover:shadow-brand-orange/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 border-2 border-white/20 group"
+          >
+            <div className="relative">
+              <MessageSquare className="w-5 h-5 text-white animate-bounce-subtle" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full ring-2 ring-white" />
+            </div>
+            <span className="font-bold text-sm hidden sm:inline">الرسائل والمحادثات</span>
+          </button>
+        )}
       </Suspense>
     </div>
   )

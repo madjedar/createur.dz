@@ -169,6 +169,12 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('createur_dev_user');
+      localStorage.removeItem('createur_dz_auth_session');
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('oauth_login');
+      sessionStorage.removeItem('oauth_role');
+      sessionStorage.removeItem('post_login_action');
     }
     if (supabase) {
       try { await supabase.auth.signOut(); } catch (e) {}

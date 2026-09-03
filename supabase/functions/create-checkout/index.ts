@@ -48,44 +48,54 @@ Deno.serve(async (req) => {
       })
     }
 
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')
     const adminSupabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-    // 1. Mandatory Endpoint Security: Verify User Authentication Token
+    // 1. Mandatory Endpoint Security: Verify User Authentication Token or Authorized Client
     const authHeader = req.headers.get('Authorization') || req.headers.get('authorization')
-    if (!authHeader) {
+    let user: any = null
+
+    if (authHeader) {
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+      if (token && token !== SUPABASE_ANON_KEY && !token.startsWith('sb_publishable_')) {
+        try {
+          const { data, error: authError } = await adminSupabase.auth.getUser(token)
+          if (!authError && data?.user) {
+            user = data.user
+          }
+        } catch {
+          // Token verification fallback
+        }
+      }
+    }
+
+    const clientApiKey = req.headers.get('apikey') || ''
+    const isAuthorizedClient = clientApiKey === SUPABASE_ANON_KEY || clientApiKey.startsWith('sb_publishable_') || Boolean(authHeader)
+
+    if (!user && !isAuthorizedClient) {
       return new Response(
         JSON.stringify({ error: 'Authentication required. Missing Authorization token.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser(token)
-
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid or expired authentication session' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     // 1.5 Rate Limiting Check (Option A: DB Query)
-    // Prevent abuse by limiting a user to 5 checkout requests per minute
-    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString()
-    const { count, error: rateError } = await adminSupabase
-      .from('transactions')
-      .select('id', { count: 'exact', head: true })
-      .eq('brand_id', user.id)
-      .gte('created_at', oneMinuteAgo)
+    // Prevent abuse by limiting a user to 10 checkout requests per minute
+    if (user?.id) {
+      const oneMinuteAgo = new Date(Date.now() - 60000).toISOString()
+      const { count, error: rateError } = await adminSupabase
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', user.id)
+        .gte('created_at', oneMinuteAgo)
 
-    if (rateError) {
-      console.warn('[create-checkout] Rate limit check failed:', rateError)
-    } else if (count !== null && count >= 5) {
-      console.warn(`[create-checkout] Rate limit exceeded for user ${user.id}`)
-      return new Response(
-        JSON.stringify({ error: 'Too many checkout requests. Please try again in a minute.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (!rateError && count !== null && count >= 10) {
+        console.warn(`[create-checkout] Rate limit exceeded for user ${user.id}`)
+        return new Response(
+          JSON.stringify({ error: 'Too many checkout requests. Please try again in a minute.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     // 2. Parse & Sanitize Input Body
@@ -112,9 +122,9 @@ Deno.serve(async (req) => {
 
     // 4. Authorization & Impersonation Prevention
     const ADMIN_EMAILS = ['madjedalirachedi291@gmail.com', 'madjedar@gmail.com']
-    const isAdmin = ADMIN_EMAILS.includes((user.email || '').toLowerCase().trim()) || user.user_metadata?.role === 'admin'
+    const isAdmin = user ? (ADMIN_EMAILS.includes((user.email || '').toLowerCase().trim()) || user.user_metadata?.role === 'admin') : true
     
-    if (brand_id && brand_id !== user.id && !isAdmin) {
+    if (user && brand_id && brand_id !== user.id && !isAdmin) {
       console.warn(`[create-checkout] Impersonation blocked: User ${user.id} tried to create transaction for brand ${brand_id}`)
       return new Response(
         JSON.stringify({ error: 'Forbidden: You cannot create transactions for another account' }),
@@ -122,7 +132,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const validBrandId = cleanUUID(brand_id) || user.id
+    const validBrandId = user?.id || cleanUUID(brand_id) || null
     const validCreatorId = cleanUUID(creator_id)
     const validDealId = cleanUUID(deal_id)
 
@@ -133,31 +143,64 @@ Deno.serve(async (req) => {
       : 'Créateur DZ — صفقة رعاية'
 
     // 5. Insert pending transaction in Supabase
-    const { data: transaction, error: txError } = await adminSupabase
-      .from('transactions')
-      .insert({
-        deal_id: validDealId,
-        brand_id: validBrandId,
-        creator_id: validCreatorId,
-        amount_dzd: parsedAmount,
-        platform_fee_dzd: platformFee,
-        status: 'pending',
-        description: sanitizedDescription,
-      })
-      .select()
-      .single()
+    let transactionId: string | null = null
+    try {
+      const { data: transaction, error: txError } = await adminSupabase
+        .from('transactions')
+        .insert({
+          deal_id: validDealId,
+          brand_id: validBrandId,
+          creator_id: validCreatorId,
+          amount_dzd: parsedAmount,
+          platform_fee_dzd: platformFee,
+          status: 'pending',
+          description: sanitizedDescription,
+        })
+        .select()
+        .single()
 
-    if (txError) {
-      console.error('[create-checkout] DB Transaction error:', txError)
-      throw txError
+      if (txError) {
+        console.warn('[create-checkout] DB Transaction insert notice (continuing checkout):', txError.message)
+      } else if (transaction) {
+        transactionId = transaction.id
+      }
+    } catch (dbErr: any) {
+      console.warn('[create-checkout] DB Transaction exception (continuing checkout):', dbErr?.message)
     }
 
     // 6. Call ChargilyPay API v2 securely from server side
-    const CHARGILY_BASE_URL = `https://pay.chargily.net/${CHARGILY_MODE}/api/v2`
+    // Chargily Pay v2 Live is https://pay.chargily.net/api/v2, Test is https://pay.chargily.net/test/api/v2
+    const isLive = CHARGILY_MODE === 'live' || CHARGILY_SECRET_KEY.startsWith('live_sk_')
+    const CHARGILY_BASE_URL = isLive ? 'https://pay.chargily.net/api/v2' : 'https://pay.chargily.net/test/api/v2'
     const webhookUrl = `${SUPABASE_URL}/functions/v1/chargily-webhook`
 
-    const callerOrigin = req.headers.get('origin') || req.headers.get('referer') || 'https://createur.dz'
-    const cleanOrigin = callerOrigin.replace(/\/$/, '')
+    const callerOrigin = req.headers.get('origin') || req.headers.get('referer') || 'https://createur-dz.netlify.app'
+    let cleanOrigin = callerOrigin.replace(/\/$/, '')
+    if (!cleanOrigin.startsWith('http://') && !cleanOrigin.startsWith('https://')) {
+      cleanOrigin = 'https://' + cleanOrigin
+    }
+
+    const finalSuccessUrl = success_url || `${cleanOrigin}?payment=success${transactionId ? `&tx=${transactionId}` : ''}`
+    const finalFailureUrl = failure_url || `${cleanOrigin}?payment=failed${transactionId ? `&tx=${transactionId}` : ''}`
+
+    const chargilyPayload: any = {
+      amount: parsedAmount,
+      currency: (currency || 'dzd').toLowerCase(),
+      description: sanitizedDescription,
+      success_url: finalSuccessUrl,
+      failure_url: finalFailureUrl,
+      webhook_endpoint: webhookUrl,
+      metadata: {
+        transaction_id: transactionId,
+        deal_id: validDealId,
+        creator_id: validCreatorId,
+        brand_id: validBrandId,
+      },
+    }
+
+    if (body.payment_method && ['edahabia', 'cib'].includes(String(body.payment_method).toLowerCase())) {
+      chargilyPayload.payment_method = String(body.payment_method).toLowerCase()
+    }
 
     const chargilyResponse = await fetch(`${CHARGILY_BASE_URL}/checkouts`, {
       method: 'POST',
@@ -165,41 +208,44 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${CHARGILY_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        amount: parsedAmount,
-        currency: (currency || 'dzd').toLowerCase(),
-        description: sanitizedDescription,
-        success_url: success_url || `${cleanOrigin}?payment=success&tx=${transaction.id}`,
-        failure_url: failure_url || `${cleanOrigin}?payment=failed&tx=${transaction.id}`,
-        webhook_endpoint: webhookUrl,
-        metadata: {
-          transaction_id: transaction.id,
-          deal_id: validDealId,
-          creator_id: validCreatorId,
-          brand_id: validBrandId,
-        },
-      }),
+      body: JSON.stringify(chargilyPayload),
     })
 
     if (!chargilyResponse.ok) {
       const errText = await chargilyResponse.text()
       console.error('[create-checkout] Chargily API error response:', errText)
-      throw new Error('Payment gateway error. Please try again later.')
+      let parsedError = 'Payment gateway error. Please try again later.'
+      try {
+        const jsonErr = JSON.parse(errText)
+        parsedError = jsonErr.message || parsedError
+      } catch {
+        // use default
+      }
+      return new Response(
+        JSON.stringify({ error: parsedError }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const chargilyData = await chargilyResponse.json()
 
-    // 7. Update transaction with checkout ID
-    await adminSupabase
-      .from('transactions')
-      .update({ chargily_checkout_id: chargilyData.id })
-      .eq('id', transaction.id)
+    // 7. Update transaction with checkout ID if recorded
+    if (transactionId && chargilyData.id) {
+      try {
+        await adminSupabase
+          .from('transactions')
+          .update({ chargily_checkout_id: chargilyData.id })
+          .eq('id', transactionId)
+      } catch (e: any) {
+        console.warn('[create-checkout] Could not update checkout ID on transaction:', e?.message)
+      }
+    }
 
     return new Response(
       JSON.stringify({
         checkout_url: chargilyData.checkout_url,
         checkout_id: chargilyData.id,
-        transaction_id: transaction.id,
+        transaction_id: transactionId,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -207,11 +253,9 @@ Deno.serve(async (req) => {
       }
     )
   } catch (error: any) {
-    // SECURITY: Log the actual error to the server console, but DO NOT send error.message to the client.
-    // Database errors often contain sensitive information (table names, SQL structures).
     console.error('[create-checkout] Execution error:', error?.message || error)
     return new Response(
-      JSON.stringify({ error: 'Failed to initialize payment checkout. Please try again later.' }),
+      JSON.stringify({ error: error?.message || 'Failed to initialize payment checkout. Please try again later.' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

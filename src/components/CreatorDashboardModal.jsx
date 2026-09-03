@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { getLocalizedItem } from '../utils/localized';
 import { formatDZD, getPaymentStatusConfig } from '../services/chargilyService';
 import CampaignApplyModal from './CampaignApplyModal';
+import StoreDetailsModal from './StoreDetailsModal';
 import OptimizedImage from './OptimizedImage';
 import { 
   validatePayoutForm, 
@@ -62,6 +63,7 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
   const [activeContactProfile, setActiveContactProfile] = useState(null);
   const [selectedContactId, setSelectedContactId] = useState(initialContactId);
   const [chatError, setChatError] = useState('');
+  const [selectedStoreModal, setSelectedStoreModal] = useState(null);
   const messagesEndRef = useRef(null);
 
   // Load stores so the creator can always message partner stores even before any initial reply
@@ -140,6 +142,21 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
 
   const [appliedCampaigns, setAppliedCampaigns] = useState([]);
   const [applications, setApplications] = useState([]);
+
+  // Fetch applications on initial load or modal open
+  useEffect(() => {
+    if (!isOpen || !user?.id) return;
+    let isMounted = true;
+    import('../services/dbService').then(({ getCreatorApplications }) => {
+      getCreatorApplications(user.id).then(apps => {
+        if (isMounted && apps) {
+          setApplications(apps);
+          setAppliedCampaigns(apps.map(a => a.campaign_id));
+        }
+      }).catch(err => console.warn('Failed to load creator applications:', err));
+    });
+    return () => { isMounted = false; };
+  }, [isOpen, user?.id]);
 
   // Derive unique contacts from DB conversations, applications, and any active selection
   const contacts = useMemo(() => {
@@ -603,46 +620,79 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
         </div>
 
         {/* Tab 1: Overview */}
-        {activeTab === 'overview' && (
-          <div className="space-y-8 animate-fade-in">
-            {/* Stats Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-brand-brownLight text-sm font-bold">إجمالي الحملات</span>
-                  <div className="p-2 bg-brand-cream text-brand-orange rounded-xl"><Briefcase className="w-5 h-5" /></div>
-                </div>
-                <div className="text-3xl font-black text-brand-brown">12</div>
-                <p className="text-xs font-bold text-emerald-500 mt-2">↑ 2 حملة جديدة هذا الشهر</p>
-              </div>
+        {activeTab === 'overview' && (() => {
+          const totalCampaignsApplied = applications.length;
+          const activeDealsCount = applications.filter(a => a.status === 'approved' || a.status === 'submitted').length;
+          const completedDealsCount = applications.filter(a => a.status === 'completed').length;
+          const totalEarnedRevenue = applications
+            .filter(a => a.status === 'completed')
+            .reduce((sum, a) => sum + (Number(a.campaign?.budget) || 0), 0);
+          const pendingEscrowRevenue = applications
+            .filter(a => a.status === 'approved' || a.status === 'submitted')
+            .reduce((sum, a) => sum + (Number(a.campaign?.budget) || 0), 0);
+          const creatorEngagement = user?.profile?.engagement || (applications.length > 0 ? 5.6 : 0);
+          const creatorRating = Number(user?.profile?.rating) || 5.0;
+          const reviewsCount = user?.profile?.review_count || completedDealsCount;
 
-              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-brand-brownLight text-sm font-bold">الإيرادات المحققة</span>
-                  <div className="p-2 bg-emerald-50 text-emerald-500 rounded-xl"><DollarSign className="w-5 h-5" /></div>
+          return (
+            <div className="space-y-8 animate-fade-in">
+              {/* Stats Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-brand-brownLight text-sm font-bold">{t('totalCampaigns') || 'إجمالي الحملات'}</span>
+                    <div className="p-2 bg-brand-cream text-brand-orange rounded-xl"><Briefcase className="w-5 h-5" /></div>
+                  </div>
+                  <div className="text-3xl font-black text-brand-brown font-mono">
+                    {totalCampaignsApplied}
+                    <span className="text-sm font-bold text-brand-brownLight mr-2">
+                      {language === 'ar' ? (totalCampaignsApplied === 1 ? 'حملة' : 'حملات') : 'campaigns'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-emerald-600 mt-2">
+                    {activeDealsCount > 0 
+                      ? `🟢 ${activeDealsCount} ${language === 'ar' ? (activeDealsCount === 1 ? 'صفقة جارية في الضمان' : 'صفقات جارية في الضمان') : 'active in escrow'}`
+                      : (totalCampaignsApplied > 0 ? 'بانتظار موافقة المتاجر' : 'تصفح فرص الرعاية وقدم الآن')}
+                  </p>
                 </div>
-                <div className="text-3xl font-black text-brand-orange">{formatDZD(185000)}</div>
-                <p className="text-xs font-medium text-brand-brownLight mt-2">محولة عبر الذهبية و CIB</p>
-              </div>
 
-              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-brand-brownLight text-sm font-bold">نسبة التفاعل</span>
-                  <div className="p-2 bg-purple-50 text-purple-500 rounded-xl"><TrendingUp className="w-5 h-5" /></div>
+                <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-brand-brownLight text-sm font-bold">{t('revenue') || 'الإيرادات المحققة'}</span>
+                    <div className="p-2 bg-emerald-50 text-emerald-500 rounded-xl"><DollarSign className="w-5 h-5" /></div>
+                  </div>
+                  <div className="text-3xl font-black text-brand-orange font-mono">{formatDZD(totalEarnedRevenue, language)}</div>
+                  <p className="text-xs font-medium text-brand-brownLight mt-2">
+                    {pendingEscrowRevenue > 0 
+                      ? `+ ${formatDZD(pendingEscrowRevenue, language)} قيد الإنجاز بالضمان`
+                      : 'محولة عبر الذهبية و CIB و BaridiMob'}
+                  </p>
                 </div>
-                <div className="text-3xl font-black text-purple-600">5.8%</div>
-                <p className="text-xs font-bold text-purple-500 mt-2">أعلى من المتوسط بـ 1.2%</p>
-              </div>
 
-              <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-brand-brownLight text-sm font-bold">التقييم</span>
-                  <div className="p-2 bg-amber-50 text-amber-500 rounded-xl"><Star className="w-5 h-5 fill-amber-500" /></div>
+                <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-brand-brownLight text-sm font-bold">{t('engagementRate') || 'نسبة التفاعل'}</span>
+                    <div className="p-2 bg-purple-50 text-purple-500 rounded-xl"><TrendingUp className="w-5 h-5" /></div>
+                  </div>
+                  <div className="text-3xl font-black text-purple-600 font-mono">
+                    {creatorEngagement > 0 ? `${creatorEngagement}%` : '—'}
+                  </div>
+                  <p className="text-xs font-bold text-purple-500 mt-2">
+                    {creatorEngagement > 0 ? 'معدل التفاعل على المنصات' : 'اربط حساباتك الاجتماعية'}
+                  </p>
                 </div>
-                <div className="text-3xl font-black text-amber-600">4.9 / 5.0</div>
-                <p className="text-xs font-medium text-brand-brownLight mt-2">من 24 علامة تجارية</p>
+
+                <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-brand-brownLight text-sm font-bold">{t('rating') || 'التقييم'}</span>
+                    <div className="p-2 bg-amber-50 text-amber-500 rounded-xl"><Star className="w-5 h-5 fill-amber-500" /></div>
+                  </div>
+                  <div className="text-3xl font-black text-amber-600 font-mono">{creatorRating.toFixed(1)} / 5.0</div>
+                  <p className="text-xs font-medium text-brand-brownLight mt-2">
+                    {reviewsCount > 0 ? `من ${reviewsCount} علامة تجارية` : 'تقييم موثوق للمنصة'}
+                  </p>
+                </div>
               </div>
-            </div>
 
             {/* Applications List */}
             <div className="bg-white border border-brand-border rounded-[24px] p-6 shadow-sm">
@@ -746,7 +796,8 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
               </div>
             </div>
           </div>
-        )}
+        );
+      })()}
 
         {/* Tab 2: Opportunities */}
         {activeTab === 'opportunities' && (
@@ -817,7 +868,29 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                           />
                           <div>
                             <h4 className="font-bold text-brand-brown text-base">{campaignTitle}</h4>
-                            <span className="text-xs font-medium text-brand-brownLight">{campaignCategory}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const storeData = availableStores.find(s => s.id === campaign.brand_id) || {
+                                    id: campaign.brand_id,
+                                    name: campaign.brand?.brand_name || campaign.brand?.full_name || campaign.brand_name || 'متجر',
+                                    brand_name: campaign.brand?.brand_name || campaign.brand_name,
+                                    logo: campaign.brand?.avatar_url || campaign.brandLogo,
+                                    sector: campaign.category || 'عام',
+                                    verified: Boolean(campaign.brand?.is_verified ?? true)
+                                  };
+                                  setSelectedStoreModal(storeData);
+                                }}
+                                className="text-xs font-bold text-brand-orange hover:underline flex items-center gap-1 cursor-pointer"
+                                title="عرض معلومات المتجر"
+                              >
+                                <span>{campaign.brand?.brand_name || campaign.brand?.full_name || campaign.brand_name || 'متجر معتمد'}</span>
+                                {campaign.brand?.is_verified && <BadgeCheck className="w-3.5 h-3.5 text-brand-orange" />}
+                              </button>
+                              <span className="text-gray-300">•</span>
+                              <span className="text-xs font-medium text-brand-brownLight">{campaignCategory}</span>
+                            </div>
                           </div>
                         </div>
                         <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-orange/10 text-brand-orange border border-brand-orange/20 font-mono">
@@ -1009,11 +1082,11 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
                       messages.map((msg) => {
                         const isMe = msg.sender_id === user.id;
                         return (
-                          <div key={msg.id} className={`flex flex-col max-w-[75%] ${isMe ? 'mr-auto items-end' : 'ml-auto items-start'}`}>
-                            <div className={`p-3 rounded-[20px] shadow-sm ${isMe ? 'bg-brand-orange text-white rounded-br-sm' : 'bg-white border border-brand-border text-brand-brown rounded-bl-sm'}`}>
+                          <div key={msg.id} className={`flex flex-col max-w-[75%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+                            <div className={`p-3.5 rounded-[20px] shadow-sm text-sm leading-relaxed ${isMe ? 'bg-brand-orange text-white rounded-br-none' : 'bg-white border border-brand-border text-brand-brown rounded-bl-none'}`}>
                               {msg.text}
                             </div>
-                            <span className="text-[10px] font-medium text-brand-brownLight mt-1">
+                            <span className="text-[10px] font-medium text-brand-brownLight mt-1 px-1">
                               {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
@@ -1309,6 +1382,19 @@ export default function CreatorDashboardModal({ isOpen, onClose, initialTab = 'o
             }
           }}
         />
+
+        {/* Store Details Modal from Campaign Opportunity */}
+        {selectedStoreModal && (
+          <StoreDetailsModal
+            isOpen={!!selectedStoreModal}
+            onClose={() => setSelectedStoreModal(null)}
+            store={selectedStoreModal}
+            onApplyCampaign={(c) => {
+              setSelectedStoreModal(null);
+              setSelectedCampaignToApply(c);
+            }}
+          />
+        )}
       </div>
     </div>
   );

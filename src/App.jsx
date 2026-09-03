@@ -265,6 +265,44 @@ function AppContent() {
     }
   }, [isLoggedIn, user]);
 
+  // Handle Chargily Pay gateway callback (success / failed return)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+    if (!paymentStatus) return;
+
+    if (paymentStatus === 'success') {
+      let pendingDetails = null;
+      try {
+        const stored = sessionStorage.getItem('pending_chargily_checkout');
+        if (stored) {
+          pendingDetails = JSON.parse(stored);
+          sessionStorage.removeItem('pending_chargily_checkout');
+        }
+      } catch (e) {
+        console.warn('Could not read pending chargily checkout:', e);
+      }
+
+      setToast({
+        type: 'success',
+        message: 'تمت عملية الدفع بنجاح عبر Chargily Pay! 🎉 تم حجز الميزانية بأمان في حساب الضمان (Escrow).'
+      });
+
+      if (pendingDetails?.creatorId) {
+        handleOpenDashboard('messages', 'brand', pendingDetails.creatorId);
+      }
+    } else if (paymentStatus === 'failed') {
+      setToast({
+        type: 'error',
+        message: 'تم إلغاء عملية الدفع عبر Chargily Pay أو فشلت المعاملة البنكية.'
+      });
+    }
+
+    // Clean up query parameters from address bar without reloading
+    const cleanUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, document.title, cleanUrl);
+  }, []);
+
   const handleHireCreator = (creator, applicationId = null) => {
     setSelectedCreator(null);
     if (!isLoggedIn) {
@@ -869,11 +907,13 @@ function AppContent() {
                   <div className="pt-4 border-t border-brand-border flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-brand-brownLight uppercase tracking-wider block">{t('activeCampaignsCount')}</span>
-                      <span className="font-bold text-brand-brown text-base">{store.activeCampaigns} {t('applicants')}</span>
+                      <span className="font-bold text-brand-brown text-base">
+                        {(store.activeCampaigns || 0)} {language === 'ar' ? ((store.activeCampaigns || 0) === 1 ? 'حملة' : 'حملات') : (language === 'fr' ? 'campagnes' : 'campaigns')}
+                      </span>
                     </div>
                     <div className="text-left">
                       <span className="text-[10px] text-brand-brownLight uppercase tracking-wider block">{t('budgetOffer')}</span>
-                      <span className="font-bold text-brand-orange text-base bg-brand-orange/10 px-3 py-1 rounded-full">{formatDZD(store.totalBudget, language)}</span>
+                      <span className="font-bold text-brand-orange text-base bg-brand-orange/10 px-3 py-1 rounded-full">{formatDZD(store.totalBudget || 0, language)}</span>
                     </div>
                   </div>
                 </div>
@@ -966,7 +1006,7 @@ function AppContent() {
             if (!isLoggedIn) {
               setSelectedStore(null);
               handleOpenAuth('signup', 'creator');
-            } else if (user?.role !== 'creator') {
+            } else if (!canApplyToCampaign(user)) {
               setToast({ type: 'error', message: t('onlyCreatorsCanApply') || 'فقط صناع المحتوى يمكنهم التقديم على الحملات' });
             } else {
               setSelectedStore(null);

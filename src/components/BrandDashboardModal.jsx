@@ -90,13 +90,27 @@ export default function BrandDashboardModal({
       const { getBrandApplications, getCampaigns, getCreators, getUserConversations } = await import('../services/dbService');
       const [apps, allCamps, creators, convos] = await Promise.all([
         getBrandApplications(user.id).catch(() => []),
-        getCampaigns().catch(() => []),
+        getCampaigns(true).catch(() => []),
         getCreators().catch(() => []),
         getUserConversations(user.id).catch(() => [])
       ]);
       
       setApplications(apps || []);
-      const myCampaigns = (allCamps || []).filter(c => c.brand_id === user.id);
+      const brandIdentifiers = [
+        user.id,
+        user.profile?.id,
+        user.profile?.brand_name,
+        user.profile?.full_name,
+        user.user_metadata?.brand_name,
+        user.user_metadata?.full_name,
+        profileData.brandName
+      ].filter(Boolean).map(x => String(x).trim().toLowerCase());
+
+      const myCampaigns = (allCamps || []).filter(c => {
+        if (c.brand_id && (c.brand_id === user.id || c.brand_id === user.profile?.id)) return true;
+        const cBrand = (c.brand?.brand_name || c.brand?.full_name || c.brand_name || '').toLowerCase();
+        return cBrand && brandIdentifiers.some(id => id.includes(cBrand) || cBrand.includes(id));
+      });
       setCampaigns(myCampaigns);
       setAllCreators(creators || []);
       setConversations(convos || []);
@@ -232,7 +246,9 @@ export default function BrandDashboardModal({
   const inEscrowApplications = applications.filter(app => app.status === 'approved' || app.status === 'submitted');
   const completedApplications = applications.filter(app => app.status === 'completed');
 
-  const totalInvestedBudget = hiredApplications.reduce((acc, app) => acc + (Number(app.campaign?.budget) || 0), 0);
+  const totalCampaignsBudget = campaigns.reduce((acc, c) => acc + (Number(c.budget) || 0), 0);
+  const totalHiredBudget = hiredApplications.reduce((acc, app) => acc + (Number(app.campaign?.budget) || 0), 0);
+  const totalInvestedBudget = totalHiredBudget > 0 ? totalHiredBudget : totalCampaignsBudget;
   const escrowHeldAmount = inEscrowApplications.reduce((acc, app) => acc + (Number(app.campaign?.budget) || 0), 0);
   const escrowReleasedAmount = completedApplications.reduce((acc, app) => acc + (Number(app.campaign?.budget) || 0), 0);
   const uniqueHiredCreatorsCount = new Set(hiredApplications.map(app => app.creator_id)).size;
@@ -599,6 +615,13 @@ export default function BrandDashboardModal({
     );
   }, [selectedContactId, chatContacts, allCreators, activeContactProfile]);
 
+  // Auto-select first contact if none selected when in messages tab
+  useEffect(() => {
+    if (activeTab === 'messages' && !selectedContactId && chatContacts.length > 0) {
+      setSelectedContactId(chatContacts[0].id);
+    }
+  }, [activeTab, selectedContactId, chatContacts]);
+
   // ─── Filtered Creators for Directory ───
   const filteredCreators = allCreators.filter(c => {
     const creatorName = c.full_name || c.username || '';
@@ -729,7 +752,11 @@ export default function BrandDashboardModal({
                 </div>
                 <p className="text-xs font-medium text-brand-brownLight mt-2 flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>عبر بريدي موب، الذهبية و CIB</span>
+                  <span>
+                    {totalHiredBudget > 0 
+                      ? 'في صفقات الضمان النشطة والمنجزة' 
+                      : (totalCampaignsBudget > 0 ? 'ميزانية مرصودة للحملات المعلنة' : 'عبر بريدي موب، الذهبية و CIB')}
+                  </span>
                 </p>
               </div>
 
@@ -742,9 +769,14 @@ export default function BrandDashboardModal({
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-brand-brown font-mono">
-                  {activeCampaignsList.length} <span className="text-sm font-bold text-brand-brownLight">حملات</span>
+                  {activeCampaignsList.length}{' '}
+                  <span className="text-sm font-bold text-brand-brownLight">
+                    {language === 'ar' ? (activeCampaignsList.length === 1 ? 'حملة' : 'حملات') : (language === 'fr' ? 'campagnes' : 'campaigns')}
+                  </span>
                 </div>
-                <p className="text-xs font-medium text-emerald-600 mt-2">تستقبل طلبات المبدعين حالياً</p>
+                <p className="text-xs font-medium text-emerald-600 mt-2">
+                  {activeCampaignsList.length > 0 ? 'تستقبل طلبات المبدعين حالياً' : 'أضف حملة جديدة لبدء التوظيف'}
+                </p>
               </div>
 
               {/* Stat 3: Hired Creators */}
@@ -756,7 +788,10 @@ export default function BrandDashboardModal({
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-brand-brown font-mono">
-                  {uniqueHiredCreatorsCount} <span className="text-sm font-bold text-brand-brownLight">مبدع</span>
+                  {uniqueHiredCreatorsCount}{' '}
+                  <span className="text-sm font-bold text-brand-brownLight">
+                    {language === 'ar' ? (uniqueHiredCreatorsCount === 1 ? 'صانع محتوى' : 'صنّاع محتوى') : (language === 'fr' ? 'créateurs' : 'creators')}
+                  </span>
                 </div>
                 <p className="text-xs font-medium text-brand-brownLight mt-2">في صفقات الضمان النشطة والمنجزة</p>
               </div>
@@ -770,9 +805,14 @@ export default function BrandDashboardModal({
                   </div>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-amber-600 font-mono">
-                  {pendingApplications.length} <span className="text-sm font-bold text-brand-brownLight">طلب</span>
+                  {pendingApplications.length}{' '}
+                  <span className="text-sm font-bold text-brand-brownLight">
+                    {language === 'ar' ? (pendingApplications.length === 1 ? 'طلب' : 'طلبات') : (language === 'fr' ? 'demandes' : 'applicants')}
+                  </span>
                 </div>
-                <p className="text-xs font-medium text-amber-600 mt-2">يحتاج لموافقتك وتأمين الصفقة</p>
+                <p className="text-xs font-medium text-amber-600 mt-2">
+                  {pendingApplications.length > 0 ? 'يحتاج لموافقتك وتأمين الصفقة' : 'لا توجد طلبات معلقة حالياً'}
+                </p>
               </div>
             </div>
 
@@ -1529,27 +1569,30 @@ export default function BrandDashboardModal({
                         </p>
                       </div>
                     ) : (
-                      messages.map((msg) => (
-                        <div 
-                          key={msg.id} 
-                          className={`flex flex-col max-w-[75%] ${
-                            msg.sender_id === user?.id ? 'mr-auto items-end' : 'ml-auto items-start'
-                          }`}
-                        >
+                      messages.map((msg) => {
+                        const isMe = msg.sender_id === user?.id;
+                        return (
                           <div 
-                            className={`p-3.5 rounded-[18px] shadow-sm text-xs leading-relaxed ${
-                              msg.sender_id === user?.id 
-                                ? 'bg-brand-brown text-white rounded-br-none' 
-                                : 'bg-white border border-brand-border text-brand-brown rounded-bl-none'
+                            key={msg.id} 
+                            className={`flex flex-col max-w-[75%] ${
+                              isMe ? 'ml-auto items-end' : 'mr-auto items-start'
                             }`}
                           >
-                            {msg.text}
+                            <div 
+                              className={`p-3.5 rounded-[18px] shadow-sm text-xs leading-relaxed ${
+                                isMe 
+                                  ? 'bg-brand-orange text-white rounded-br-none' 
+                                  : 'bg-white border border-brand-border text-brand-brown rounded-bl-none'
+                              }`}
+                            >
+                              {msg.text}
+                            </div>
+                            <span className="text-[9px] font-medium text-brand-brownLight mt-1 px-1">
+                              {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </div>
-                          <span className="text-[9px] font-medium text-brand-brownLight mt-1 px-1">
-                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                     <div ref={messagesEndRef} />
                   </div>

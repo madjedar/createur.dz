@@ -18,13 +18,36 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
         const { getCampaigns } = await import('../services/dbService');
         const allCampaigns = await getCampaigns();
         
-        // Filter campaigns where brand_id matches the store's user id, or fallback to matching store name
-        const myCampaigns = allCampaigns.filter(c => 
-          c.brand_id === store.id || 
-          (c.brand_name && c.brand_name.toLowerCase().includes(store.name?.toLowerCase()))
-        );
+        const storeNames = [
+          store.brand_name, 
+          store.name, 
+          store.full_name,
+          typeof store.name === 'object' ? store.name.ar : null,
+          typeof store.name === 'object' ? store.name.en : null,
+          typeof store.name === 'object' ? store.name.fr : null,
+        ].filter(Boolean).map(n => String(n).trim().toLowerCase());
+
+        // Filter campaigns where brand_id matches store.id or brand name matches
+        const myCampaigns = allCampaigns.filter(c => {
+          if (c.brand_id && store.id && c.brand_id === store.id) return true;
+          if (c.brand_id === store.id) return true;
+          const cBrandNames = [
+            c.brand_name, 
+            c.brand?.brand_name, 
+            c.brand?.full_name, 
+            c.brand?.name
+          ].filter(Boolean).map(n => String(n).trim().toLowerCase());
+          return storeNames.some(sName => 
+            cBrandNames.some(cName => cName.includes(sName) || sName.includes(cName))
+          );
+        });
+
+        const combinedCampaigns = [
+          ...myCampaigns,
+          ...(Array.isArray(store.campaigns) ? store.campaigns : [])
+        ].filter((c, idx, arr) => arr.findIndex(item => item.id === c.id || item.title === c.title) === idx);
         
-        setStoreCampaigns(myCampaigns);
+        setStoreCampaigns(combinedCampaigns);
       } catch (error) {
         console.error("Error fetching store campaigns:", error);
       } finally {
@@ -53,6 +76,19 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
   const storeBio = getLocalizedItem(store, 'bio', language);
 
   const displayCampaigns = storeCampaigns;
+
+  const activeCampaignsList = storeCampaigns.filter(c => 
+    c.status !== 'completed' && c.status !== 'paused' && c.status !== 'cancelled'
+  );
+  const activeCampaignsCount = activeCampaignsList.length > 0 
+    ? activeCampaignsList.length 
+    : (storeCampaigns.length > 0 ? storeCampaigns.length : (Number(store.activeCampaigns) || 0));
+
+  const calculatedBudget = (activeCampaignsList.length > 0 ? activeCampaignsList : storeCampaigns)
+    .reduce((sum, c) => sum + (Number(c.budget) || 0), 0);
+  const displayTotalBudget = calculatedBudget > 0 
+    ? calculatedBudget 
+    : (Number(store.totalBudget) || 0);
 
   return (
     <div 
@@ -127,11 +163,13 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-white border border-brand-border rounded-2xl text-center shadow-sm">
               <span className="text-xs text-brand-brownLight font-medium block mb-1">{t('activeCampaignsCount')}</span>
-              <span className="text-2xl font-black text-brand-orange">{store.activeCampaigns} {t('applicants')}</span>
+              <span className="text-2xl font-black text-brand-orange">
+                {activeCampaignsCount} {language === 'ar' ? (activeCampaignsCount === 1 ? 'حملة' : 'حملات') : (language === 'fr' ? 'campagnes' : 'campaigns')}
+              </span>
             </div>
             <div className="p-4 bg-white border border-brand-border rounded-2xl text-center shadow-sm">
               <span className="text-xs text-brand-brownLight font-medium block mb-1">{t('budgetOffer')}</span>
-              <span className="text-2xl font-black text-brand-orange">{formatDZD(store.totalBudget, language)}</span>
+              <span className="text-2xl font-black text-brand-orange">{formatDZD(displayTotalBudget, language)}</span>
             </div>
           </div>
 
@@ -142,43 +180,51 @@ export default function StoreDetailsModal({ isOpen, onClose, store, onApplyCampa
               {t('availableOpportunities')}
             </h3>
 
-            <div className="space-y-4">
-              {displayCampaigns.map((campaign) => {
-                const campaignTitle = getLocalizedItem(campaign, 'title', language);
-                const campaignDesc = getLocalizedItem(campaign, 'description', language);
-                const campaignDeliverables = (campaign.deliverables && campaign.deliverables[language]) || campaign.deliverables?.ar || campaign.deliverables || [];
+            {displayCampaigns.length === 0 ? (
+              <div className="text-center py-8 bg-brand-cream/30 rounded-2xl border border-brand-border/60 p-6">
+                <p className="text-xs text-brand-brownLight font-medium">
+                  {language === 'ar' ? 'لا توجد فرص رعاية معلنة حالياً من هذا المتجر.' : 'No active campaign opportunities currently available.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {displayCampaigns.map((campaign) => {
+                  const campaignTitle = getLocalizedItem(campaign, 'title', language);
+                  const campaignDesc = getLocalizedItem(campaign, 'description', language);
+                  const campaignDeliverables = (campaign.deliverables && campaign.deliverables[language]) || campaign.deliverables?.ar || campaign.deliverables || [];
 
-                return (
-                  <div key={campaign.id} className="bg-white p-5 border border-brand-border rounded-[24px] flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold text-brand-brown text-base">{campaignTitle}</h4>
-                        <p className="text-xs text-brand-brownLight mt-1 leading-relaxed font-medium">{campaignDesc}</p>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-orange/10 text-brand-orange border border-brand-orange/20 whitespace-nowrap">
-                        {formatDZD(campaign.budget, language)}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 pt-2 border-t border-brand-border">
-                      {(Array.isArray(campaignDeliverables) ? campaignDeliverables : (typeof campaignDeliverables === 'string' ? [campaignDeliverables] : [])).map((deliv, idx) => (
-                        <span key={idx} className="px-2.5 py-1 rounded-md bg-brand-cream border-brand-border text-brand-brownLight text-xs border font-medium">
-                          ✓ {deliv}
+                  return (
+                    <div key={campaign.id} className="bg-white p-5 border border-brand-border rounded-[24px] flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-brand-brown text-base">{campaignTitle}</h4>
+                          <p className="text-xs text-brand-brownLight mt-1 leading-relaxed font-medium">{campaignDesc}</p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-xs font-black bg-brand-orange/10 text-brand-orange border border-brand-orange/20 whitespace-nowrap">
+                          {formatDZD(campaign.budget, language)}
                         </span>
-                      ))}
-                    </div>
+                      </div>
 
-                    <button 
-                      onClick={() => onApplyCampaign(campaign)}
-                      className="btn-primary w-full py-2.5 flex items-center justify-center gap-2 text-sm"
-                    >
-                      <Send className="w-4 h-4" />
-                      <span>{t('applyNow')}</span>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-brand-border">
+                        {(Array.isArray(campaignDeliverables) ? campaignDeliverables : (typeof campaignDeliverables === 'string' ? [campaignDeliverables] : [])).map((deliv, idx) => (
+                          <span key={idx} className="px-2.5 py-1 rounded-md bg-brand-cream border-brand-border text-brand-brownLight text-xs border font-medium">
+                            ✓ {deliv}
+                          </span>
+                        ))}
+                      </div>
+
+                      <button 
+                        onClick={() => onApplyCampaign(campaign)}
+                        className="btn-primary w-full py-2.5 flex items-center justify-center gap-2 text-sm"
+                      >
+                        <Send className="w-4 h-4" />
+                        <span>{t('applyNow')}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Guarantee Security Note */}

@@ -4,6 +4,7 @@ import {
   isBrand,
   isCreator,
   canApplyToCampaign,
+  canCreateCampaign,
   canHireCreator,
   canAccessAdmin,
   canAccessBrandDashboard,
@@ -60,9 +61,39 @@ describe('Role & Authorization Guards', () => {
       expect(canApplyToCampaign(creator)).toBe(true);
     });
 
+    it('allows creators whose email matches admin addresses or usernames to apply', () => {
+      const creatorWithAdminEmail = { role: 'creator', email: 'madjedar@gmail.com' };
+      expect(canApplyToCampaign(creatorWithAdminEmail)).toBe(true);
+
+      const creatorWithProfileRole = { email: 'madjedalirachedi291@gmail.com', profile: { role: 'creator' } };
+      expect(canApplyToCampaign(creatorWithProfileRole)).toBe(true);
+    });
+
+    it('allows platform administrators to apply for testing active campaigns', () => {
+      expect(canApplyToCampaign({ role: 'admin' })).toBe(true);
+      expect(canApplyToCampaign({ email: 'madjedar@gmail.com' })).toBe(true);
+    });
+
     it('disallows brands and unauthenticated users', () => {
       expect(canApplyToCampaign(null)).toBe(false);
-      expect(canApplyToCampaign({ role: 'brand' })).toBe(false);
+      expect(canApplyToCampaign({ role: 'brand', email: 'brand_owner@example.com' })).toBe(false);
+    });
+  });
+
+  describe('canCreateCampaign', () => {
+    it('allows store / brand accounts to create campaigns', () => {
+      expect(canCreateCampaign({ role: 'brand' })).toBe(true);
+      expect(canCreateCampaign({ profile: { role: 'brand' } })).toBe(true);
+    });
+
+    it('strictly disallows creator accounts from creating campaigns', () => {
+      expect(canCreateCampaign({ role: 'creator' })).toBe(false);
+      expect(canCreateCampaign({ profile: { role: 'creator' } })).toBe(false);
+      expect(canCreateCampaign({ role: 'creator', email: 'madjedar@gmail.com' })).toBe(false);
+    });
+
+    it('disallows unauthenticated users', () => {
+      expect(canCreateCampaign(null)).toBe(false);
     });
   });
 

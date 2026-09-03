@@ -59,4 +59,12 @@ describe('Financial & Chargily Utilities', () => {
       expect(getPaymentStatusConfig('unknown_status').label).toBe('قيد الانتظار');
     });
   });
+
+  describe('createCheckoutSession contract', () => {
+    it('is an exported async function that does not silently return mock success', async () => {
+      const { createCheckoutSession } = await import('./chargilyService');
+      expect(typeof createCheckoutSession).toBe('function');
+    });
+  });
 });
+

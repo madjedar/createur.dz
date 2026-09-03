@@ -61,39 +61,37 @@ export default function CheckoutModal({ isOpen, onClose, creator, campaign, appl
       });
       
       if (result.success && result.checkoutUrl) {
-        // Bug #3 fix: Approve application before redirecting to payment
+        // Save pending payment metadata locally so App.jsx can confirm when returned
+        try {
+          sessionStorage.setItem('pending_chargily_checkout', JSON.stringify({
+            checkoutId: result.checkoutId,
+            applicationId,
+            creatorId: creator?.id,
+            campaignTitle: campaign?.title
+          }));
+        } catch (e) {
+          console.warn('Could not store pending checkout in session:', e);
+        }
+
         if (applicationId) {
           const { updateApplicationStatus } = await import('../services/dbService');
-          await updateApplicationStatus(applicationId, 'approved');
+          await updateApplicationStatus(applicationId, 'approved').catch(e => console.warn(e));
         }
         if (creator?.id) {
           const { createNotification } = await import('../services/dbService');
           await createNotification(
             creator.id,
             'تم توظيفك في حملة جديدة! 🎉',
-            `تم حجز ميزانية الحملة في حساب الضمان (Escrow). يمكنك الآن بدء تنفيذ المحتوى المطلوب.`
+            `تم بدء صفقة جديدة وحجز ميزانية الحملة في حساب الضمان (Escrow). يمكنك الآن متابعة التفاصيل.`
           ).catch(e => console.warn(e));
         }
+        // Redirect to Chargily Pay payment gateway
         window.location.href = result.checkoutUrl;
-      } else if (result.success && !result.checkoutUrl) {
-        if (applicationId) {
-          const { updateApplicationStatus } = await import('../services/dbService');
-          await updateApplicationStatus(applicationId, 'approved');
-        }
-        if (creator?.id) {
-          const { createNotification } = await import('../services/dbService');
-          await createNotification(
-            creator.id,
-            'تم توظيفك في حملة جديدة! 🎉',
-            `تم حجز ميزانية الحملة في حساب الضمان (Escrow). يمكنك الآن بدء تنفيذ المحتوى المطلوب.`
-          ).catch(e => console.warn(e));
-        }
-        setSuccess(true);
       } else {
-        setError(result.error || t('checkoutError'));
+        setError(result.error || t('checkoutError') || 'تعذر إنشاء جلسة الدفع عبر Chargily Pay. يرجى التحقق من اتصالك والمحاولة لاحقاً.');
       }
     } catch (err) {
-      setError(err.message || 'Payment failed');
+      setError(err.message || 'فشلت عملية الدفع');
     } finally {
       setLoading(false);
     }

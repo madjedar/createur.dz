@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase';
 
 export default function AdminDashboardModal({ isOpen, onClose }) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview');
   const [users, setUsers] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
@@ -38,13 +38,14 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [usersRes, campaignsRes, appsRes] = await Promise.all([
+        const { getCampaigns } = await import('../services/dbService');
+        const [usersRes, allCamps, appsRes] = await Promise.all([
           supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-          supabase.from('campaigns').select('*, brand:profiles!campaigns_brand_id_fkey(brand_name, full_name)').order('created_at', { ascending: false }),
+          getCampaigns(true).catch(() => []),
           supabase.from('applications').select('*, campaign:campaigns(*), creator:profiles!applications_creator_id_fkey(full_name)').order('created_at', { ascending: false }),
         ]);
         if (usersRes.data) setUsers(usersRes.data);
-        if (campaignsRes.data) setCampaigns(campaignsRes.data);
+        if (allCamps) setCampaigns(allCamps);
         if (appsRes.data) setApplications(appsRes.data);
       } catch (err) {
         console.error('Admin fetch error:', err);
@@ -169,11 +170,11 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
               </div>
               <div className="bg-white border border-brand-border rounded-[24px] shadow-sm p-6">
                 <p className="text-sm font-bold text-brand-brownLight mb-2">{t('adminTotalTx')}</p>
-                <p className="text-3xl font-black text-brand-orange">{formatDZD(totalBudget)}</p>
+                <p className="text-3xl font-black text-brand-orange font-mono">{formatDZD(totalBudget, language)}</p>
               </div>
               <div className="bg-brand-cream border border-brand-border rounded-[24px] shadow-sm p-6">
                 <p className="text-sm font-bold text-brand-brownLight mb-2">{t('adminPlatformFee')}</p>
-                <p className="text-3xl font-black text-emerald-600">{formatDZD(platformRevenue)}</p>
+                <p className="text-3xl font-black text-emerald-600 font-mono">{formatDZD(platformRevenue, language)}</p>
               </div>
             </div>
           </div>
@@ -238,7 +239,7 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
                   <div key={camp.id} className="bg-white border border-brand-border rounded-[24px] shadow-sm p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                       <h4 className="text-lg font-bold text-brand-brown tracking-wide">{camp.title}</h4>
-                      <p className="text-sm font-medium text-brand-brownLight mt-1">من: <span className="font-bold">{camp.brand?.brand_name || camp.brand?.full_name || 'متجر'}</span> | {t('budget')}: <span className="font-mono font-bold">{formatDZD(camp.budget)}</span></p>
+                      <p className="text-sm font-medium text-brand-brownLight mt-1">من: <span className="font-bold">{camp.brand?.brand_name || camp.brand?.full_name || 'متجر'}</span> | {t('budget')}: <span className="font-mono font-bold">{formatDZD(camp.budget, language)}</span></p>
                       <span className={`inline-block mt-3 px-3 py-1.5 rounded-full text-xs font-bold border ${
                         camp.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-brand-cream text-brand-orange border-brand-orange/30'
                       }`}>
@@ -279,7 +280,7 @@ export default function AdminDashboardModal({ isOpen, onClose }) {
                       <tr key={app.id} className="hover:bg-[#FAFAFA] transition-colors">
                         <td className="px-6 py-4 text-brand-brown font-bold">{app.campaign?.title || '—'}</td>
                         <td className="px-6 py-4 font-medium text-brand-brownLight">{app.creator?.full_name || '—'}</td>
-                        <td className="px-6 py-4 text-brand-orange font-black font-mono">{formatDZD(app.campaign?.budget || 0)}</td>
+                        <td className="px-6 py-4 text-brand-orange font-black font-mono">{formatDZD(app.campaign?.budget || 0, language)}</td>
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${
                             app.status === 'approved' ? 'bg-brand-cream text-brand-orange border-brand-orange/30' : 'bg-emerald-50 text-emerald-600 border-emerald-200'

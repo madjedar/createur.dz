@@ -86,13 +86,17 @@ export default function CampaignApplyModal({
 
       await applyToCampaign(campaign.id, user.id, pitchPayload);
 
-      // Send in-app notification to the brand owner
+      // Send in-app notification to the brand owner (safe attempt)
       if (campaign.brand_id) {
-        await createNotification(
-          campaign.brand_id,
-          'طلب تقديم جديد على حملتك',
-          `قام المبدع ${user?.profile?.full_name || user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaignTitle}".`
-        );
+        try {
+          await createNotification(
+            campaign.brand_id,
+            'طلب تقديم جديد على حملتك',
+            `قام المبدع ${user?.profile?.full_name || user?.user_metadata?.full_name || 'صانع محتوى'} بالتقديم على حملتك "${campaignTitle}".`
+          );
+        } catch (notifErr) {
+          console.warn('Could not dispatch in-app notification to brand:', notifErr);
+        }
       }
 
       setSuccess(true);

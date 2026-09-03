@@ -225,16 +225,19 @@ export function AuthProvider({ children }) {
   ];
 
   const userEmail = (user?.email || '').toLowerCase().trim();
-  const isAdmin = ADMIN_EMAILS.includes(userEmail) || userEmail.includes('madjed') || profile?.role === 'admin' || user?.user_metadata?.role === 'admin';
-  const resolvedRole = isAdmin 
-    ? 'admin' 
-    : (profile?.role || user?.user_metadata?.role || null);
+  const hasAdminEmail = ADMIN_EMAILS.includes(userEmail);
+  const isAdminUser = profile?.role === 'admin' || user?.user_metadata?.role === 'admin' || hasAdminEmail;
+
+  // Preserve explicit role if set in profile or metadata (e.g. creator or brand)
+  const explicitRole = profile?.role || user?.user_metadata?.role || null;
+  const resolvedRole = explicitRole || (isAdminUser ? 'admin' : null);
 
   const userWithRole = user ? { 
     ...user, 
     role: resolvedRole, 
-    profile 
-  } : null
+    isAdmin: isAdminUser,
+    profile: profile ? { ...profile, role: profile.role || resolvedRole } : { id: user.id, role: resolvedRole }
+  } : null;
 
   return (
     <AuthContext.Provider value={{ user: userWithRole, profile, loading, logout, loginDevUser, updateRole, updateProfileData, fetchProfile, getFreshToken }}>

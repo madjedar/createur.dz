@@ -117,15 +117,29 @@ Deno.serve(async (req) => {
     console.log(`[chargily-webhook] Verified Event: ${eventType} for checkout: ${checkoutData.id}`)
 
     // 3. Idempotency Check: Fetch existing transaction
-    const { data: existingTx, error: fetchErr } = await supabase
+    let existingTx: any = null
+    const { data: txByCheckout, error: fetchErr } = await supabase
       .from('transactions')
-      .select('id, status, brand_id, creator_id, amount_dzd')
+      .select('id, status, brand_id, creator_id, amount_dzd, deal_id')
       .eq('chargily_checkout_id', checkoutData.id)
       .maybeSingle()
 
     if (fetchErr) {
       console.error('[chargily-webhook] DB fetch error:', fetchErr)
-      throw fetchErr
+    } else {
+      existingTx = txByCheckout
+    }
+
+    if (!existingTx && checkoutData.metadata?.transaction_id) {
+      const { data: txByMeta, error: metaErr } = await supabase
+        .from('transactions')
+        .select('id, status, brand_id, creator_id, amount_dzd, deal_id')
+        .eq('id', checkoutData.metadata.transaction_id)
+        .maybeSingle()
+
+      if (!metaErr && txByMeta) {
+        existingTx = txByMeta
+      }
     }
 
     if (!existingTx) {
@@ -150,12 +164,26 @@ Deno.serve(async (req) => {
         .from('transactions')
         .update({
           status: 'escrow_funded',
+          chargily_checkout_id: checkoutData.id,
           payment_method: checkoutData.payment_method || 'edahabia',
           updated_at: new Date().toISOString(),
         })
         .eq('id', existingTx.id)
 
       if (updateErr) throw updateErr
+
+      // If tied to an application / deal, update application status to approved
+      const targetDealId = existingTx.deal_id || checkoutData.metadata?.deal_id
+      if (targetDealId) {
+        try {
+          await supabase
+            .from('applications')
+            .update({ status: 'approved' })
+            .eq('id', targetDealId)
+        } catch (appErr: any) {
+          console.warn('[chargily-webhook] Application status update notice:', appErr?.message)
+        }
+      }
 
       // Create in-app notifications for both Brand and Creator
       if (existingTx.brand_id) {

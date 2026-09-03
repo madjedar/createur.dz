@@ -54,6 +54,9 @@ export async function createCheckoutSession({ amount, dealId, creatorId, brandId
       Authorization: `Bearer ${token}`
     } : {};
 
+    const callerOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+    const cleanOrigin = callerOrigin.replace(/\/$/, '');
+
     const { data, error } = await supabase.functions.invoke('create-checkout', {
       headers,
       body: {
@@ -63,24 +66,41 @@ export async function createCheckoutSession({ amount, dealId, creatorId, brandId
         creator_id: creatorId,
         brand_id: brandId || session?.user?.id,
         description: description || 'Créateur DZ — صفقة رعاية',
-        success_url: `${window.location.origin}?payment=success&deal_id=${dealId || ''}`,
-        failure_url: `${window.location.origin}?payment=failed&deal_id=${dealId || ''}`,
+        success_url: `${cleanOrigin}?payment=success&deal_id=${dealId || ''}`,
+        failure_url: `${cleanOrigin}?payment=failed&deal_id=${dealId || ''}`,
       },
     });
 
     if (!error && data?.checkout_url) {
-      return { success: true, checkoutUrl: data.checkout_url, checkoutId: data.checkout_id };
+      return { 
+        success: true, 
+        checkoutUrl: data.checkout_url, 
+        checkoutId: data.checkout_id,
+        transactionId: data.transaction_id 
+      };
     }
 
+    let errorMessage = 'تعذر إنشاء جلسة الدفع عبر Chargily Pay. يرجى المحاولة لاحقاً.';
     if (error) {
-      console.warn('Chargily Edge Function notice:', error);
+      if (error.context && typeof error.context.json === 'function') {
+        try {
+          const errJson = await error.context.json();
+          if (errJson?.error) errorMessage = errJson.error;
+        } catch {
+          if (error.message) errorMessage = error.message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+    } else if (data?.error) {
+      errorMessage = data.error;
     }
 
-    // Fallback to simulated Escrow mode for local demo if secrets are not set in dev
-    return { success: true, isTestMode: true };
+    console.error('[chargilyService] Checkout creation error:', errorMessage);
+    return { success: false, error: errorMessage };
   } catch (err) {
-    console.warn('Checkout creation fallback to simulated Escrow mode:', err);
-    return { success: true, isTestMode: true };
+    console.error('[chargilyService] Checkout creation exception:', err);
+    return { success: false, error: err.message || 'فشل الاتصال ببوابة الدفع' };
   }
 }
 

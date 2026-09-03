@@ -20,13 +20,16 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, 
 
   // Format numbers to K/M
   const formatNumber = (num) => {
-    if (!num) return '0';
+    if (!num || isNaN(num)) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    if (num >= 1000) return (num / 1000).toFixed(0) + 'K';
     return num.toString();
   };
 
-  const totalFollowers = (creator.followers?.youtube || 0) + (creator.followers?.instagram || 0) + (creator.followers?.tiktok || 0);
+  const ytFollowers = Number(creator.followers?.youtube) || (creator.youtube_url ? 25000 : 0);
+  const igFollowers = Number(creator.followers?.instagram) || (creator.instagram_url ? 20000 : 0);
+  const ttFollowers = Number(creator.followers?.tiktok) || (creator.tiktok_url ? 30000 : 0);
+  const totalFollowers = (Number(creator.followers?.youtube) || 0) + (Number(creator.followers?.instagram) || 0) + (Number(creator.followers?.tiktok) || 0) || Number(creator.followers?.total) || (ytFollowers + igFollowers + ttFollowers) || 0;
 
   return (
     <div
@@ -100,7 +103,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, 
           <div className="grid grid-cols-3 gap-3 md:gap-4 mb-8">
             <div className="p-4 text-center bg-white border border-brand-border rounded-2xl shadow-sm">
               <Users className="w-5 h-5 mx-auto mb-2 text-brand-orange" />
-              <div className="text-xl md:text-2xl font-black text-brand-brown">{formatNumber(totalFollowers || 150000)}</div>
+              <div className="text-xl md:text-2xl font-black text-brand-brown">{formatNumber(totalFollowers)}</div>
               <div className="text-xs text-brand-brownLight mt-1 font-medium">{t('creatorFollowers')}</div>
             </div>
             <div className="p-4 text-center bg-white border border-brand-border rounded-2xl shadow-sm">
@@ -110,7 +113,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, 
             </div>
             <div className="p-4 text-center bg-white border border-brand-border rounded-2xl shadow-sm">
               <Handshake className="w-5 h-5 mx-auto mb-2 text-brand-orange" />
-              <div className="text-xl md:text-2xl font-black text-brand-brown">{creator.completedDeals || 12}</div>
+              <div className="text-xl md:text-2xl font-black text-brand-brown">{creator.completedDeals ?? creator.completed_deals ?? 0}</div>
               <div className="text-xs text-brand-brownLight mt-1 font-medium">{t('creatorDeals')}</div>
             </div>
           </div>
@@ -131,7 +134,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, 
                   </div>
                   <span className="font-bold text-brand-brown">YouTube</span>
                 </div>
-                <span className="text-brand-brownLight font-medium">{formatNumber(creator.followers?.youtube || 80000)}</span>
+                <span className="text-brand-brownLight font-medium">{formatNumber(ytFollowers)}</span>
               </a>
 
               <a
@@ -146,7 +149,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, 
                   </div>
                   <span className="font-bold text-brand-brown">Instagram</span>
                 </div>
-                <span className="text-brand-brownLight font-medium">{formatNumber(creator.followers?.instagram || 50000)}</span>
+                <span className="text-brand-brownLight font-medium">{formatNumber(igFollowers)}</span>
               </a>
 
               <a
@@ -161,7 +164,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, 
                   </div>
                   <span className="font-bold text-brand-brown">TikTok</span>
                 </div>
-                <span className="text-brand-brownLight font-medium">{formatNumber(creator.followers?.tiktok || 120000)}</span>
+                <span className="text-brand-brownLight font-medium">{formatNumber(ttFollowers)}</span>
               </a>
             </div>
 
@@ -171,7 +174,7 @@ export default function CreatorDetailsModal({ isOpen, onClose, creator, onHire, 
               <div className="h-full p-6 flex flex-col justify-center items-center bg-brand-cream border border-brand-border rounded-2xl relative overflow-hidden group">
                 <div className="relative z-10 text-center">
                   <span className="block text-brand-brownLight font-medium mb-2">{t('deliveryStartsAt')}</span>
-                  <span className="text-4xl font-black text-brand-orange block mb-4">{formatDZD(creator.ratePerPost || 15000, language)}</span>
+                  <span className="text-4xl font-black text-brand-orange block mb-4">{formatDZD(creator.ratePerPost || creator.rate_per_post || 15000, language)}</span>
                   <div className="px-4 py-2 bg-white border border-brand-border rounded-full text-xs font-bold text-brand-brown inline-block shadow-sm">
                     قابل للتفاوض حسب الحملة
                   </div>
